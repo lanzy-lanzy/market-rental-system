@@ -1,0 +1,108 @@
+{% extends 'reports/report_base.html' %}
+{% load static %}
+{% load humanize %}
+{% block report_title %}{{ report_type|default:"Tenants Report" }}{% endblock %}
+{% block report_heading %}{{ report_type|default:"Tenants Report" }}{% endblock %}
+{% block report_title_display %}{{ report_type|default:"Tenants Report" }}{% endblock %}
+{% block report_subtitle %}{{ month_name }} {{ year }}{% endblock %}
+
+{% block report_actions %}
+<div class="no-print mb-4 flex flex-wrap items-end gap-4">
+  <form class="flex flex-wrap items-end gap-3">
+    <div>
+      <label class="block text-xs font-medium uppercase tracking-wider text-gray-500 mb-1">Month</label>
+      <select name="month" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200">
+        {% for m in "123456789012"|make_list %}
+        <option value="{{ forloop.counter }}" {% if forloop.counter == month %}selected{% endif %}>{{ forloop.counter|stringformat:"02d" }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs font-medium uppercase tracking-wider text-gray-500 mb-1">Year</label>
+      <input type="number" name="year" value="{{ year }}" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200 w-20">
+    </div>
+    <button type="submit" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 transition-colors">Filter</button>
+  </form>
+  <button onclick="window.print()" class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors ml-auto">Print</button>
+</div>
+{% endblock %}
+
+{% block report_content %}
+<div class="mb-6">
+  <div class="grid grid-cols-2 gap-4">
+    <div class="bg-green-50 rounded-lg p-4 text-center">
+      <p class="text-xs font-medium uppercase tracking-wider text-green-600">
+        {% if 'Paid' in report_type %}Total Collected{% elif 'Unpaid' in report_type %}Total Unpaid{% else %}Total Overdue{% endif %}
+      </p>
+      <p class="text-2xl font-bold text-green-700">
+        &#8369;
+        {% if total_collected %}
+          {{ total_collected|floatformat:2|intcomma }}
+        {% elif total_unpaid %}
+          {{ total_unpaid|floatformat:2|intcomma }}
+        {% elif total_overdue %}
+          {{ total_overdue|floatformat:2|intcomma }}
+        {% else %}
+          0.00
+        {% endif %}
+      </p>
+    </div>
+    <div class="bg-gray-50 rounded-lg p-4 text-center">
+      <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Tenant Count</p>
+      <p class="text-2xl font-bold text-gray-900">{{ total_count }}</p>
+    </div>
+  </div>
+</div>
+
+<div class="overflow-x-auto">
+  <table class="w-full border-collapse">
+    <thead>
+      <tr class="bg-gray-50">
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Tenant ID</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Tenant Name</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Stall</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Section</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Rental</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Penalty</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Total Due</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Paid</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Balance</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for billing in page_obj %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-4 py-3 text-sm font-mono text-gray-600">{{ billing.tenant.tenant_id }}</td>
+        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ billing.tenant.full_name }}</td>
+        <td class="px-4 py-3 text-sm text-gray-600">{{ billing.stall.stall_number }}</td>
+        <td class="px-4 py-3 text-sm text-gray-600">{{ billing.stall.section.name }}</td>
+        <td class="px-4 py-3 text-sm text-right text-gray-800">&#8369;{{ billing.rental_amount|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3 text-sm text-right text-red-600">{{ billing.penalty_amount|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3 text-sm font-medium text-right text-gray-900">&#8369;{{ billing.total_due|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3 text-sm text-right text-green-600">&#8369;{{ billing.amount_paid|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3 text-sm font-medium text-right {% if billing.balance > 0 %}text-red-600{% else %}text-green-600{% endif %}">&#8369;{{ billing.balance|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3">{% include 'includes/status_badge.html' with status=billing.status %}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="10" class="px-4 py-8 text-center text-sm text-gray-400">No records found</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="bg-gray-100 font-semibold">
+        <td colspan="4" class="px-4 py-3 text-sm text-gray-900 text-right">Grand Total:</td>
+        <td class="px-4 py-3 text-sm text-right text-gray-900"></td>
+        <td class="px-4 py-3 text-sm text-right text-gray-900"></td>
+        <td class="px-4 py-3 text-sm text-right text-gray-900"></td>
+        <td class="px-4 py-3 text-sm text-right text-green-700"></td>
+        <td class="px-4 py-3 text-sm text-right text-red-700"></td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+{% include 'includes/pagination.html' %}
+{% endblock %}

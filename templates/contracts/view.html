@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% block title %}Contract - {{ contract.tenant.full_name }}{% endblock %}
+{% block page_title %}Contract Details{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex flex-col gap-4 rounded-xl border border-gray-100 bg-gradient-to-r from-secondary-50 to-primary-50 p-6 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex items-center gap-4">
+      <div class="flex h-14 w-14 items-center justify-center rounded-lg bg-secondary-100 text-secondary-700">
+        <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+      <div>
+        <h2 class="text-xl font-bold text-gray-900">{{ contract.tenant.full_name }} - {{ contract.stall.stall_number }}</h2>
+        <div class="mt-1 flex items-center gap-3 text-sm text-gray-500">
+          <span>{{ contract.stall.section.name }}</span>
+          <span class="text-gray-300">|</span>
+          {% include 'includes/status_badge.html' with status=contract.status %}
+        </div>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <button type="button"
+              hx-get="{% url 'contract_edit_modal' contract.id %}"
+              hx-target="#modal-content"
+              hx-trigger="click"
+              onclick="openModal('{% url 'contract_edit_modal' contract.id %}')"
+              class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors duration-200">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+        Edit
+      </button>
+      <a href="{% url 'contract_list' %}"
+         class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors duration-200">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Back
+      </a>
+    </div>
+  </div>
+
+  <!-- Contract Info -->
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <div class="rounded-xl border border-gray-100 bg-card shadow-sm">
+      <div class="border-b border-gray-100 px-6 py-4">
+        <h3 class="text-sm font-semibold text-gray-900">Contract Terms</h3>
+      </div>
+      <div class="space-y-4 px-6 py-4">
+        <div>
+          <p class="text-xs font-medium uppercase tracking-wider text-gray-400">Start Date</p>
+          <p class="mt-1 text-sm text-gray-800">{{ contract.start_date|date:"F d, Y" }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-medium uppercase tracking-wider text-gray-400">End Date</p>
+          <p class="mt-1 text-sm text-gray-800">{{ contract.end_date|date:"F d, Y"|default:"Open-ended" }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-medium uppercase tracking-wider text-gray-400">Due Day</p>
+          <p class="mt-1 text-sm text-gray-800">Every {{ contract.due_day|ordinal }} of the month</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-gray-100 bg-card shadow-sm">
+      <div class="border-b border-gray-100 px-6 py-4">
+        <h3 class="text-sm font-semibold text-gray-900">Financial Details</h3>
+      </div>
+      <div class="space-y-4 px-6 py-4">
+        <div>
+          <p class="text-xs font-medium uppercase tracking-wider text-gray-400">Monthly Rent</p>
+          <p class="mt-1 text-lg font-bold text-primary-700">&#8369;{{ contract.monthly_rent|floatformat:2|intcomma }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-medium uppercase tracking-wider text-gray-400">Security Deposit</p>
+          <p class="mt-1 text-sm text-gray-800">&#8369;{{ contract.security_deposit|floatformat:2|intcomma }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-gray-100 bg-card shadow-sm">
+      <div class="border-b border-gray-100 px-6 py-4">
+        <h3 class="text-sm font-semibold text-gray-900">Stall Information</h3>
+      </div>
+      <div class="space-y-4 px-6 py-4">
+        <div>
+          <p class="text-xs font-medium uppercase tracking-wider text-gray-400">Stall Number</p>
+          <p class="mt-1"><a href="{% url 'stall_view' contract.stall.id %}" class="text-sm font-medium text-primary-600 hover:text-primary-700">{{ contract.stall.stall_number }}</a></p>
+        </div>
+        <div>
+          <p class="text-xs font-medium uppercase tracking-wider text-gray-400">Section</p>
+          <p class="mt-1 text-sm text-gray-800">{{ contract.stall.section.name }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-medium uppercase tracking-wider text-gray-400">Tenant</p>
+          <p class="mt-1"><a href="{% url 'tenant_view' contract.tenant.id %}" class="text-sm font-medium text-primary-600 hover:text-primary-700">{{ contract.tenant.full_name }}</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Billings -->
+  <div class="rounded-xl border border-gray-100 bg-card shadow-sm">
+    <div class="border-b border-gray-100 px-6 py-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-gray-900">Billing History</h3>
+        <a href="{% url 'billing_list' %}?tenant={{ contract.tenant.id }}" class="text-xs font-medium text-primary-600 hover:text-primary-700">View All</a>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-100">
+        <thead>
+          <tr class="bg-gray-50">
+            <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Month</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Rental</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Penalty</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Total Due</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Paid</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Balance</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Due Date</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+          {% for billing in billings %}
+          <tr class="transition-colors hover:bg-gray-50">
+            <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{{ billing.billing_month }}/{{ billing.billing_year }}</td>
+            <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">&#8369;{{ billing.rental_amount|floatformat:2|intcomma }}</td>
+            <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">&#8369;{{ billing.penalty_amount|floatformat:2|intcomma }}</td>
+            <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">&#8369;{{ billing.total_due|floatformat:2|intcomma }}</td>
+            <td class="whitespace-nowrap px-6 py-4 text-sm text-green-600">&#8369;{{ billing.amount_paid|floatformat:2|intcomma }}</td>
+            <td class="whitespace-nowrap px-6 py-4 text-sm font-medium {% if billing.balance > 0 %}text-red-600{% else %}text-green-600{% endif %}">&#8369;{{ billing.balance|floatformat:2|intcomma }}</td>
+            <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">{{ billing.due_date|date:"M d, Y" }}</td>
+            <td class="whitespace-nowrap px-6 py-4">{% include 'includes/status_badge.html' with status=billing.status %}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="px-6 py-8 text-center text-sm text-gray-400">No billing records</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if contract.remarks %}
+  <div class="rounded-xl border border-gray-100 bg-card p-6 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-900">Remarks</h3>
+    <p class="mt-2 text-sm text-gray-600">{{ contract.remarks|linebreaksbr }}</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ notice.notice_number }} - Notice</title>
+  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+  <style>
+    @media print {
+      body { background: white; font-size: 11pt; }
+      @page { margin: 0.75in; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-white p-8 font-sans">
+  <div class="no-print mb-4 flex justify-end">
+    <button onclick="window.print()" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 transition-colors">Print</button>
+  </div>
+
+  <div class="max-w-2xl mx-auto border border-gray-300 p-8">
+    <!-- Letterhead -->
+    <div class="text-center border-b-2 border-gray-800 pb-4 mb-6">
+      <h1 class="text-lg font-bold uppercase text-gray-900">Republic of the Philippines</h1>
+      <h2 class="text-base font-semibold text-primary-800">PUBLIC MARKET</h2>
+      <p class="text-sm text-gray-600">Market Administration Office</p>
+    </div>
+
+    <div class="text-center mb-6">
+      <h3 class="text-base font-bold uppercase tracking-wider text-gray-900">{{ notice.get_notice_type_display }}</h3>
+      <p class="text-sm text-gray-500">Notice No: {{ notice.notice_number }}</p>
+      <p class="text-sm text-gray-500">Date Issued: {{ notice.date_issued|date:"F d, Y" }}</p>
+    </div>
+
+    <!-- To -->
+    <div class="mb-4">
+      <p class="text-sm font-semibold text-gray-800">{{ notice.tenant.full_name }}</p>
+      <p class="text-sm text-gray-600">{{ notice.tenant.address|linebreaksbr }}</p>
+    </div>
+
+    <p class="text-sm text-gray-700 mb-2">Dear <strong>{{ notice.tenant.full_name }}</strong>,</p>
+
+    <!-- Content -->
+    <div class="mb-6 text-sm text-gray-800 leading-relaxed">
+      {{ notice.content|linebreaksbr }}
+    </div>
+
+    <!-- Signature -->
+    <div class="mt-10">
+      <div class="text-center">
+        <div class="border-t border-gray-300 pt-2 inline-block px-8">
+          <p class="text-sm font-semibold text-gray-900">Market Administrator</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Info -->
+    <div class="mt-6 pt-4 border-t border-gray-200 text-xs text-gray-400 text-center">
+      <p>This notice is officially issued by the Market Administration Office.</p>
+      {% if notice.remarks %}
+      <p class="mt-1">Remarks: {{ notice.remarks }}</p>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

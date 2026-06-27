@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}System Settings - Market Rental System{% endblock %}
+{% block page_title %}System Settings{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="rounded-xl border border-gray-100 bg-card shadow-sm">
+    <div class="border-b border-gray-100 px-6 py-4">
+      <h3 class="text-lg font-semibold text-gray-900">System Configuration</h3>
+      <p class="text-sm text-gray-500">Configure market information, billing rules, and system preferences</p>
+    </div>
+    <form method="post" action="{% url 'settings_update' %}" enctype="multipart/form-data" class="p-6 space-y-6">
+      {% csrf_token %}
+
+      <!-- Municipality Info -->
+      <div>
+        <h4 class="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-100">Municipality & Market Information</h4>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Municipality/City Name</label>
+            {{ form.municipality_name }}
+            {% if form.municipality_name.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.municipality_name.errors.0 }}</p>
+            {% endif %}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Market Name</label>
+            {{ form.market_name }}
+            {% if form.market_name.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.market_name.errors.0 }}</p>
+            {% endif %}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Office Name</label>
+            {{ form.office_name }}
+            {% if form.office_name.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.office_name.errors.0 }}</p>
+            {% endif %}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Receipt Prefix</label>
+            {{ form.receipt_prefix }}
+            {% if form.receipt_prefix.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.receipt_prefix.errors.0 }}</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Billing Rules -->
+      <div>
+        <h4 class="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-100">Billing & Penalty Rules</h4>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Default Due Day</label>
+            {{ form.default_due_day }}
+            {% if form.default_due_day.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.default_due_day.errors.0 }}</p>
+            {% endif %}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Penalty Type</label>
+            {{ form.penalty_type }}
+            {% if form.penalty_type.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.penalty_type.errors.0 }}</p>
+            {% endif %}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Penalty Value</label>
+            {{ form.penalty_value }}
+            {% if form.penalty_value.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.penalty_value.errors.0 }}</p>
+            {% endif %}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Grace Period (days)</label>
+            {{ form.grace_period }}
+            {% if form.grace_period.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.grace_period.errors.0 }}</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Branding -->
+      <div>
+        <h4 class="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-100">Branding & Appearance</h4>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Logo</label>
+            <div class="mt-1 flex items-center gap-3">
+              {% if settings.logo %}
+              <img src="{{ settings.logo.url }}" alt="Current logo" class="h-12 w-auto rounded border border-gray-200">
+              {% endif %}
+              {{ form.logo }}
+            </div>
+            {% if form.logo.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.logo.errors.0 }}</p>
+            {% endif %}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Theme Color</label>
+            {{ form.theme_color }}
+            {% if form.theme_color.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.theme_color.errors.0 }}</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Action -->
+      <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-4">
+        <a href="{% url 'dashboard' %}" class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+          Cancel
+        </a>
+        <button type="submit" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors">
+          Save Settings
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

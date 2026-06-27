@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{% if is_add %}Record Payment{% else %}Edit Payment{% endif %} - Market Rental System{% endblock %}
+{% block page_title %}{% if is_add %}Record Payment{% else %}Edit Payment: {{ payment.receipt_number }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl">
+  <div class="rounded-xl border border-gray-100 bg-card shadow-sm">
+    <div class="border-b border-gray-100 px-6 py-4">
+      <h3 class="text-lg font-semibold text-gray-900">{% if is_add %}Record Payment{% else %}Edit Payment{% endif %}</h3>
+      <p class="mt-1 text-sm text-gray-500">{% if is_add %}Record a new payment from a tenant.{% else %}Update the payment details.{% endif %}</p>
+    </div>
+    <form method="post" action="{% if is_add %}{% url 'payment_add' %}{% else %}{% url 'payment_list' %}{% endif %}" class="p-6">
+      {% csrf_token %}
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Tenant</label>
+          {{ form.tenant }}
+          {% if form.tenant.errors %}<p class="mt-1 text-xs text-red-500">{{ form.tenant.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Stall</label>
+          {{ form.stall }}
+          {% if form.stall.errors %}<p class="mt-1 text-xs text-red-500">{{ form.stall.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Billing Reference</label>
+          {{ form.billing }}
+          {% if form.billing.errors %}<p class="mt-1 text-xs text-red-500">{{ form.billing.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Billing Month</label>
+          {{ form.billing_month }}
+          {% if form.billing_month.errors %}<p class="mt-1 text-xs text-red-500">{{ form.billing_month.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Billing Year</label>
+          {{ form.billing_year }}
+          {% if form.billing_year.errors %}<p class="mt-1 text-xs text-red-500">{{ form.billing_year.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Payment Date</label>
+          {{ form.payment_date }}
+          {% if form.payment_date.errors %}<p class="mt-1 text-xs text-red-500">{{ form.payment_date.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Rental Amount (&#8369;)</label>
+          {{ form.rental_amount }}
+          {% if form.rental_amount.errors %}<p class="mt-1 text-xs text-red-500">{{ form.rental_amount.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Penalty Amount (&#8369;)</label>
+          {{ form.penalty_amount }}
+          {% if form.penalty_amount.errors %}<p class="mt-1 text-xs text-red-500">{{ form.penalty_amount.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Discount (&#8369;)</label>
+          {{ form.discount }}
+          {% if form.discount.errors %}<p class="mt-1 text-xs text-red-500">{{ form.discount.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Total Amount Due (&#8369;)</label>
+          {{ form.total_amount_due }}
+          {% if form.total_amount_due.errors %}<p class="mt-1 text-xs text-red-500">{{ form.total_amount_due.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Amount Paid (&#8369;)</label>
+          {{ form.amount_paid }}
+          {% if form.amount_paid.errors %}<p class="mt-1 text-xs text-red-500">{{ form.amount_paid.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Payment Method</label>
+          {{ form.payment_method }}
+          {% if form.payment_method.errors %}<p class="mt-1 text-xs text-red-500">{{ form.payment_method.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Official Receipt No.</label>
+          {{ form.official_receipt_no }}
+          {% if form.official_receipt_no.errors %}<p class="mt-1 text-xs text-red-500">{{ form.official_receipt_no.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Collected By</label>
+          {{ form.collected_by }}
+          {% if form.collected_by.errors %}<p class="mt-1 text-xs text-red-500">{{ form.collected_by.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Status</label>
+          {{ form.status }}
+          {% if form.status.errors %}<p class="mt-1 text-xs text-red-500">{{ form.status.errors.0 }}</p>{% endif %}
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-medium text-gray-700">Remarks</label>
+          {{ form.remarks }}
+          {% if form.remarks.errors %}<p class="mt-1 text-xs text-red-500">{{ form.remarks.errors.0 }}</p>{% endif %}
+        </div>
+      </div>
+      <div class="mt-6 flex items-center justify-end gap-3 border-t border-gray-100 pt-4">
+        <a href="{% url 'payment_list' %}" class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Cancel</a>
+        <button type="submit" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors">{% if is_add %}Record Payment{% else %}Update Payment{% endif %}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

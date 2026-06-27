@@ -1,0 +1,89 @@
+{% extends 'reports/report_base.html' %}
+{% load static %}
+{% load humanize %}
+{% block report_title %}{{ report_type|default:"Collection Report" }}{% endblock %}
+{% block report_heading %}{{ report_type|default:"Collection Report" }}{% endblock %}
+{% block report_title_display %}{{ report_type|default:"Collection Report" }}{% endblock %}
+{% block report_subtitle %}{{ date_from|date:"F d, Y" }} to {{ date_to|date:"F d, Y" }}{% endblock %}
+
+{% block report_actions %}
+<div class="no-print mb-4 flex flex-wrap items-end gap-4">
+  <form class="flex flex-wrap items-end gap-3">
+    <div>
+      <label class="block text-xs font-medium uppercase tracking-wider text-gray-500 mb-1">Date From</label>
+      <input type="date" name="date_from" value="{{ date_from|default:'' }}"
+             class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200">
+    </div>
+    <div>
+      <label class="block text-xs font-medium uppercase tracking-wider text-gray-500 mb-1">Date To</label>
+      <input type="date" name="date_to" value="{{ date_to|default:'' }}"
+             class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200">
+    </div>
+    <button type="submit" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 transition-colors">Filter</button>
+  </form>
+  <button onclick="window.print()" class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors ml-auto">
+    Print
+  </button>
+</div>
+{% endblock %}
+
+{% block report_content %}
+<div class="mb-6">
+  <div class="grid grid-cols-3 gap-4">
+    <div class="bg-gray-50 rounded-lg p-4 text-center">
+      <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Total Collected</p>
+      <p class="text-2xl font-bold text-green-600">&#8369;{{ total_collected|floatformat:2|intcomma }}</p>
+    </div>
+    <div class="bg-gray-50 rounded-lg p-4 text-center">
+      <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Transaction Count</p>
+      <p class="text-2xl font-bold text-gray-900">{{ total_count }}</p>
+    </div>
+    <div class="bg-gray-50 rounded-lg p-4 text-center">
+      <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Average per Transaction</p>
+      <p class="text-2xl font-bold text-primary-700">&#8369;{% if total_count %}{{ total_collected|divisibleby:total_count|default:total_collected|floatformat:2|intcomma }}{% else %}0.00{% endif %}</p>
+    </div>
+  </div>
+</div>
+
+<div class="overflow-x-auto">
+  <table class="w-full border-collapse">
+    <thead>
+      <tr class="bg-gray-50">
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Date</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Receipt</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Tenant</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Stall</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Method</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Amount</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Collector</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for payment in page_obj %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-4 py-3 text-sm text-gray-600">{{ payment.payment_date|date:"M d, Y" }}</td>
+        <td class="px-4 py-3 text-sm font-mono text-gray-900">{{ payment.receipt_number }}</td>
+        <td class="px-4 py-3 text-sm text-gray-800">{{ payment.tenant.full_name }}</td>
+        <td class="px-4 py-3 text-sm text-gray-600">{{ payment.stall.stall_number }}</td>
+        <td class="px-4 py-3 text-sm text-gray-600">{{ payment.payment_method }}</td>
+        <td class="px-4 py-3 text-sm font-medium text-right text-green-600">&#8369;{{ payment.amount_paid|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3 text-sm text-gray-600">{{ payment.collected_by.get_full_name|default:payment.collected_by.username }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" class="px-4 py-8 text-center text-sm text-gray-400">No records found for this period</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="bg-gray-100 font-semibold">
+        <td colspan="5" class="px-4 py-3 text-sm text-gray-900 text-right">Grand Total:</td>
+        <td class="px-4 py-3 text-sm text-green-700 text-right">&#8369;{{ total_collected|floatformat:2|intcomma }}</td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+{% include 'includes/pagination.html' %}
+{% endblock %}

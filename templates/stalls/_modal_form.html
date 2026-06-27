@@ -1,0 +1,66 @@
+{% load static %}
+{% if is_add %}
+<div class="p-6">
+  <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+    <h3 class="text-lg font-semibold text-gray-900">Add New Stall</h3>
+    <button onclick="closeModal()" class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <form hx-post="{% url 'stall_add_modal' %}" hx-target="#modal-content" class="mt-4 space-y-4">
+    {% csrf_token %}
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+{% else %}
+<div class="p-6">
+  <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+    <h3 class="text-lg font-semibold text-gray-900">Edit Stall: {{ stall.stall_number }}</h3>
+    <button onclick="closeModal()" class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <form hx-post="{% url 'stall_edit_modal' stall.id %}" hx-target="#modal-content" class="mt-4 space-y-4">
+    {% csrf_token %}
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+{% endif %}
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Stall Number</label>
+        {{ form.stall_number }}
+        {% if form.stall_number.errors %}<p class="mt-1 text-xs text-red-500">{{ form.stall_number.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Section</label>
+        {{ form.section }}
+        {% if form.section.errors %}<p class="mt-1 text-xs text-red-500">{{ form.section.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Stall Type</label>
+        {{ form.stall_type }}
+        {% if form.stall_type.errors %}<p class="mt-1 text-xs text-red-500">{{ form.stall_type.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Size (sqm)</label>
+        {{ form.size }}
+        {% if form.size.errors %}<p class="mt-1 text-xs text-red-500">{{ form.size.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Monthly Rate (&#8369;)</label>
+        {{ form.monthly_rate }}
+        {% if form.monthly_rate.errors %}<p class="mt-1 text-xs text-red-500">{{ form.monthly_rate.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Status</label>
+        {{ form.status }}
+        {% if form.status.errors %}<p class="mt-1 text-xs text-red-500">{{ form.status.errors.0 }}</p>{% endif %}
+      </div>
+      <div class="sm:col-span-2">
+        <label class="block text-sm font-medium text-gray-700">Remarks</label>
+        {{ form.remarks }}
+        {% if form.remarks.errors %}<p class="mt-1 text-xs text-red-500">{{ form.remarks.errors.0 }}</p>{% endif %}
+      </div>
+    </div>
+    <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-4">
+      <button type="button" onclick="closeModal()" class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
+      <button type="submit" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors">{% if is_add %}Create Stall{% else %}Update Stall{% endif %}</button>
+    </div>
+  </form>
+</div>

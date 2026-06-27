@@ -1,0 +1,78 @@
+{% load humanize %}
+  <!-- Summary Bar -->
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div class="rounded-lg bg-gray-50 px-5 py-3 border border-gray-100">
+      <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Total Due</p>
+      <p class="text-lg font-bold text-gray-900">&#8369;{{ total_due|floatformat:2|intcomma }}</p>
+    </div>
+    <div class="rounded-lg bg-green-50 px-5 py-3 border border-green-100">
+      <p class="text-xs font-medium uppercase tracking-wider text-green-600">Total Paid</p>
+      <p class="text-lg font-bold text-green-700">&#8369;{{ total_paid|floatformat:2|intcomma }}</p>
+    </div>
+    <div class="rounded-lg bg-red-50 px-5 py-3 border border-red-100">
+      <p class="text-xs font-medium uppercase tracking-wider text-red-600">Total Balance</p>
+      <p class="text-lg font-bold text-red-700">&#8369;{{ total_balance|floatformat:2|intcomma }}</p>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div id="billing-table" class="overflow-x-auto rounded-xl border border-gray-100 bg-card shadow-sm">
+    <table class="min-w-full divide-y divide-gray-100">
+      <thead>
+        <tr class="bg-gray-50">
+          <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Tenant</th>
+          <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Stall</th>
+          <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Period</th>
+          <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Total Due</th>
+          <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Paid</th>
+          <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Balance</th>
+          <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Due Date</th>
+          <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
+          <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-50">
+        {% for billing in page_obj %}
+        <tr class="transition-colors hover:bg-gray-50">
+          <td class="whitespace-nowrap px-6 py-4">
+            <a href="{% url 'tenant_view' billing.tenant.id %}" class="text-sm font-medium text-primary-600 hover:text-primary-700">{{ billing.tenant.full_name }}</a>
+          </td>
+          <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">{{ billing.stall.stall_number }}</td>
+          <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">{{ billing.billing_month }}/{{ billing.billing_year }}</td>
+          <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">&#8369;{{ billing.total_due|floatformat:2|intcomma }}</td>
+          <td class="whitespace-nowrap px-6 py-4 text-sm text-green-600">&#8369;{{ billing.amount_paid|floatformat:2|intcomma }}</td>
+          <td class="whitespace-nowrap px-6 py-4 text-sm font-medium {% if billing.balance > 0 %}text-red-600{% else %}text-green-600{% endif %}">&#8369;{{ billing.balance|floatformat:2|intcomma }}</td>
+          <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">{{ billing.due_date|date:"M d, Y" }}</td>
+          <td class="whitespace-nowrap px-6 py-4">{% include 'includes/status_badge.html' with status=billing.status %}</td>
+          <td class="whitespace-nowrap px-6 py-4 text-right">
+            <div class="flex items-center justify-end gap-2">
+              <button type="button"
+                      hx-get="{% url 'billing_edit_modal' billing.id %}"
+                      hx-target="#modal-content"
+                      hx-trigger="click"
+                      onclick="openModal('{% url 'billing_edit_modal' billing.id %}')"
+                      class="rounded-lg border border-gray-200 bg-white p-2 text-gray-500 hover:bg-gray-50 hover:text-secondary-600 transition-colors duration-200"
+                      title="Edit">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" class="px-6 py-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <p class="mt-4 text-sm font-medium text-gray-500">No billing records found</p>
+            <p class="mt-1 text-xs text-gray-400">Generate billings to get started</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% include 'includes/pagination.html' %}

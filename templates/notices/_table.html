@@ -1,0 +1,74 @@
+<div id="notice-table" class="overflow-x-auto rounded-xl border border-gray-100 bg-card shadow-sm">
+  <table class="min-w-full divide-y divide-gray-100">
+    <thead>
+      <tr class="bg-gray-50">
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Notice #</th>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Tenant</th>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Type</th>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Date Issued</th>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Served</th>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Served Date</th>
+        <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-50">
+      {% for notice in page_obj %}
+      <tr class="transition-colors hover:bg-gray-50">
+        <td class="whitespace-nowrap px-6 py-4 text-sm font-mono font-medium text-gray-900">{{ notice.notice_number }}</td>
+        <td class="whitespace-nowrap px-6 py-4">
+          <a href="{% url 'tenant_view' notice.tenant.id %}" class="text-sm font-medium text-primary-600 hover:text-primary-700">{{ notice.tenant.full_name }}</a>
+        </td>
+        <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">{{ notice.get_notice_type_display }}</td>
+        <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">{{ notice.date_issued|date:"M d, Y" }}</td>
+        <td class="whitespace-nowrap px-6 py-4">
+          {% if notice.is_served %}
+          <span class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
+            <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+            </svg>
+            Served
+          </span>
+          {% else %}
+          <span class="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-700">
+            Pending
+          </span>
+          {% endif %}
+        </td>
+        <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">{{ notice.served_date|date:"M d, Y"|default:"--" }}</td>
+        <td class="whitespace-nowrap px-6 py-4 text-right">
+          <div class="flex items-center justify-end gap-2">
+            <a href="{% url 'notice_print' notice.id %}" target="_blank"
+               class="rounded-lg border border-gray-200 bg-white p-2 text-gray-500 hover:bg-gray-50 hover:text-primary-600 transition-colors duration-200"
+               title="Print">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+              </svg>
+            </a>
+            {% if not notice.is_served %}
+            <button type="button"
+                    onclick="showConfirm('Mark as Served', 'Mark notice {{ notice.notice_number }} as served?', function() { document.getElementById('serve-form-{{ notice.id }}').submit(); })"
+                    class="rounded-lg border border-gray-200 bg-white p-2 text-gray-500 hover:bg-gray-50 hover:text-green-600 transition-colors duration-200"
+                    title="Mark as Served">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+            </button>
+            <form id="serve-form-{{ notice.id }}" method="post" action="{% url 'notice_mark_served' notice.id %}" class="hidden">{% csrf_token %}</form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" class="px-6 py-12 text-center">
+          <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+          </svg>
+          <p class="mt-4 text-sm font-medium text-gray-500">No notices found</p>
+          <p class="mt-1 text-xs text-gray-400">Create a notice to get started</p>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

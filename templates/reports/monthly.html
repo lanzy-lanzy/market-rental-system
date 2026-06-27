@@ -1,0 +1,99 @@
+{% extends 'reports/report_base.html' %}
+{% load static %}
+{% load humanize %}
+{% block report_title %}Monthly Collection Report{% endblock %}
+{% block report_heading %}Monthly Collection Report{% endblock %}
+{% block report_title_display %}Monthly Collection Report{% endblock %}
+{% block report_subtitle %}{{ month_name }} {{ year }}{% endblock %}
+
+{% block report_actions %}
+<div class="no-print mb-4 flex flex-wrap items-end gap-4">
+  <form class="flex flex-wrap items-end gap-3">
+    <div>
+      <label class="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">Month</label>
+      <select name="month" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200">
+        <option value="1" {% if month == 1 %}selected{% endif %}>January</option>
+        <option value="2" {% if month == 2 %}selected{% endif %}>February</option>
+        <option value="3" {% if month == 3 %}selected{% endif %}>March</option>
+        <option value="4" {% if month == 4 %}selected{% endif %}>April</option>
+        <option value="5" {% if month == 5 %}selected{% endif %}>May</option>
+        <option value="6" {% if month == 6 %}selected{% endif %}>June</option>
+        <option value="7" {% if month == 7 %}selected{% endif %}>July</option>
+        <option value="8" {% if month == 8 %}selected{% endif %}>August</option>
+        <option value="9" {% if month == 9 %}selected{% endif %}>September</option>
+        <option value="10" {% if month == 10 %}selected{% endif %}>October</option>
+        <option value="11" {% if month == 11 %}selected{% endif %}>November</option>
+        <option value="12" {% if month == 12 %}selected{% endif %}>December</option>
+      </select>
+    </div>
+    <div>
+      <label class="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">Year</label>
+      <input type="number" name="year" value="{{ year }}" min="2020" max="2099"
+             class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200">
+    </div>
+    <button type="submit" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 transition-colors">Filter</button>
+  </form>
+  <button onclick="window.print()" class="ml-auto rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Print</button>
+</div>
+{% endblock %}
+
+{% block report_content %}
+<div class="mb-6">
+  <div class="grid grid-cols-3 gap-4">
+    <div class="rounded-lg bg-gray-50 p-4 text-center">
+      <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Total Billed</p>
+      <p class="text-2xl font-bold text-gray-900">&#8369;{{ total_billed|floatformat:2|intcomma }}</p>
+    </div>
+    <div class="rounded-lg bg-green-50 p-4 text-center">
+      <p class="text-xs font-medium uppercase tracking-wider text-green-600">Total Collected</p>
+      <p class="text-2xl font-bold text-green-700">&#8369;{{ total_collected|floatformat:2|intcomma }}</p>
+    </div>
+    <div class="rounded-lg bg-gray-50 p-4 text-center">
+      <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Transactions</p>
+      <p class="text-2xl font-bold text-gray-900">{{ total_count }}</p>
+    </div>
+  </div>
+</div>
+
+<div class="overflow-x-auto">
+  <table class="w-full border-collapse">
+    <thead>
+      <tr class="bg-gray-50">
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Date</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Receipt</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Tenant</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Stall</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Method</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Amount</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Collector</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for payment in page_obj %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-4 py-3 text-sm text-gray-600">{{ payment.payment_date|date:"M d, Y" }}</td>
+        <td class="px-4 py-3 font-mono text-sm text-gray-900">{{ payment.receipt_number }}</td>
+        <td class="px-4 py-3 text-sm text-gray-800">{{ payment.tenant.full_name }}</td>
+        <td class="px-4 py-3 text-sm text-gray-600">{{ payment.stall.stall_number }}</td>
+        <td class="px-4 py-3 text-sm text-gray-600">{{ payment.payment_method }}</td>
+        <td class="px-4 py-3 text-right text-sm font-medium text-green-600">&#8369;{{ payment.amount_paid|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3 text-sm text-gray-600">{{ payment.collected_by.get_full_name|default:payment.collected_by.username }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" class="px-4 py-8 text-center text-sm text-gray-400">No records found for {{ month_name }} {{ year }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="bg-gray-100 font-semibold">
+        <td colspan="5" class="px-4 py-3 text-right text-sm text-gray-900">Grand Total:</td>
+        <td class="px-4 py-3 text-right text-sm text-green-700">&#8369;{{ total_collected|floatformat:2|intcomma }}</td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+{% include 'includes/pagination.html' %}
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{% if is_add %}Add Stall{% else %}Edit Stall{% endif %} - Market Rental System{% endblock %}
+{% block page_title %}{% if is_add %}Add New Stall{% else %}Edit Stall: {{ stall.stall_number }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl">
+  <div class="rounded-xl border border-gray-100 bg-card shadow-sm">
+    <div class="border-b border-gray-100 px-6 py-4">
+      <h3 class="text-lg font-semibold text-gray-900">{% if is_add %}Add New Stall{% else %}Edit Stall: {{ stall.stall_number }}{% endif %}</h3>
+      <p class="mt-1 text-sm text-gray-500">{% if is_add %}Fill in the details below to register a new stall.{% else %}Update the stall information below.{% endif %}</p>
+    </div>
+    <form method="post" action="{% if is_add %}{% url 'stall_add' %}{% else %}{% url 'stall_edit' stall.id %}{% endif %}" class="p-6">
+      {% csrf_token %}
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Stall Number</label>
+          {{ form.stall_number }}
+          {% if form.stall_number.errors %}<p class="mt-1 text-xs text-red-500">{{ form.stall_number.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Section</label>
+          {{ form.section }}
+          {% if form.section.errors %}<p class="mt-1 text-xs text-red-500">{{ form.section.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Stall Type</label>
+          {{ form.stall_type }}
+          {% if form.stall_type.errors %}<p class="mt-1 text-xs text-red-500">{{ form.stall_type.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Size (sqm)</label>
+          {{ form.size }}
+          {% if form.size.errors %}<p class="mt-1 text-xs text-red-500">{{ form.size.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Monthly Rate (&#8369;)</label>
+          {{ form.monthly_rate }}
+          {% if form.monthly_rate.errors %}<p class="mt-1 text-xs text-red-500">{{ form.monthly_rate.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Status</label>
+          {{ form.status }}
+          {% if form.status.errors %}<p class="mt-1 text-xs text-red-500">{{ form.status.errors.0 }}</p>{% endif %}
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-medium text-gray-700">Remarks</label>
+          {{ form.remarks }}
+          {% if form.remarks.errors %}<p class="mt-1 text-xs text-red-500">{{ form.remarks.errors.0 }}</p>{% endif %}
+        </div>
+      </div>
+      <div class="mt-6 flex items-center justify-end gap-3 border-t border-gray-100 pt-4">
+        <a href="{% url 'stall_list' %}" class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Cancel</a>
+        <button type="submit" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors">{% if is_add %}Create Stall{% else %}Update Stall{% endif %}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

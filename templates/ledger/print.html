@@ -1,0 +1,85 @@
+{% load static %}
+{% load humanize %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ledger - {{ tenant.full_name }}</title>
+  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+  <style>
+    @media print {
+      body { background: white; font-size: 10pt; }
+      @page { margin: 0.5in; }
+      table { page-break-inside: auto; }
+      tr { page-break-inside: avoid; page-break-after: auto; }
+      thead { display: table-header-group; }
+    }
+  </style>
+</head>
+<body class="bg-white p-8 font-sans">
+  <div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="text-center border-b-2 border-gray-300 pb-4 mb-6">
+      <h1 class="text-lg font-bold uppercase text-gray-900">Tenant Ledger</h1>
+      <p class="text-sm text-gray-500">{{ tenant.full_name }} - {{ tenant.tenant_id }}</p>
+    </div>
+
+    <!-- Summary -->
+    <div class="grid grid-cols-3 gap-4 mb-6">
+      <div class="border border-gray-200 rounded p-3 text-center">
+        <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Total Debits</p>
+        <p class="text-lg font-bold text-red-600">&#8369;{{ total_debits|floatformat:2|intcomma }}</p>
+      </div>
+      <div class="border border-gray-200 rounded p-3 text-center">
+        <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Total Credits</p>
+        <p class="text-lg font-bold text-green-600">&#8369;{{ total_credits|floatformat:2|intcomma }}</p>
+      </div>
+      <div class="border border-gray-200 rounded p-3 text-center">
+        <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Running Balance</p>
+        <p class="text-lg font-bold {% if running_balance > 0 %}text-red-600{% else %}text-green-600{% endif %}">&#8369;{{ running_balance|floatformat:2|intcomma }}</p>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <table class="w-full border-collapse">
+      <thead>
+        <tr class="bg-gray-100">
+          <th class="border border-gray-300 px-3 py-2 text-left text-xs font-semibold uppercase text-gray-600">Date</th>
+          <th class="border border-gray-300 px-3 py-2 text-left text-xs font-semibold uppercase text-gray-600">Description</th>
+          <th class="border border-gray-300 px-3 py-2 text-right text-xs font-semibold uppercase text-gray-600">Debit</th>
+          <th class="border border-gray-300 px-3 py-2 text-right text-xs font-semibold uppercase text-gray-600">Credit</th>
+          <th class="border border-gray-300 px-3 py-2 text-right text-xs font-semibold uppercase text-gray-600">Balance</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in entries %}
+        <tr>
+          <td class="border border-gray-200 px-3 py-2 text-sm text-gray-700">{{ entry.transaction_date|date:"M d, Y" }}</td>
+          <td class="border border-gray-200 px-3 py-2 text-sm text-gray-700">{{ entry.description }}</td>
+          <td class="border border-gray-200 px-3 py-2 text-sm text-right text-red-600">{{ entry.debit|floatformat:2|intcomma }}</td>
+          <td class="border border-gray-200 px-3 py-2 text-sm text-right text-green-600">{{ entry.credit|floatformat:2|intcomma }}</td>
+          <td class="border border-gray-200 px-3 py-2 text-sm text-right font-medium {% if entry.balance > 0 %}text-red-600{% else %}text-green-600{% endif %}">&#8369;{{ entry.balance|floatformat:2|intcomma }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="border border-gray-200 px-3 py-4 text-center text-sm text-gray-400">No ledger entries</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr class="bg-gray-50 font-semibold">
+          <td colspan="2" class="border border-gray-300 px-3 py-2 text-sm text-gray-900">Totals</td>
+          <td class="border border-gray-300 px-3 py-2 text-sm text-right text-red-600">&#8369;{{ total_debits|floatformat:2|intcomma }}</td>
+          <td class="border border-gray-300 px-3 py-2 text-sm text-right text-green-600">&#8369;{{ total_credits|floatformat:2|intcomma }}</td>
+          <td class="border border-gray-300 px-3 py-2 text-sm text-right {% if running_balance > 0 %}text-red-600{% else %}text-green-600{% endif %}">&#8369;{{ running_balance|floatformat:2|intcomma }}</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="mt-8 pt-4 border-t border-gray-200 text-center text-xs text-gray-400">
+      <p>Generated on {% now "F d, Y h:i A" %} by {{ user.get_full_name|default:user.username }}</p>
+      <p>Market Rental and Collection Management System</p>
+    </div>
+  </div>
+</body>
+</html>
