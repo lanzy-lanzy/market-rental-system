@@ -39,7 +39,7 @@ class Command(BaseCommand):
             self.stdout.write('System settings already exist, skipping.')
             return
         SystemSetting.objects.create(
-            municipality_name='Dumingag Municipality, LGU DUMINGAG',
+            municipality_name='LGU Dumingag',
             market_name='Dumingag Public Market',
             office_name='Market Administration Office',
             receipt_prefix='DMPM-',
