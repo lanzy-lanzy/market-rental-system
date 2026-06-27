@@ -57,7 +57,7 @@ def user_add(request):
         return redirect('dashboard')
 
     if request.method == 'POST':
-        user_form = UserForm(request.POST)
+        user_form = UserCreationForm(request.POST)
         profile_form = UserProfileForm(request.POST)
         if user_form.is_valid() and profile_form.is_valid():
             user = user_form.save(commit=False)
@@ -80,7 +80,7 @@ def user_add(request):
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
-        user_form = UserForm()
+        user_form = UserCreationForm()
         profile_form = UserProfileForm()
     context = {
         'user_form': user_form,
@@ -100,7 +100,7 @@ def user_edit(request, pk):
     profile = get_object_or_404(UserProfile, user=user)
 
     if request.method == 'POST':
-        user_form = UserForm(request.POST, instance=user)
+        user_form = UserCreationForm(request.POST, instance=user)
         profile_form = UserProfileForm(request.POST, instance=profile)
         if user_form.is_valid() and profile_form.is_valid():
             user = user_form.save()
@@ -121,7 +121,7 @@ def user_edit(request, pk):
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
-        user_form = UserForm(instance=user)
+        user_form = UserCreationForm(instance=user)
         profile_form = UserProfileForm(instance=profile)
     context = {
         'user_form': user_form,
