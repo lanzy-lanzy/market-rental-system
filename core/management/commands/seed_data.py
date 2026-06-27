@@ -39,10 +39,10 @@ class Command(BaseCommand):
             self.stdout.write('System settings already exist, skipping.')
             return
         SystemSetting.objects.create(
-            municipality_name='San Juan Municipal Government',
-            market_name='San Juan Public Market',
+            municipality_name='Dumingag Municipality, LGU DUMINGAG',
+            market_name='Dumingag Public Market',
             office_name='Market Administration Office',
-            receipt_prefix='SJPM-',
+            receipt_prefix='DMPM-',
             default_due_day=5,
             penalty_type='percentage',
             penalty_value=2.00,
@@ -55,11 +55,11 @@ class Command(BaseCommand):
             {'username': 'admin', 'password': 'admin123', 'is_staff': True, 'is_superuser': True,
              'profile': {'role': 'admin', 'phone': '', 'address': ''}},
             {'username': 'collector1', 'password': 'collector123',
-             'profile': {'role': 'collector', 'phone': '09171234567', 'address': 'San Juan'}},
+             'profile': {'role': 'collector', 'phone': '09171234567', 'address': 'Dumingag'}},
             {'username': 'supervisor1', 'password': 'supervisor123',
-             'profile': {'role': 'supervisor', 'phone': '09181234568', 'address': 'San Juan'}},
+             'profile': {'role': 'supervisor', 'phone': '09181234568', 'address': 'Dumingag'}},
             {'username': 'treasurer1', 'password': 'treasurer123',
-             'profile': {'role': 'treasurer', 'phone': '09191234569', 'address': 'San Juan'}},
+             'profile': {'role': 'treasurer', 'phone': '09191234569', 'address': 'Dumingag'}},
         ]
         created_count = 0
         for ud in users_data:
@@ -162,28 +162,28 @@ class Command(BaseCommand):
 
     def _create_tenants(self):
         tenants_data = [
-            {'tenant_id': 'TEN-001', 'full_name': 'Juan dela Cruz', 'address': '123 Rizal St, San Juan',
+            {'tenant_id': 'TEN-001', 'full_name': 'Juan dela Cruz', 'address': '123 Rizal St, Dumingag',
              'contact_number': '09170000001', 'email': 'juan@email.com',
              'business_name': 'Juan Rice Trading', 'business_type': 'Rice and Grains'},
-            {'tenant_id': 'TEN-002', 'full_name': 'Maria Santos', 'address': '456 Bonifacio Ave, San Juan',
+            {'tenant_id': 'TEN-002', 'full_name': 'Maria Santos', 'address': '456 Bonifacio Ave, Dumingag',
              'contact_number': '09170000002', 'email': 'maria@email.com',
              'business_name': 'Maria Fresh Fish', 'business_type': 'Fish Vendor'},
-            {'tenant_id': 'TEN-003', 'full_name': 'Pedro Reyes', 'address': '789 Mabini St, San Juan',
+            {'tenant_id': 'TEN-003', 'full_name': 'Pedro Reyes', 'address': '789 Mabini St, Dumingag',
              'contact_number': '09170000003', 'email': 'pedro@email.com',
              'business_name': 'Pedro Meat Shop', 'business_type': 'Meat Vendor'},
-            {'tenant_id': 'TEN-004', 'full_name': 'Ana Gonzales', 'address': '321 Luna St, San Juan',
+            {'tenant_id': 'TEN-004', 'full_name': 'Ana Gonzales', 'address': '321 Luna St, Dumingag',
              'contact_number': '09170000004', 'email': 'ana@email.com',
              'business_name': 'Ana\'s Fresh Produce', 'business_type': 'Vegetable Vendor'},
-            {'tenant_id': 'TEN-005', 'full_name': 'Jose Rizal II', 'address': '654 Del Pilar St, San Juan',
+            {'tenant_id': 'TEN-005', 'full_name': 'Jose Rizal II', 'address': '654 Del Pilar St, Dumingag',
              'contact_number': '09170000005', 'email': 'jose@email.com',
              'business_name': 'Jose\'s Fruit Stand', 'business_type': 'Fruit Vendor'},
-            {'tenant_id': 'TEN-006', 'full_name': 'Luzviminda Mercado', 'address': '987 Aguinaldo St, San Juan',
+            {'tenant_id': 'TEN-006', 'full_name': 'Luzviminda Mercado', 'address': '987 Aguinaldo St, Dumingag',
              'contact_number': '09170000006', 'email': 'luz@email.com',
              'business_name': 'Luz\'s Eatery', 'business_type': 'Food Service'},
-            {'tenant_id': 'TEN-007', 'full_name': 'Antonio Lopez', 'address': '147 Jacinto St, San Juan',
+            {'tenant_id': 'TEN-007', 'full_name': 'Antonio Lopez', 'address': '147 Jacinto St, Dumingag',
              'contact_number': '09170000007', 'email': 'antonio@email.com',
              'business_name': 'Antonio Dry Goods', 'business_type': 'Dry Goods'},
-            {'tenant_id': 'TEN-008', 'full_name': 'Teresa Cruz', 'address': '258 Natividad St, San Juan',
+            {'tenant_id': 'TEN-008', 'full_name': 'Teresa Cruz', 'address': '258 Natividad St, Dumingag',
              'contact_number': '09170000008', 'email': 'teresa@email.com',
              'business_name': 'Teresa\'s Store', 'business_type': 'Grocery'},
         ]
@@ -343,7 +343,7 @@ class Command(BaseCommand):
         ]
         payment_methods = ['Cash', 'GCash', 'Cash', 'Bank Transfer']
         created_count = 0
-        receipt_prefix = 'SJPM-'
+        receipt_prefix = 'DMPM-'
 
         for i, pc in enumerate(payment_configs):
             contract = contracts[pc['contract_idx']]
@@ -430,7 +430,7 @@ class Command(BaseCommand):
             {
                 'tenant': tenants[0],
                 'notice_type': 'Payment Reminder',
-                'notice_number': 'SJPM-NOT-2026-0001',
+                'notice_number': 'DMPM-NOT-2026-0001',
                 'date_issued': date(now.year, now.month, 10),
                 'is_served': True,
                 'served_date': date(now.year, now.month, 10),
@@ -440,13 +440,13 @@ class Command(BaseCommand):
                     f"is due on the 5th of each month. Please settle your account "
                     f"at the Market Administration Office to avoid penalties.\n\n"
                     f"Thank you,\n"
-                    f"San Juan Public Market Administration"
+                    f"Dumingag Public Market Administration"
                 ),
             },
             {
                 'tenant': tenants[1],
                 'notice_type': 'Overdue Notice',
-                'notice_number': 'SJPM-NOT-2026-0002',
+                'notice_number': 'DMPM-NOT-2026-0002',
                 'date_issued': date(now.year, now.month, 15),
                 'is_served': False,
                 'served_date': None,
@@ -456,7 +456,7 @@ class Command(BaseCommand):
                     f"outstanding balance immediately to avoid further penalties "
                     f"and possible suspension of your rental contract.\n\n"
                     f"Thank you,\n"
-                    f"San Juan Public Market Administration"
+                    f"Dumingag Public Market Administration"
                 ),
             },
         ]
@@ -487,7 +487,7 @@ class Command(BaseCommand):
              'description': 'Collector user logged into the system',
              'ip_address': '192.168.1.101'},
             {'user': collector, 'action': 'Create Payment', 'module': 'Payments',
-             'description': 'Recorded payment SJPM-2026-0001 for TEN-001',
+             'description': 'Recorded payment DMPM-2026-0001 for TEN-001',
              'ip_address': '192.168.1.101'},
             {'user': supervisor, 'action': 'Login', 'module': 'Auth',
              'description': 'Supervisor user logged into the system',
