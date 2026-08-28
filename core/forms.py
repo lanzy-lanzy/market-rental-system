@@ -8,10 +8,10 @@ from .models import (
     PenaltySetting,
 )
 
-TW_INPUT = 'block w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-200 transition-colors duration-200'
-TW_SELECT = 'block w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:border-primary-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-200 transition-colors duration-200'
-TW_TEXTAREA = 'block w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-200 transition-colors duration-200'
-TW_CHECKBOX = 'h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-200'
+TW_INPUT = 'block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-4 focus:ring-slate-900/10 transition-all duration-200'
+TW_SELECT = 'block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-4 focus:ring-slate-900/10 transition-all duration-200'
+TW_TEXTAREA = 'block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-4 focus:ring-slate-900/10 transition-all duration-200'
+TW_CHECKBOX = 'h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900/20'
 
 
 class DateInput(forms.DateInput):
@@ -118,6 +118,31 @@ class RentalContractForm(forms.ModelForm):
             'remarks': forms.Textarea(attrs={'class': TW_TEXTAREA, 'rows': 3, 'placeholder': 'Optional remarks'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Limit tenant to Active, stall to Vacant + current selection for edit
+        from core.models import Tenant, Stall
+        self.fields['tenant'].queryset = Tenant.objects.filter(status='Active').order_by('full_name')
+        stall_qs = Stall.objects.all().order_by('stall_number')
+        # If editing and current stall is not Vacant, include it
+        if self.instance and self.instance.pk and self.instance.stall_id:
+            stall_qs = Stall.objects.filter(status='Vacant').order_by('stall_number') | Stall.objects.filter(pk=self.instance.stall_id)
+            self.fields['stall'].queryset = stall_qs.distinct().order_by('stall_number')
+        else:
+            self.fields['stall'].queryset = Stall.objects.filter(status='Vacant').order_by('stall_number')
+
+    def clean(self):
+        cleaned = super().clean()
+        stall = cleaned.get('stall')
+        status = cleaned.get('status')
+        if stall and status == 'Active':
+            qs = RentalContract.objects.filter(stall=stall, status='Active')
+            if self.instance and self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError(f'Stall {stall.stall_number} already has an active contract. One stall can only have one active tenant.')
+        return cleaned
+
 
 class BillingForm(forms.ModelForm):
     class Meta:
@@ -141,12 +166,45 @@ class BillingForm(forms.ModelForm):
             'rental_amount': forms.NumberInput(attrs={'class': TW_INPUT, 'step': '0.01'}),
             'penalty_amount': forms.NumberInput(attrs={'class': TW_INPUT, 'step': '0.01'}),
             'discount': forms.NumberInput(attrs={'class': TW_INPUT, 'step': '0.01'}),
-            'total_due': forms.NumberInput(attrs={'class': TW_INPUT, 'step': '0.01'}),
+            'total_due': forms.NumberInput(attrs={'class': TW_INPUT, 'step': '0.01', 'readonly': 'readonly'}),
             'amount_paid': forms.NumberInput(attrs={'class': TW_INPUT, 'step': '0.01'}),
-            'balance': forms.NumberInput(attrs={'class': TW_INPUT, 'step': '0.01'}),
+            'balance': forms.NumberInput(attrs={'class': TW_INPUT, 'step': '0.01', 'readonly': 'readonly'}),
             'due_date': DateInput(attrs={'class': TW_INPUT}),
             'status': forms.Select(attrs={'class': TW_SELECT}),
         }
+
+    def clean(self):
+        cleaned = super().clean()
+        rental = cleaned.get('rental_amount') or 0
+        penalty = cleaned.get('penalty_amount') or 0
+        discount = cleaned.get('discount') or 0
+        # Recompute total_due and balance to prevent manual tampering
+        try:
+            total_due = rental + penalty - discount
+        except Exception:
+            total_due = rental + penalty
+        cleaned['total_due'] = total_due
+        amt_paid = cleaned.get('amount_paid') or 0
+        try:
+            balance = total_due - amt_paid
+        except Exception:
+            balance = total_due
+        if balance < 0:
+            balance = 0
+            cleaned['amount_paid'] = total_due
+            amt_paid = total_due
+        cleaned['balance'] = balance
+        # Auto-status if not explicitly Overdue
+        current_status = cleaned.get('status')
+        if balance == 0:
+            cleaned['status'] = 'Paid'
+        elif balance > 0 and amt_paid > 0:
+            if current_status != 'Overdue':
+                cleaned['status'] = 'Partial'
+        else:
+            if current_status not in ['Overdue', 'Unpaid']:
+                cleaned['status'] = 'Unpaid'
+        return cleaned
 
 
 class PaymentForm(forms.ModelForm):
@@ -176,11 +234,36 @@ class PaymentForm(forms.ModelForm):
             'amount_paid': forms.NumberInput(attrs={'class': TW_INPUT, 'step': '0.01'}),
             'payment_date': DateInput(attrs={'class': TW_INPUT}),
             'payment_method': forms.Select(attrs={'class': TW_SELECT}),
-            'official_receipt_no': forms.TextInput(attrs={'class': TW_INPUT, 'placeholder': 'Official receipt number'}),
+            'official_receipt_no': forms.TextInput(attrs={'class': TW_INPUT, 'placeholder': 'Official receipt number (auto if blank)'}),
             'collected_by': forms.Select(attrs={'class': TW_SELECT}),
             'status': forms.Select(attrs={'class': TW_SELECT}),
             'remarks': forms.Textarea(attrs={'class': TW_TEXTAREA, 'rows': 3, 'placeholder': 'Optional remarks'}),
         }
+
+    def clean(self):
+        cleaned = super().clean()
+        billing = cleaned.get('billing')
+        tenant = cleaned.get('tenant')
+        stall = cleaned.get('stall')
+        # Validate billing consistency
+        if billing and tenant and billing.tenant_id != tenant.id:
+            raise forms.ValidationError('Selected billing does not belong to the selected tenant.')
+        if billing and stall and billing.stall_id != stall.id:
+            raise forms.ValidationError('Selected billing does not belong to the selected stall.')
+        # Auto total_amount_due if billing present
+        if billing and not cleaned.get('total_amount_due'):
+            cleaned['total_amount_due'] = billing.total_due
+        # Overpayment guard: amount_paid cannot exceed balance
+        amount_paid = cleaned.get('amount_paid') or 0
+        if billing:
+            # balance is what remains before this payment
+            remaining = billing.balance
+            # If editing, add back current payment if it was valid
+            if self.instance and self.instance.pk and self.instance.status in ['Paid', 'Partial']:
+                remaining += float(self.instance.amount_paid)
+            if float(amount_paid) > float(remaining) + 0.01:
+                raise forms.ValidationError(f'Amount paid ({amount_paid}) exceeds outstanding balance ({remaining:.2f}) for this billing period.')
+        return cleaned
 
 
 class NoticeForm(forms.ModelForm):

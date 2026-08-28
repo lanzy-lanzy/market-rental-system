@@ -1,5 +1,4 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
@@ -8,17 +7,15 @@ from django.http import JsonResponse
 
 from core.models import Tenant, Stall, RentalContract, Billing, Payment, AuditLog, UserProfile
 from core.forms import TenantForm
-
-
-def is_admin(user):
-    return hasattr(user, 'profile') and user.profile.role == 'admin'
+from core.permissions import staff_required, admin_required, get_user_role
+from django.contrib.auth.decorators import login_required
 
 
 def is_htmx(request):
     return getattr(request, 'htmx', None) or request.headers.get('HX-Request') == 'true'
 
 
-@login_required
+@staff_required
 def tenant_list(request):
     tenants = Tenant.objects.all().order_by('full_name')
     status_filter = request.GET.get('status')
@@ -47,7 +44,7 @@ def tenant_list(request):
     return render(request, 'tenants/list.html', context)
 
 
-@login_required
+@staff_required
 def tenant_add(request):
     if request.method == 'POST':
         form = TenantForm(request.POST)
@@ -85,7 +82,7 @@ def tenant_add(request):
     return render(request, 'tenants/form.html', {'form': form, 'is_add': True})
 
 
-@login_required
+@staff_required
 def tenant_edit(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
     if request.method == 'POST':
@@ -108,12 +105,9 @@ def tenant_edit(request, pk):
     return render(request, 'tenants/form.html', {'form': form, 'is_add': False, 'tenant': tenant})
 
 
-@login_required
+@admin_required
 def tenant_delete(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
-    if not is_admin(request.user):
-        messages.error(request, 'You do not have permission to perform this action.')
-        return redirect('tenant_list')
     if request.method == 'POST':
         tenant.status = 'Terminated'
         tenant.save()
@@ -134,6 +128,11 @@ def tenant_delete(request, pk):
 @login_required
 def tenant_view(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
+    # Tenant isolation: tenants can only view own profile
+    role = get_user_role(request.user)
+    if role == 'tenant' and tenant.user != request.user:
+        messages.error(request, 'You can only view your own tenant profile.')
+        return redirect('dashboard')
     contracts = RentalContract.objects.filter(tenant=tenant).select_related('stall', 'stall__section')
     billings = Billing.objects.filter(tenant=tenant).order_by('-billing_year', '-billing_month')
     payments = Payment.objects.filter(tenant=tenant).order_by('-payment_date')[:10]
@@ -150,7 +149,7 @@ def tenant_view(request, pk):
     return render(request, 'tenants/view.html', context)
 
 
-@login_required
+@staff_required
 def tenant_search(request):
     q = request.GET.get('q', '')
     tenants = Tenant.objects.filter(
@@ -165,7 +164,7 @@ def tenant_search(request):
     return JsonResponse(data, safe=False)
 
 
-@login_required
+@staff_required
 def tenant_add_modal(request):
     if request.method == 'POST':
         form = TenantForm(request.POST)
@@ -194,7 +193,7 @@ def tenant_add_modal(request):
     return render(request, 'tenants/_modal_form.html', {'form': form, 'is_add': True})
 
 
-@login_required
+@staff_required
 def tenant_edit_modal(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
     if request.method == 'POST':

@@ -1,5 +1,4 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
@@ -7,21 +6,15 @@ from django.db.models import Q
 
 from core.models import UserProfile, AuditLog
 from core.forms import UserCreationForm, UserProfileForm
+from core.permissions import admin_required
 
 
 def is_htmx(request):
     return getattr(request, 'htmx', None) or request.headers.get('HX-Request') == 'true'
 
 
-def is_admin(user):
-    return hasattr(user, 'profile') and user.profile.role == 'admin'
-
-
-@login_required
+@admin_required
 def user_list(request):
-    if not is_admin(request.user):
-        messages.error(request, 'You do not have permission to view this page.')
-        return redirect('dashboard')
 
     users = User.objects.select_related('profile').all().order_by('username')
     role_filter = request.GET.get('role')
@@ -50,11 +43,8 @@ def user_list(request):
     return render(request, template, context)
 
 
-@login_required
+@admin_required
 def user_add(request):
-    if not is_admin(request.user):
-        messages.error(request, 'You do not have permission to perform this action.')
-        return redirect('dashboard')
 
     if request.method == 'POST':
         user_form = UserCreationForm(request.POST)
@@ -90,11 +80,8 @@ def user_add(request):
     return render(request, 'users/form.html', context)
 
 
-@login_required
+@admin_required
 def user_edit(request, pk):
-    if not is_admin(request.user):
-        messages.error(request, 'You do not have permission to perform this action.')
-        return redirect('dashboard')
 
     user = get_object_or_404(User, pk=pk)
     profile = get_object_or_404(UserProfile, user=user)
@@ -132,11 +119,8 @@ def user_edit(request, pk):
     return render(request, 'users/form.html', context)
 
 
-@login_required
+@admin_required
 def user_deactivate(request, pk):
-    if not is_admin(request.user):
-        messages.error(request, 'You do not have permission to perform this action.')
-        return redirect('dashboard')
 
     user = get_object_or_404(User, pk=pk)
     if request.method == 'POST':

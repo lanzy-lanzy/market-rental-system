@@ -1,5 +1,7 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from core.permissions import staff_required, admin_required, get_user_role
 from django.core.paginator import Paginator
 from django.db.models import Sum, Q
 
@@ -8,6 +10,14 @@ from core.models import Tenant, TenantLedger, AuditLog
 
 @login_required
 def ledger_list(request):
+    role = get_user_role(request.user)
+    if role == 'tenant':
+        try:
+            own_tenant = Tenant.objects.get(user=request.user)
+            return redirect('ledger_view', pk=own_tenant.pk)
+        except Tenant.DoesNotExist:
+            messages.info(request, 'Your tenant profile is not linked. Contact administrator.')
+            return redirect('dashboard')
     tenants = Tenant.objects.filter(
         status='Active',
         contracts__status='Active'
@@ -33,6 +43,10 @@ def ledger_list(request):
 @login_required
 def ledger_view(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
+    role = get_user_role(request.user)
+    if role == 'tenant' and tenant.user != request.user:
+        messages.error(request, 'You can only view your own ledger.')
+        return redirect('ledger_list')
     entries = TenantLedger.objects.filter(tenant=tenant).select_related(
         'billing', 'payment'
     ).order_by('transaction_date', 'created_at')
@@ -67,6 +81,10 @@ def ledger_view(request, pk):
 @login_required
 def ledger_print(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
+    role = get_user_role(request.user)
+    if role == 'tenant' and tenant.user != request.user:
+        messages.error(request, 'You can only print your own ledger.')
+        return redirect('ledger_list')
     entries = TenantLedger.objects.filter(tenant=tenant).select_related(
         'billing', 'payment'
     ).order_by('transaction_date', 'created_at')

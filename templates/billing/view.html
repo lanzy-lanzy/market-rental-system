@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Billing {{ billing.billing_month|stringformat:"02d" }}/{{ billing.billing_year }} — {{ billing.tenant.full_name }}{% endblock %}
+{% block page_title %}Billing Detail{% endblock %}
+{% block page_subtitle %}{{ billing.tenant.full_name }} • {{ billing.stall.stall_number }} • {{ billing.billing_month|stringformat:"02d" }}/{{ billing.billing_year }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="rounded-[20px] border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 p-6 text-white relative overflow-hidden">
+    <div class="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-primary-600/20 blur-2xl"></div>
+    <div class="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-slate-900">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div>
+          <h2 class="text-xl font-extrabold tracking-tight" style="font-family:'Plus Jakarta Sans'">{{ billing.tenant.full_name }} — {{ billing.stall.stall_number }}</h2>
+          <p class="text-sm text-white/70">{{ billing.stall.section.name }} • Period {{ billing.billing_month|stringformat:"02d" }}/{{ billing.billing_year }} • Due {{ billing.due_date|date:"F d, Y" }}</p>
+          <div class="mt-2 flex items-center gap-2">{% include 'includes/status_badge.html' with status=billing.status %}<span class="text-xs text-white/50">Rental &#8369;{{ billing.rental_amount|floatformat:2|intcomma }} + Penalty &#8369;{{ billing.penalty_amount|floatformat:2|intcomma }}</span></div>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button type="button" hx-get="{% url 'billing_edit_modal' billing.id %}" hx-target="#modal-content" onclick="openModal('{% url 'billing_edit_modal' billing.id %}')" class="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-slate-900 shadow hover:bg-slate-50">Edit</button>
+        <a href="{% url 'billing_list' %}" class="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/20 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/15">Back</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Amount Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+    <div class="rounded-[20px] border border-slate-200 bg-white p-5 text-center">
+      <p class="text-xs font-bold tracking-widest text-slate-500">Rental</p>
+      <p class="mt-1 text-xl font-extrabold text-slate-900">&#8369;{{ billing.rental_amount|floatformat:2|intcomma }}</p>
+    </div>
+    <div class="rounded-[20px] border border-red-200 bg-red-50 p-5 text-center">
+      <p class="text-xs font-bold tracking-widest text-red-600">Penalty</p>
+      <p class="mt-1 text-xl font-extrabold text-red-700">&#8369;{{ billing.penalty_amount|floatformat:2|intcomma }}</p>
+    </div>
+    <div class="rounded-[20px] border border-slate-200 bg-slate-900 p-5 text-center text-white">
+      <p class="text-xs font-bold tracking-widest text-white/60">Total Due</p>
+      <p class="mt-1 text-xl font-extrabold">&#8369;{{ billing.total_due|floatformat:2|intcomma }}</p>
+      {% if billing.discount %}<p class="text-xs text-white/60">Discount &#8369;{{ billing.discount }}</p>{% endif %}
+    </div>
+    <div class="rounded-[20px] border {% if billing.balance > 0 %}border-red-200 bg-red-50{% else %}border-emerald-200 bg-emerald-50{% endif %} p-5 text-center">
+      <p class="text-xs font-bold tracking-widest {% if billing.balance > 0 %}text-red-700{% else %}text-emerald-700{% endif %}">Balance</p>
+      <p class="mt-1 text-xl font-extrabold {% if billing.balance > 0 %}text-red-600{% else %}text-emerald-600{% endif %}">&#8369;{{ billing.balance|floatformat:2|intcomma }}</p>
+      <p class="text-xs {% if billing.balance > 0 %}text-red-600{% else %}text-emerald-600{% endif %}">Paid &#8369;{{ billing.amount_paid|floatformat:2|intcomma }} • {{ billing.status }}</p>
+    </div>
+  </div>
+
+  <!-- Details -->
+  <div class="grid lg:grid-cols-2 gap-6">
+    <div class="rounded-[20px] border border-slate-200 bg-white p-6">
+      <h3 class="text-xs font-bold tracking-widest text-slate-500">BILLING INFORMATION</h3>
+      <dl class="mt-4 space-y-3 text-sm">
+        <div class="flex justify-between"><dt class="text-slate-500">Tenant</dt><dd class="font-bold"><a href="{% url 'tenant_view' billing.tenant.id %}" class="hover:text-primary-700">{{ billing.tenant.full_name }}</a> <span class="font-mono text-slate-500">({{ billing.tenant.tenant_id }})</span></dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">Stall</dt><dd class="font-mono font-bold">{{ billing.stall.stall_number }} • {{ billing.stall.section.name }}</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">Contract</dt><dd class="text-sm"><a href="{% url 'contract_view' billing.contract.id %}" class="font-mono hover:underline">#{{ billing.contract.id }}</a> • &#8369;{{ billing.contract.monthly_rent }}</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">Period</dt><dd class="font-bold">{{ billing.billing_month|stringformat:"02d" }}/{{ billing.billing_year }}</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">Due Date</dt><dd class="font-medium">{{ billing.due_date|date:"F d, Y" }}</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">Status</dt><dd>{% include 'includes/status_badge.html' with status=billing.status %}</dd></div>
+      </dl>
+      <div class="mt-4 flex gap-2">
+        <a href="{% url 'ledger_view' billing.tenant.id %}" class="inline-flex rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-black">View Ledger →</a>
+        <a href="{% url 'payment_list' %}?tenant={{ billing.tenant.id }}" class="inline-flex rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold hover:bg-slate-50">Payments</a>
+      </div>
+    </div>
+    <div class="rounded-[20px] border border-slate-200 bg-white p-6">
+      <h3 class="text-xs font-bold tracking-widest text-slate-500">PAYMENTS FOR THIS BILLING</h3>
+      {% if payments %}
+      <div class="mt-4 space-y-3">
+        {% for payment in payments %}
+        <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div>
+            <p class="text-sm font-bold text-slate-900">{{ payment.receipt_number }} <span class="text-xs font-normal text-slate-500">• {{ payment.payment_date|date:"M d, Y" }} • {{ payment.payment_method }}</span></p>
+            <p class="text-xs text-slate-500">By {{ payment.collected_by.get_full_name|default:payment.collected_by.username }} • {{ payment.status }}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-sm font-extrabold text-emerald-600">&#8369;{{ payment.amount_paid|floatformat:2|intcomma }}</p>
+            <a href="{% url 'payment_receipt' payment.id %}" class="text-xs font-bold text-slate-700 hover:underline">Receipt →</a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="mt-4 text-sm text-slate-500">No payments recorded for this billing period yet.</p>
+      <a href="{% url 'payment_add' %}" class="mt-3 inline-flex rounded-full bg-emerald-600 px-4 py-2 text-xs font-bold text-white">Record Payment</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

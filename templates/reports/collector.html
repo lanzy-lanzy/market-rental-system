@@ -1,0 +1,72 @@
+{% extends 'reports/report_base.html' %}
+{% load static %}
+{% load humanize %}
+{% block report_title %}Collection by Collector{% endblock %}
+{% block report_heading %}Collection by Collector{% endblock %}
+{% block report_title_display %}Collection by Collector{% endblock %}
+{% block report_subtitle %}{{ date_from }} to {{ date_to }}{% endblock %}
+
+{% block report_actions %}
+<div class="no-print mb-4 flex flex-wrap items-end gap-4">
+  <form class="flex flex-wrap items-end gap-3">
+    <div>
+      <label class="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">Date From</label>
+      <input type="date" name="date_from" value="{{ date_from }}" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
+    </div>
+    <div>
+      <label class="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">Date To</label>
+      <input type="date" name="date_to" value="{{ date_to }}" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
+    </div>
+    <button type="submit" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white">Filter</button>
+  </form>
+  <button onclick="window.print()" class="ml-auto rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm">Print</button>
+  <a href="{% url 'report_export_excel' %}?report=collector&date_from={{ date_from }}&date_to={{ date_to }}" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white">Excel</a>
+  <a href="{% url 'report_export_pdf' %}?report=collector&date_from={{ date_from }}&date_to={{ date_to }}" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white">PDF</a>
+</div>
+{% endblock %}
+
+{% block report_content %}
+<div class="mb-6 grid grid-cols-2 gap-4">
+  <div class="rounded-lg bg-green-50 p-4 text-center">
+    <p class="text-xs font-medium uppercase tracking-wider text-green-600">Grand Total Collected</p>
+    <p class="text-2xl font-bold text-green-700">&#8369;{{ grand_total|floatformat:2|intcomma }}</p>
+  </div>
+  <div class="rounded-lg bg-gray-50 p-4 text-center">
+    <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Total Transactions</p>
+    <p class="text-2xl font-bold text-gray-900">{{ grand_count }}</p>
+  </div>
+</div>
+
+<div class="overflow-x-auto">
+  <table class="w-full border-collapse">
+    <thead>
+      <tr class="bg-gray-50">
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Collector</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Transactions</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Total Collected</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">% of Grand</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for row in collector_data %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ row.collector.get_full_name|default:row.collector.username }}</td>
+        <td class="px-4 py-3 text-right text-sm text-gray-600">{{ row.count }}</td>
+        <td class="px-4 py-3 text-right text-sm font-medium text-green-600">&#8369;{{ row.total|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3 text-right text-sm text-gray-600">{% if grand_total %}{% widthratio row.total grand_total 100 %}{% else %}0{% endif %}%</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="px-4 py-8 text-center text-sm text-gray-400">No collectors found</td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="bg-gray-100 font-semibold">
+        <td class="px-4 py-3 text-sm">Grand Total</td>
+        <td class="px-4 py-3 text-right text-sm">{{ grand_count }}</td>
+        <td class="px-4 py-3 text-right text-sm text-green-700">&#8369;{{ grand_total|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3 text-right text-sm">100%</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+{% endblock %}

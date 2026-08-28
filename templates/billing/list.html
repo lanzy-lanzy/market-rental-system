@@ -2,57 +2,49 @@
 {% load static %}
 {% load humanize %}
 {% load market_tags %}
-{% block title %}Billing - Market Rental System{% endblock %}
+{% block title %}Billing — Mercado{% endblock %}
 {% block page_title %}Billing Records{% endblock %}
+{% block page_subtitle %}Monthly rental bills • penalties & balances{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
-  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-    <p class="text-sm text-gray-500">View and manage tenant billing records</p>
-    <div class="flex gap-2">
-      <a href="{% url 'billing_generate' %}"
-         class="inline-flex items-center gap-2 rounded-lg bg-secondary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-secondary-700 transition-colors duration-200">
-        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-        </svg>
-        Generate
+<div class="space-y-5">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="hidden sm:flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500 text-white"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
+      <div><p class="text-sm font-bold text-slate-900">Billing overview</p><p class="text-xs text-slate-500">Generate, filter & track payment status</p></div>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="{% url 'billing_generate' %}" class="inline-flex items-center gap-2 rounded-full bg-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-amber-600 transition">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Generate
       </a>
-      <button type="button"
-              hx-get="{% url 'billing_add_modal' %}"
-              hx-target="#modal-content"
-              hx-trigger="click"
-              onclick="openModal('{% url 'billing_add_modal' %}')"
-              class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors duration-200">
-        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-        </svg>
-        Add Manual
+      <button type="button" hx-get="{% url 'billing_add_modal' %}" hx-target="#modal-content" onclick="openModal('{% url 'billing_add_modal' %}')" class="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-black transition">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg> Add Manual
       </button>
     </div>
   </div>
 
-  <!-- Filters -->
-  <form class="flex flex-wrap gap-3" hx-get="{% url 'billing_list' %}" hx-target="#billing-table" hx-trigger="change">
-    <select name="month" class="rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200">
+  <div class="rounded-[18px] border border-slate-200 bg-slate-50/70 p-3 flex flex-wrap gap-3 items-center">
+    <select name="month" hx-get="{% url 'billing_list' %}" hx-target="#billing-table" hx-trigger="change" class="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10 outline-none">
       <option value="">All Months</option>
       {% for m in "123456789012"|make_list %}
       <option value="{{ forloop.counter }}" {% if month_filter|stringformat:"s" == forloop.counter|stringformat:"s" %}selected{% endif %}>{{ forloop.counter|stringformat:"02d" }}</option>
       {% endfor %}
     </select>
-    <select name="year" class="rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200">
+    <select name="year" hx-get="{% url 'billing_list' %}" hx-target="#billing-table" hx-trigger="change" class="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10 outline-none">
       <option value="">All Years</option>
       {% for y in "2024,2025,2026,2027,2028"|split:"," %}
       <option value="{{ y }}" {% if year_filter == y %}selected{% endif %}>{{ y }}</option>
       {% endfor %}
     </select>
-    <select name="status" class="rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200">
+    <select name="status" hx-get="{% url 'billing_list' %}" hx-target="#billing-table" hx-trigger="change" class="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10 outline-none">
       <option value="">All Status</option>
-      <option value="Unpaid" {% if status_filter == 'Unpaid' %}selected{% endif %}>Unpaid</option>
-      <option value="Paid" {% if status_filter == 'Paid' %}selected{% endif %}>Paid</option>
-      <option value="Partial" {% if status_filter == 'Partial' %}selected{% endif %}>Partial</option>
-      <option value="Overdue" {% if status_filter == 'Overdue' %}selected{% endif %}>Overdue</option>
+      <option value="Unpaid">Unpaid</option>
+      <option value="Paid">Paid</option>
+      <option value="Partial">Partial</option>
+      <option value="Overdue">Overdue</option>
     </select>
-  </form>
+    <span class="ml-auto hidden lg:inline-flex items-center gap-2 rounded-full bg-white border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600">Auto penalty after grace period</span>
+  </div>
 
   {% include 'billing/_table.html' %}
 </div>

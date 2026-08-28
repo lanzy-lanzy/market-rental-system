@@ -1,27 +1,18 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}Audit Logs - Market Rental System{% endblock %}
+{% block title %}Audit Trail — Mercado{% endblock %}
 {% block page_title %}Audit Logs{% endblock %}
+{% block page_subtitle %}Complete system activity • administrators only • read-only{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
-  <p class="text-sm text-gray-500">View system activity logs. This page is read-only and accessible to administrators only.</p>
-
-  <!-- Filters -->
-  <form class="flex flex-wrap gap-3" hx-get="{% url 'audit_log_list' %}" hx-target="#audit-table" hx-trigger="change">
-    <input type="text" name="action" placeholder="Filter by action..." value="{{ action_filter|default:'' }}"
-           class="rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 placeholder-gray-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200">
-    <input type="text" name="module" placeholder="Filter by module..." value="{{ module_filter|default:'' }}"
-           class="rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 placeholder-gray-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200">
-    <input type="date" name="date_from" value="{{ date_from|default:'' }}"
-           class="rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200">
-    <input type="date" name="date_to" value="{{ date_to|default:'' }}"
-           class="rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200">
-  </form>
-
-  <!-- Table -->
+<div class="space-y-5">
+  <div class="rounded-[18px] border border-slate-200 bg-slate-50/70 p-3 flex flex-wrap gap-3" hx-get="{% url 'audit_log_list' %}" hx-target="#audit-table" hx-trigger="change">
+    <input type="text" name="action" placeholder="Filter by action..." value="{{ action_filter|default:'' }}" class="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium placeholder:text-slate-400 focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10 outline-none">
+    <input type="text" name="module" placeholder="Filter by module..." value="{{ module_filter|default:'' }}" class="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium placeholder:text-slate-400 focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10 outline-none">
+    <input type="date" name="date_from" value="{{ date_from|default:'' }}" class="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10 outline-none">
+    <input type="date" name="date_to" value="{{ date_to|default:'' }}" class="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10 outline-none">
+  </div>
   {% include 'audit/_table.html' %}
-
   {% include 'includes/pagination.html' %}
 </div>
 {% endblock %}

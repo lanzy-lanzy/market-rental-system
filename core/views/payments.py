@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.permissions import staff_required, admin_required, get_user_role
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum
@@ -19,14 +20,19 @@ def is_htmx(request):
 
 def generate_receipt_number():
     settings = SystemSetting.objects.first()
-    prefix = settings.receipt_prefix if settings else 'RCP'
+    prefix = (settings.receipt_prefix if settings else 'RCP').strip().rstrip('-')
+    if not prefix:
+        prefix = 'RCP'
     today = date.today()
     last_payment = Payment.objects.filter(
         receipt_number__startswith=f'{prefix}-'
     ).order_by('-created_at').first()
     if last_payment:
-        last_num = int(last_payment.receipt_number.split('-')[-1])
-        new_num = last_num + 1
+        try:
+            last_num = int(last_payment.receipt_number.split('-')[-1])
+            new_num = last_num + 1
+        except (ValueError, IndexError):
+            new_num = 1
     else:
         new_num = 1
     return f'{prefix}-{today.strftime("%Y%m")}-{new_num:06d}'
@@ -38,12 +44,17 @@ def payment_list(request):
         'tenant', 'stall', 'collected_by'
     ).all().order_by('-payment_date', '-created_at')
 
+    # Tenant isolation: tenants see only own payments
+    if get_user_role(request.user) == 'tenant':
+        payments = payments.filter(tenant__user=request.user)
+
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
     tenant_filter = request.GET.get('tenant')
     stall_filter = request.GET.get('stall')
     collector_filter = request.GET.get('collector')
     status_filter = request.GET.get('status')
+    payment_method = request.GET.get('payment_method')
 
     if date_from:
         payments = payments.filter(payment_date__gte=date_from)
@@ -57,6 +68,8 @@ def payment_list(request):
         payments = payments.filter(collected_by_id=collector_filter)
     if status_filter:
         payments = payments.filter(status=status_filter)
+    if payment_method:
+        payments = payments.filter(payment_method=payment_method)
 
     paginator = Paginator(payments, 20)
     page_number = request.GET.get('page')
@@ -73,12 +86,13 @@ def payment_list(request):
         'stall_filter': stall_filter,
         'collector_filter': collector_filter,
         'status_filter': status_filter,
+        'payment_method': payment_method,
     }
     template = 'payments/_table.html' if is_htmx(request) else 'payments/list.html'
     return render(request, template, context)
 
 
-@login_required
+@staff_required
 @transaction.atomic
 def payment_add(request):
     if request.method == 'POST':
@@ -86,6 +100,9 @@ def payment_add(request):
         if form.is_valid():
             payment = form.save(commit=False)
             payment.receipt_number = generate_receipt_number()
+            # Auto-fill official receipt if blank (spec requires OR)
+            if not payment.official_receipt_no:
+                payment.official_receipt_no = payment.receipt_number
             payment.collected_by = request.user
             payment.save()
 
@@ -107,11 +124,15 @@ def payment_add(request):
                 billing.status = 'Partial'
             billing.save()
 
-            ledger_entries = TenantLedger.objects.filter(
-                billing=billing
-            ).order_by('-transaction_date')
-            current_balance = ledger_entries.first().balance if ledger_entries.exists() else billing.total_due
-            new_balance = current_balance - payment.amount_paid
+            # Ledger: create credit entry then recompute chain for tenant
+            # Use tenant-wide last balance for correct chaining
+            last_tenant_entry = TenantLedger.objects.filter(tenant=payment.tenant).order_by('-transaction_date', '-id').first()
+            current_balance = last_tenant_entry.balance if last_tenant_entry else 0
+            # If no prior tenant entry but billing has debit, use that debit as baseline (billing total)
+            if not last_tenant_entry:
+                billing_debit_entry = TenantLedger.objects.filter(billing=billing, debit__gt=0).first()
+                if billing_debit_entry:
+                    current_balance = billing_debit_entry.balance
 
             TenantLedger.objects.create(
                 tenant=payment.tenant,
@@ -120,9 +141,12 @@ def payment_add(request):
                 description=f'Payment {payment.receipt_number} - {payment.payment_method}',
                 debit=0,
                 credit=payment.amount_paid,
-                balance=new_balance,
+                balance=max(0, current_balance - float(payment.amount_paid)),
                 payment=payment,
             )
+            # Recompute full ledger chain to ensure consistency
+            from core.helpers import recalc_tenant_ledger
+            recalc_tenant_ledger(payment.tenant)
 
             AuditLog.objects.create(
                 user=request.user,
@@ -157,6 +181,9 @@ def payment_view(request, pk):
         Payment.objects.select_related('tenant', 'stall', 'stall__section', 'billing', 'collected_by'),
         pk=pk
     )
+    if get_user_role(request.user) == 'tenant' and payment.tenant.user != request.user:
+        messages.error(request, 'You can only view your own payments.')
+        return redirect('dashboard')
     ledger_entries = TenantLedger.objects.filter(payment=payment).order_by('transaction_date')
     context = {
         'payment': payment,
@@ -171,6 +198,11 @@ def payment_receipt(request, pk):
         Payment.objects.select_related('tenant', 'stall', 'stall__section', 'collected_by'),
         pk=pk
     )
+    if get_user_role(request.user) == 'tenant' and payment.tenant.user != request.user:
+        from django.contrib import messages
+        from django.shortcuts import redirect
+        messages.error(request, 'You can only view your own payment receipt.')
+        return redirect('dashboard')
     settings = SystemSetting.objects.first()
     context = {
         'payment': payment,
@@ -185,6 +217,9 @@ def payment_print_receipt(request, pk):
         Payment.objects.select_related('tenant', 'stall', 'stall__section', 'collected_by'),
         pk=pk
     )
+    if get_user_role(request.user) == 'tenant' and payment.tenant.user != request.user:
+        messages.error(request, 'You can only view your own payment receipt.')
+        return redirect('dashboard')
     settings = SystemSetting.objects.first()
     context = {
         'payment': payment,
@@ -193,13 +228,15 @@ def payment_print_receipt(request, pk):
     return render(request, 'payments/print_receipt.html', context)
 
 
-@login_required
+@staff_required
 def payment_add_modal(request):
     if request.method == 'POST':
         form = PaymentForm(request.POST)
         if form.is_valid():
             payment = form.save(commit=False)
             payment.receipt_number = generate_receipt_number()
+            if not payment.official_receipt_no:
+                payment.official_receipt_no = payment.receipt_number
             payment.collected_by = request.user
             payment.save()
 
@@ -221,10 +258,12 @@ def payment_add_modal(request):
                 billing.status = 'Partial'
             billing.save()
 
-            ledger_entries = TenantLedger.objects.filter(billing=billing).order_by('-transaction_date')
-            current_balance = ledger_entries.first().balance if ledger_entries.exists() else billing.total_due
-            new_balance = current_balance - payment.amount_paid
-
+            last_tenant_entry = TenantLedger.objects.filter(tenant=payment.tenant).order_by('-transaction_date', '-id').first()
+            current_balance = last_tenant_entry.balance if last_tenant_entry else 0
+            if not last_tenant_entry:
+                billing_debit_entry = TenantLedger.objects.filter(billing=billing, debit__gt=0).first()
+                if billing_debit_entry:
+                    current_balance = billing_debit_entry.balance
             TenantLedger.objects.create(
                 tenant=payment.tenant,
                 billing=billing,
@@ -232,9 +271,11 @@ def payment_add_modal(request):
                 description=f'Payment {payment.receipt_number} - {payment.payment_method}',
                 debit=0,
                 credit=payment.amount_paid,
-                balance=new_balance,
+                balance=max(0, current_balance - float(payment.amount_paid)),
                 payment=payment,
             )
+            from core.helpers import recalc_tenant_ledger
+            recalc_tenant_ledger(payment.tenant)
 
             AuditLog.objects.create(
                 user=request.user,
@@ -260,13 +301,55 @@ def payment_add_modal(request):
     return render(request, 'payments/_modal_form.html', {'form': form, 'is_add': True})
 
 
-@login_required
+@staff_required
 def payment_edit_modal(request, pk):
     payment = get_object_or_404(Payment, pk=pk)
+    old_billing = payment.billing
     if request.method == 'POST':
         form = PaymentForm(request.POST, instance=payment)
         if form.is_valid():
-            form.save()
+            payment = form.save()
+            # Recalculate billing totals after amount/method change
+            billing = payment.billing
+            total_valid = Payment.objects.filter(billing=billing, status__in=['Paid', 'Partial']).aggregate(total=Sum('amount_paid'))['total'] or 0
+            if total_valid >= billing.total_due:
+                billing.amount_paid = total_valid
+                billing.balance = 0
+                billing.status = 'Paid'
+            elif total_valid > 0:
+                billing.amount_paid = total_valid
+                billing.balance = billing.total_due - total_valid
+                billing.status = 'Partial'
+            else:
+                billing.amount_paid = 0
+                billing.balance = billing.total_due
+                billing.status = 'Unpaid'
+            billing.save()
+            # Update ledger entry for this payment
+            ledger_qs = TenantLedger.objects.filter(payment=payment)
+            if ledger_qs.exists():
+                ledger_qs.update(credit=payment.amount_paid, transaction_date=payment.payment_date, description=f'Payment {payment.receipt_number} - {payment.payment_method}')
+            else:
+                # Create if missing
+                TenantLedger.objects.create(
+                    tenant=payment.tenant,
+                    billing=billing,
+                    transaction_date=payment.payment_date,
+                    description=f'Payment {payment.receipt_number} - {payment.payment_method}',
+                    debit=0,
+                    credit=payment.amount_paid,
+                    balance=0,
+                    payment=payment,
+                )
+            from core.helpers import recalc_tenant_ledger
+            # Recalc both old and new tenant ledgers if tenant changed
+            recalc_tenant_ledger(payment.tenant)
+            if old_billing and old_billing.tenant_id != payment.tenant_id:
+                # Need tenant from old_billing
+                try:
+                    recalc_tenant_ledger(old_billing.tenant)
+                except Exception:
+                    pass
             AuditLog.objects.create(
                 user=request.user,
                 action='UPDATE',
@@ -290,7 +373,7 @@ def payment_edit_modal(request, pk):
     return render(request, 'payments/_modal_form.html', {'form': form, 'is_add': False, 'payment': payment})
 
 
-@login_required
+@staff_required
 @transaction.atomic
 def payment_void(request, pk):
     payment = get_object_or_404(Payment, pk=pk)
@@ -320,8 +403,12 @@ def payment_void(request, pk):
         billing.save()
 
         ledger_entries = TenantLedger.objects.filter(payment=payment)
+        tenant_to_recalc = payment.tenant
         for entry in ledger_entries:
             entry.delete()
+        # Recompute chain for tenant to fix subsequent balances
+        from core.helpers import recalc_tenant_ledger
+        recalc_tenant_ledger(tenant_to_recalc)
 
         AuditLog.objects.create(
             user=request.user,

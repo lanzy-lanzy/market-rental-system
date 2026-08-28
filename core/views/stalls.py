@@ -6,6 +6,7 @@ from django.db.models import Q
 
 from core.models import Stall, MarketSection, StallType, RentalContract, AuditLog
 from core.forms import StallForm
+from core.permissions import staff_required
 
 
 def is_htmx(request):
@@ -40,7 +41,7 @@ def stall_list(request):
     return render(request, 'stalls/list.html', context)
 
 
-@login_required
+@staff_required
 def stall_add(request):
     if request.method == 'POST':
         form = StallForm(request.POST)
@@ -62,7 +63,7 @@ def stall_add(request):
     return render(request, 'stalls/form.html', {'form': form, 'is_add': True})
 
 
-@login_required
+@staff_required
 def stall_edit(request, pk):
     stall = get_object_or_404(Stall, pk=pk)
     if request.method == 'POST':
@@ -85,7 +86,7 @@ def stall_edit(request, pk):
     return render(request, 'stalls/form.html', {'form': form, 'is_add': False, 'stall': stall})
 
 
-@login_required
+@staff_required
 def stall_delete(request, pk):
     stall = get_object_or_404(Stall, pk=pk)
     if request.method == 'POST':
@@ -113,7 +114,7 @@ def stall_view(request, pk):
     return render(request, 'stalls/view.html', context)
 
 
-@login_required
+@staff_required
 def stall_add_modal(request):
     if request.method == 'POST':
         form = StallForm(request.POST)
@@ -142,7 +143,7 @@ def stall_add_modal(request):
     return render(request, 'stalls/_modal_form.html', {'form': form, 'is_add': True})
 
 
-@login_required
+@staff_required
 def stall_edit_modal(request, pk):
     stall = get_object_or_404(Stall, pk=pk)
     if request.method == 'POST':

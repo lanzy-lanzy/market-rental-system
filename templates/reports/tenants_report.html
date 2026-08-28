@@ -24,6 +24,16 @@
     <button type="submit" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 transition-colors">Filter</button>
   </form>
   <button onclick="window.print()" class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors ml-auto">Print</button>
+  {% if 'Paid' in report_type %}
+    <a href="{% url 'report_export_excel' %}?report=paid&month={{ month }}&year={{ year }}" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">Excel</a>
+    <a href="{% url 'report_export_pdf' %}?report=paid&month={{ month }}&year={{ year }}" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">PDF</a>
+  {% elif 'Unpaid' in report_type %}
+    <a href="{% url 'report_export_excel' %}?report=unpaid&month={{ month }}&year={{ year }}" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">Excel</a>
+    <a href="{% url 'report_export_pdf' %}?report=unpaid&month={{ month }}&year={{ year }}" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">PDF</a>
+  {% elif 'Overdue' in report_type %}
+    <a href="{% url 'report_export_excel' %}?report=overdue&month={{ month }}&year={{ year }}" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">Excel</a>
+    <a href="{% url 'report_export_pdf' %}?report=overdue&month={{ month }}&year={{ year }}" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">PDF</a>
+  {% endif %}
 </div>
 {% endblock %}
 

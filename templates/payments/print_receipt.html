@@ -129,14 +129,27 @@
               <td class="py-3 text-sm font-bold text-green-700">Amount Paid</td>
               <td class="py-3 text-right text-lg font-bold text-green-700">&#8369;{{ payment.amount_paid|floatformat:2|intcomma }}</td>
             </tr>
+            <tr class="{% if payment.billing.balance > 0 %}bg-red-50{% else %}bg-green-50/50{% endif %}">
+              <td class="py-3 text-sm font-bold {% if payment.billing.balance > 0 %}text-red-700{% else %}text-green-700{% endif %}">Remaining Balance</td>
+              <td class="py-3 text-right text-sm font-bold {% if payment.billing.balance > 0 %}text-red-700{% else %}text-green-700{% endif %}">&#8369;{{ payment.billing.balance|floatformat:2|intcomma }}</td>
+            </tr>
+            <tr>
+              <td class="py-2 text-xs text-gray-500">Due Date</td>
+              <td class="py-2 text-right text-xs text-gray-700">{{ payment.billing.due_date|date:"F d, Y" }}</td>
+            </tr>
           </tfoot>
         </table>
       </div>
 
-      {% if payment.official_receipt_no %}
       <div class="mb-6 rounded-lg bg-gray-50 p-3">
         <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Official Receipt No.</p>
-        <p class="text-sm font-semibold text-gray-900">{{ payment.official_receipt_no }}</p>
+        <p class="text-sm font-semibold text-gray-900">{{ payment.official_receipt_no|default:payment.receipt_number }}</p>
+      </div>
+
+      {% if payment.official_receipt_no and payment.official_receipt_no != payment.receipt_number %}
+      <div class="mb-6 rounded-lg bg-gray-50 p-3">
+        <p class="text-xs font-medium uppercase tracking-wider text-gray-500">System Receipt No.</p>
+        <p class="text-xs font-mono text-gray-700">{{ payment.receipt_number }}</p>
       </div>
       {% endif %}
 

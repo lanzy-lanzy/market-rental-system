@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: sans-serif; font-size: 10pt; color: #111; }
+  h1 { text-align: center; font-size: 14pt; margin-bottom: 2px; text-transform: uppercase; }
+  .meta { text-align: center; color: #555; font-size: 9pt; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+  th { background: #f3f4f6; text-transform: uppercase; font-size: 8pt; padding: 6px 8px; text-align: left; border-bottom: 2px solid #ddd; }
+  td { padding: 6px 8px; border-bottom: 1px solid #eee; }
+  .right { text-align: right; }
+  .footer { margin-top: 16px; text-align: center; font-size: 8pt; color: #888; border-top: 1px solid #ddd; padding-top: 8px; }
+  @page { size: A4 portrait; margin: 0.6in; }
+</style>
+</head>
+<body>
+  <h1>{{ report_type|default:"Monthly Collection Report" }}</h1>
+  <p class="meta">{{ month_name }} {{ year }} • Generated {% now "F d, Y h:i A" %}</p>
+  <p style="text-align:right; font-size:9pt; margin-bottom:8px;"><strong>Total Billed:</strong> &#8369;{{ total_billed|floatformat:2 }} &nbsp; <strong>Collected:</strong> &#8369;{{ total_collected|floatformat:2 }}</p>
+  <table>
+    <thead>
+      <tr><th>Tenant ID</th><th>Tenant</th><th>Stall</th><th>Section</th><th class="right">Rental</th><th class="right">Penalty</th><th class="right">Total Due</th><th class="right">Paid</th><th class="right">Balance</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      {% for billing in billings %}
+      <tr>
+        <td>{{ billing.tenant.tenant_id }}</td>
+        <td>{{ billing.tenant.full_name }}</td>
+        <td>{{ billing.stall.stall_number }}</td>
+        <td>{{ billing.stall.section.name }}</td>
+        <td class="right">{{ billing.rental_amount }}</td>
+        <td class="right">{{ billing.penalty_amount }}</td>
+        <td class="right"><strong>{{ billing.total_due }}</strong></td>
+        <td class="right">{{ billing.amount_paid }}</td>
+        <td class="right"><strong>{{ billing.balance }}</strong></td>
+        <td>{{ billing.status }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="10" style="text-align:center; padding:16px;">No records</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="footer">Public Market Rental and Collection Management System • Computer-generated document</div>
+</body>
+</html>

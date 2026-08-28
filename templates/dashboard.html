@@ -1,285 +1,179 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load humanize %}
-{% block title %}Dashboard - Market Rental System{% endblock %}
+{% block title %}Dashboard — Public Market{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Overview as of {% now "F d, Y" %} • {{ system_settings.market_name|default:"Public Market" }}{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
   <!-- Welcome -->
-  <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-    <div>
-      <h2 class="text-2xl font-bold text-gray-900">
-        Welcome back, {{ user.get_full_name|default:user.username }}
-      </h2>
-      <p class="mt-1 text-sm text-gray-500">
-        {{ user.profile.get_role_display|default:"Staff" }} &middot;
-        {% now "F d, Y" %}
-      </p>
-    </div>
-    <div class="flex gap-2">
-      <a href="{% url 'payment_list' %}"
-         class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors duration-200">
-        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-        </svg>
-        Record Payment
-      </a>
-    </div>
-  </div>
-
-  <!-- Summary Cards Row 1 - 6 cards -->
-  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
-    <!-- Total Stalls -->
-    <div class="group relative overflow-hidden rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 p-5 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl">
-      <div class="absolute -right-3 -top-3 opacity-10">
-        <svg class="h-24 w-24 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-        </svg>
+  <div class="rounded-xl border border-slate-200 bg-white p-5">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div>
+        <p class="text-xs font-medium text-slate-500">{{ user.profile.get_role_display|default:"Staff" }} • {% now "l, F d, Y" %}</p>
+        <h2 class="mt-1 text-xl font-semibold text-slate-900">Welcome back, {{ user.get_full_name|default:user.username }}</h2>
+        <p class="mt-1 text-sm text-slate-600">Overview of stalls, tenants and collections for <span class="font-medium text-slate-900">{{ system_settings.market_name|default:"the market" }}</span>.</p>
       </div>
-      <div class="relative z-10">
-        <div class="flex items-center justify-between">
-          <p class="text-sm font-medium text-primary-100">Total Stalls</p>
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 text-white">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-            </svg>
-          </div>
-        </div>
-        <p class="mt-3 text-3xl font-bold text-white">{{ total_stalls }}</p>
-        <p class="mt-1 text-xs text-primary-200">Total market stalls</p>
-      </div>
-    </div>
-
-    <!-- Occupied Stalls -->
-    <div class="group relative overflow-hidden rounded-xl bg-gradient-to-br from-secondary-500 to-secondary-700 p-5 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl">
-      <div class="absolute -right-3 -top-3 opacity-10">
-        <svg class="h-24 w-24 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-        </svg>
-      </div>
-      <div class="relative z-10">
-        <div class="flex items-center justify-between">
-          <p class="text-sm font-medium text-secondary-100">Occupied</p>
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 text-white">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-            </svg>
-          </div>
-        </div>
-        <p class="mt-3 text-3xl font-bold text-white">{{ occupied_stalls }}</p>
-        <p class="mt-1 text-xs text-secondary-200">Currently occupied</p>
-      </div>
-    </div>
-
-    <!-- Vacant Stalls -->
-    <div class="group relative overflow-hidden rounded-xl bg-gradient-to-br from-accent-400 to-accent-600 p-5 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl">
-      <div class="absolute -right-3 -top-3 opacity-10">
-        <svg class="h-24 w-24 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-        </svg>
-      </div>
-      <div class="relative z-10">
-        <div class="flex items-center justify-between">
-          <p class="text-sm font-medium text-accent-100">Vacant</p>
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 text-white">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-            </svg>
-          </div>
-        </div>
-        <p class="mt-3 text-3xl font-bold text-white">{{ vacant_stalls }}</p>
-        <p class="mt-1 text-xs text-accent-200">Available for rent</p>
-      </div>
-    </div>
-
-    <!-- Total Tenants -->
-    <div class="group relative overflow-hidden rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 p-5 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl">
-      <div class="absolute -right-3 -top-3 opacity-10">
-        <svg class="h-24 w-24 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-        </svg>
-      </div>
-      <div class="relative z-10">
-        <div class="flex items-center justify-between">
-          <p class="text-sm font-medium text-primary-100">Total Tenants</p>
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 text-white">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-            </svg>
-          </div>
-        </div>
-        <p class="mt-3 text-3xl font-bold text-white">{{ total_tenants }}</p>
-        <p class="mt-1 text-xs text-primary-200">Active tenants</p>
-      </div>
-    </div>
-
-    <!-- Monthly Collectibles -->
-    <div class="group relative overflow-hidden rounded-xl bg-gradient-to-br from-secondary-400 to-secondary-600 p-5 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl">
-      <div class="absolute -right-3 -top-3 opacity-10">
-        <svg class="h-24 w-24 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-      </div>
-      <div class="relative z-10">
-        <div class="flex items-center justify-between">
-          <p class="text-sm font-medium text-secondary-100">Monthly Collectibles</p>
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 text-white">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-          </div>
-        </div>
-        <p class="mt-3 text-3xl font-bold text-white">&#8369;{{ total_monthly_collectibles|floatformat:2|intcomma }}</p>
-        <p class="mt-1 text-xs text-secondary-200">Expected monthly revenue</p>
-      </div>
-    </div>
-
-    <!-- Collection % -->
-    <div class="group relative overflow-hidden rounded-xl bg-gradient-to-br from-accent-500 to-accent-700 p-5 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl">
-      <div class="absolute -right-3 -top-3 opacity-10">
-        <svg class="h-24 w-24 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-        </svg>
-      </div>
-      <div class="relative z-10">
-        <div class="flex items-center justify-between">
-          <p class="text-sm font-medium text-accent-100">Collection %</p>
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 text-white">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-            </svg>
-          </div>
-        </div>
-        <p class="mt-3 text-3xl font-bold text-white">{{ collection_percentage|floatformat:1 }}%</p>
-        <p class="mt-1 text-xs text-accent-200">This month collection rate</p>
+      <div class="flex gap-2">
+        <a href="{% url 'payment_add' %}" class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black">Record Payment</a>
+        <a href="{% url 'billing_generate' %}" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Generate Bills</a>
       </div>
     </div>
   </div>
 
-  <!-- Summary Cards Row 2 -->
-  <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-    <div class="rounded-xl border border-gray-100 bg-card p-5 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-md">
-      <div class="flex items-center gap-4">
-        <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100 text-green-600">
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-          </svg>
-        </div>
-        <div>
-          <p class="text-sm font-medium text-gray-500">Total Collected</p>
-          <p class="text-2xl font-bold text-gray-900">&#8369;{{ total_collected|floatformat:2|intcomma }}</p>
-          <p class="text-xs text-green-600">This month</p>
-        </div>
+  <!-- Stats -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="rounded-xl border border-slate-200 bg-white p-4">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Total Stalls</p>
+        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-600">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/></svg>
+        </span>
       </div>
+      <p class="mt-2 text-2xl font-semibold text-slate-900">{{ total_stalls }}</p>
+      <p class="text-xs text-slate-500">{{ occupied_stalls }} occupied • {{ vacant_stalls }} vacant</p>
     </div>
-
-    <div class="rounded-xl border border-gray-100 bg-card p-5 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-md">
-      <div class="flex items-center gap-4">
-        <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-rose-100 text-rose-600">
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-        </div>
-        <div>
-          <p class="text-sm font-medium text-gray-500">Unpaid Rentals</p>
-          <p class="text-2xl font-bold text-gray-900">&#8369;{{ total_unpaid|floatformat:2|intcomma }}</p>
-          <p class="text-xs text-rose-600">Outstanding balance</p>
-        </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-4">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Occupied</p>
+        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-green-50 border border-green-200 text-green-700">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </span>
       </div>
+      <p class="mt-2 text-2xl font-semibold text-slate-900">{{ occupied_stalls }}</p>
+      <div class="mt-2 h-1.5 rounded-full bg-slate-100"><div class="h-1.5 rounded-full bg-green-600" style="width: {% if total_stalls %}{% widthratio occupied_stalls total_stalls 100 %}{% else %}0{% endif %}%"></div></div>
+      <p class="mt-1 text-xs text-slate-500">{% if total_stalls %}{% widthratio occupied_stalls total_stalls 100 %}{% else %}0{% endif %}% occupancy</p>
     </div>
-
-    <div class="rounded-xl border border-gray-100 bg-card p-5 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-md">
-      <div class="flex items-center gap-4">
-        <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100 text-red-600">
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.072 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-          </svg>
-        </div>
-        <div>
-          <p class="text-sm font-medium text-gray-500">Overdue Accounts</p>
-          <p class="text-2xl font-bold text-gray-900">{{ overdue_accounts }}</p>
-          <p class="text-xs text-red-600">Accounts with overdue payments</p>
-        </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-4">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Vacant</p>
+        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 border border-amber-200 text-amber-700">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/></svg>
+        </span>
       </div>
+      <p class="mt-2 text-2xl font-semibold text-slate-900">{{ vacant_stalls }}</p>
+      <p class="mt-1 text-xs text-slate-500">Available for lease</p>
+      <a href="{% url 'stall_list' %}?status=Vacant" class="mt-1 inline-flex text-xs font-medium text-slate-700 hover:text-slate-900">View →</a>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-4">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Tenants</p>
+        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900 text-white">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        </span>
+      </div>
+      <p class="mt-2 text-2xl font-semibold text-slate-900">{{ total_tenants }}</p>
+      <p class="mt-1 text-xs text-slate-500">Active tenants</p>
     </div>
   </div>
 
-  <!-- Tables Row -->
-  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-    <!-- Recent Payments -->
-    <div class="rounded-xl border border-gray-100 bg-card shadow-sm">
-      <div class="border-b border-gray-100 px-6 py-4">
-        <div class="flex items-center justify-between">
-          <h3 class="text-base font-semibold text-gray-900">Recent Payments</h3>
-          <a href="{% url 'payment_list' %}" class="text-xs font-medium text-primary-600 hover:text-primary-700">View All</a>
+  <!-- Secondary stats -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div class="rounded-xl border border-slate-200 bg-white p-4">
+      <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Monthly Collectibles</p>
+      <p class="mt-1 text-xl font-semibold text-slate-900">&#8369;{{ total_monthly_collectibles|floatformat:2|intcomma }}</p>
+      <p class="text-xs text-slate-500">From {{ total_tenants }} active contracts</p>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-4">
+      <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Collected (This Month)</p>
+      <p class="mt-1 text-xl font-semibold text-green-700">&#8369;{{ total_collected|floatformat:2|intcomma }}</p>
+      <p class="text-xs text-slate-500">{{ collection_percentage|floatformat:1 }}% of collectibles</p>
+      <div class="mt-2 h-1.5 rounded-full bg-slate-100"><div class="h-1.5 rounded-full bg-green-600" style="width: {{ collection_percentage|floatformat:0 }}%"></div></div>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-4">
+      <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Unpaid & Overdue</p>
+      <p class="mt-1 text-xl font-semibold text-red-700">&#8369;{{ total_unpaid|floatformat:2|intcomma }}</p>
+      <p class="text-xs text-slate-500">{{ overdue_accounts }} overdue accounts • <a href="{% url 'report_overdue' %}" class="font-medium text-slate-700 hover:underline">View</a></p>
+    </div>
+  </div>
+
+  <!-- Tables -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+      <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+        <div>
+          <h3 class="text-sm font-semibold text-slate-900">Recent Payments</h3>
+          <p class="text-xs text-slate-500">Latest 5 collections</p>
         </div>
+        <a href="{% url 'payment_list' %}" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">View all</a>
       </div>
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-100">
-          <thead>
-            <tr class="bg-gray-50">
-              <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Receipt</th>
-              <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Tenant</th>
-              <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Amount</th>
-              <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Date</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-50">
-            {% for payment in recent_payments %}
-            <tr class="transition-colors hover:bg-gray-50">
-              <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{{ payment.receipt_number }}</td>
-              <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                <a href="{% url 'tenant_view' payment.tenant.id %}" class="text-primary-600 hover:text-primary-700">{{ payment.tenant.full_name }}</a>
-              </td>
-              <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-green-600">&#8369;{{ payment.amount_paid|floatformat:2|intcomma }}</td>
-              <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{{ payment.payment_date|date:"M d, Y" }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-400">No recent payments</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      <div class="divide-y divide-slate-100">
+        {% for payment in recent_payments %}
+        <div class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 border border-slate-200 text-xs font-medium text-slate-700">{{ payment.receipt_number|slice:":2"|upper }}</div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-slate-900 truncate">{{ payment.tenant.full_name }} <span class="font-normal text-slate-500">• {{ payment.stall.stall_number|default:"—" }}</span></p>
+            <p class="text-xs text-slate-500">{{ payment.receipt_number }} • {{ payment.payment_date|date:"M d, Y" }}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-sm font-semibold text-slate-900">&#8369;{{ payment.amount_paid|floatformat:2|intcomma }}</p>
+            <p class="text-xs text-slate-500">{{ payment.status }}</p>
+          </div>
+        </div>
+        {% empty %}
+        <div class="px-4 py-10 text-center">
+          <p class="text-sm text-slate-500">No recent payments</p>
+          <a href="{% url 'payment_add' %}" class="mt-2 inline-flex rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white">Record payment</a>
+        </div>
+        {% endfor %}
       </div>
     </div>
 
-    <!-- Tenants with Unpaid Balances -->
-    <div class="rounded-xl border border-gray-100 bg-card shadow-sm">
-      <div class="border-b border-gray-100 px-6 py-4">
-        <div class="flex items-center justify-between">
-          <h3 class="text-base font-semibold text-gray-900">Unpaid Balances</h3>
-          <a href="{% url 'billing_list' %}?status=Unpaid" class="text-xs font-medium text-primary-600 hover:text-primary-700">View All</a>
+    <div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+      <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+        <div>
+          <h3 class="text-sm font-semibold text-slate-900">Unpaid Balances</h3>
+          <p class="text-xs text-slate-500">Top 5 by outstanding amount</p>
         </div>
+        <a href="{% url 'billing_list' %}?status=Unpaid" class="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white">View</a>
       </div>
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-100">
-          <thead>
-            <tr class="bg-gray-50">
-              <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Tenant ID</th>
-              <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Name</th>
-              <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Balance</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-50">
-            {% for item in tenants_with_unpaid %}
-            <tr class="transition-colors hover:bg-gray-50">
-              <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{{ item.tenant__tenant_id }}</td>
-              <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                <a href="{% url 'tenant_view' item.tenant %}" class="text-primary-600 hover:text-primary-700">{{ item.tenant__full_name }}</a>
-              </td>
-              <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-red-600">&#8369;{{ item.total_balance|floatformat:2|intcomma }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="3" class="px-6 py-8 text-center text-sm text-gray-400">All balances are paid</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      <div class="divide-y divide-slate-100">
+        {% for item in tenants_with_unpaid %}
+        <div class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 border border-red-200 text-xs font-medium text-red-700">{{ item.tenant__tenant_id|slice:":2"|upper }}</div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-slate-900 truncate">{{ item.tenant__full_name }}</p>
+            <p class="text-xs font-mono text-slate-500">{{ item.tenant__tenant_id }}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-sm font-semibold text-red-700">&#8369;{{ item.total_balance|floatformat:2|intcomma }}</p>
+            <a href="{% url 'ledger_view' item.tenant %}" class="text-xs font-medium text-slate-600 hover:text-slate-900">Ledger</a>
+          </div>
+        </div>
+        {% empty %}
+        <div class="px-4 py-10 text-center">
+          <p class="text-sm font-medium text-green-700">All balances are paid</p>
+          <p class="text-xs text-slate-500">No outstanding amounts.</p>
+        </div>
+        {% endfor %}
       </div>
+      {% if tenants_with_unpaid %}
+      <div class="border-t border-slate-200 bg-slate-50 px-4 py-2.5 flex items-center justify-between text-xs">
+        <span class="text-slate-600">{{ overdue_accounts }} overdue accounts</span>
+        <a href="{% url 'report_unpaid_tenants' %}" class="font-medium text-slate-700 hover:underline">View report →</a>
+      </div>
+      {% endif %}
     </div>
+  </div>
+
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <a href="{% url 'tenant_add' %}" class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 hover:bg-slate-50">
+      <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg></span>
+      <div><p class="text-sm font-medium text-slate-900">Add Tenant</p><p class="text-xs text-slate-500">New stallholder</p></div>
+    </a>
+    <a href="{% url 'stall_add' %}" class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 hover:bg-slate-50">
+      <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-700"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/></svg></span>
+      <div><p class="text-sm font-medium text-slate-900">Add Stall</p><p class="text-xs text-slate-500">Rental space</p></div>
+    </a>
+    <a href="{% url 'billing_generate' %}" class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 hover:bg-slate-50">
+      <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-700"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></span>
+      <div><p class="text-sm font-medium text-slate-900">Generate Bills</p><p class="text-xs text-slate-500">Monthly</p></div>
+    </a>
+    <a href="{% url 'report_dashboard' %}" class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 hover:bg-slate-50">
+      <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-700"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></span>
+      <div><p class="text-sm font-medium text-slate-900">Reports</p><p class="text-xs text-slate-500">Export</p></div>
+    </a>
   </div>
 </div>
 {% endblock %}

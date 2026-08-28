@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.permissions import staff_required, admin_required, get_user_role
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -16,6 +17,9 @@ def is_htmx(request):
 @login_required
 def notice_list(request):
     notices = Notice.objects.select_related('tenant').all().order_by('-date_issued', '-created_at')
+    # Tenant isolation: only own notices
+    if get_user_role(request.user) == 'tenant':
+        notices = notices.filter(tenant__user=request.user)
 
     type_filter = request.GET.get('type')
     tenant_filter = request.GET.get('tenant')
@@ -46,7 +50,7 @@ def notice_list(request):
     return render(request, template, context)
 
 
-@login_required
+@staff_required
 def notice_add(request):
     if request.method == 'POST':
         form = NoticeForm(request.POST)
@@ -71,13 +75,16 @@ def notice_add(request):
 @login_required
 def notice_print(request, pk):
     notice = get_object_or_404(Notice.objects.select_related('tenant'), pk=pk)
+    if get_user_role(request.user) == 'tenant' and notice.tenant.user != request.user:
+        messages.error(request, 'You can only view your own notices.')
+        return redirect('notice_list')
     context = {
         'notice': notice,
     }
     return render(request, 'notices/print.html', context)
 
 
-@login_required
+@staff_required
 def notice_mark_served(request, pk):
     notice = get_object_or_404(Notice, pk=pk)
     if request.method == 'POST':

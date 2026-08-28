@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}Excel Export Unavailable{% endblock %}
+{% block page_title %}Excel Export{% endblock %}
+{% block content %}
+<div class="text-center py-12">
+  <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-600"><svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.072 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg></div>
+  <h3 class="mt-4 text-lg font-bold text-slate-900">Excel export unavailable</h3>
+  <p class="mt-2 text-sm text-slate-600">The <code>openpyxl</code> library is not installed. Install it with <code>pip install openpyxl</code> to enable Excel exports.</p>
+  <a href="{% url 'report_dashboard' %}" class="mt-6 inline-flex rounded-full bg-slate-900 px-6 py-3 text-sm font-bold text-white">Back to Reports</a>
+</div>
+{% endblock %}

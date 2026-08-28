@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: sans-serif; font-size: 10pt; color: #111; }
+  h1 { text-align: center; font-size: 14pt; margin-bottom: 2px; text-transform: uppercase; }
+  .meta { text-align: center; color: #555; font-size: 9pt; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+  th { background: #f3f4f6; text-transform: uppercase; font-size: 8pt; padding: 6px 8px; text-align: left; border-bottom: 2px solid #ddd; }
+  td { padding: 6px 8px; border-bottom: 1px solid #eee; }
+  .right { text-align: right; }
+  .footer { margin-top: 16px; text-align: center; font-size: 8pt; color: #888; border-top: 1px solid #ddd; padding-top: 8px; }
+  @page { size: A4 portrait; margin: 0.6in; }
+</style>
+</head>
+<body>
+  <h1>{{ report_type|default:"Daily Collection Report" }}</h1>
+  <p class="meta">{{ date_from }} to {{ date_to }} • Generated {% now "F d, Y h:i A" %} • Total: &#8369;{{ total_collected|floatformat:2 }}</p>
+  <table>
+    <thead>
+      <tr><th>Date</th><th>Receipt</th><th>Tenant</th><th>Stall</th><th>Method</th><th class="right">Amount</th><th>Collector</th></tr>
+    </thead>
+    <tbody>
+      {% for payment in payments %}
+      <tr>
+        <td>{{ payment.payment_date }}</td>
+        <td style="font-family: monospace;">{{ payment.receipt_number }}</td>
+        <td>{{ payment.tenant.full_name }}</td>
+        <td>{{ payment.stall.stall_number }}</td>
+        <td>{{ payment.payment_method }}</td>
+        <td class="right"><strong>{{ payment.amount_paid }}</strong></td>
+        <td>{{ payment.collected_by.get_full_name|default:payment.collected_by.username }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" style="text-align:center; padding:16px;">No records</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="footer">Public Market Rental and Collection Management System • Computer-generated document</div>
+</body>
+</html>

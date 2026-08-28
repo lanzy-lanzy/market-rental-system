@@ -1,0 +1,66 @@
+{% extends 'reports/report_base.html' %}
+{% load static %}
+{% load humanize %}
+{% block report_title %}Overdue Accounts Report{% endblock %}
+{% block report_heading %}Overdue Accounts Report{% endblock %}
+{% block report_title_display %}Overdue Accounts Report{% endblock %}
+{% block report_subtitle %}{{ total_count }} accounts • Total overdue &#8369;{{ total_overdue|floatformat:2|intcomma }}{% endblock %}
+
+{% block report_actions %}
+<div class="no-print mb-4 flex justify-end gap-2">
+  <button onclick="window.print()" class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm">Print</button>
+  <a href="{% url 'report_export_excel' %}?report=overdue" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white">Excel</a>
+  <a href="{% url 'report_export_pdf' %}?report=overdue" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white">PDF</a>
+</div>
+{% endblock %}
+
+{% block report_content %}
+<div class="mb-6 grid grid-cols-2 gap-4">
+  <div class="rounded-lg bg-red-50 p-4 text-center">
+    <p class="text-xs font-medium uppercase tracking-wider text-red-600">Total Overdue Balance</p>
+    <p class="text-2xl font-bold text-red-700">&#8369;{{ total_overdue|floatformat:2|intcomma }}</p>
+  </div>
+  <div class="rounded-lg bg-gray-50 p-4 text-center">
+    <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Accounts</p>
+    <p class="text-2xl font-bold text-gray-900">{{ total_count }}</p>
+  </div>
+</div>
+
+<div class="overflow-x-auto">
+  <table class="w-full border-collapse">
+    <thead>
+      <tr class="bg-gray-50">
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Tenant ID</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Tenant</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Stall</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Section</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Rental</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Penalty</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Total Due</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Balance</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Due Date</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for billing in page_obj %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-4 py-3 text-sm font-mono text-gray-600">{{ billing.tenant.tenant_id }}</td>
+        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ billing.tenant.full_name }}</td>
+        <td class="px-4 py-3 text-sm text-gray-600">{{ billing.stall.stall_number }}</td>
+        <td class="px-4 py-3 text-sm text-gray-600">{{ billing.stall.section.name }}</td>
+        <td class="px-4 py-3 text-right text-sm">&#8369;{{ billing.rental_amount|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3 text-right text-sm text-red-600">{{ billing.penalty_amount|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3 text-right text-sm font-medium">&#8369;{{ billing.total_due|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3 text-right text-sm font-bold text-red-600">&#8369;{{ billing.balance|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3 text-sm text-gray-600">{{ billing.due_date|date:"M d, Y" }}</td>
+        <td class="px-4 py-3">{% include 'includes/status_badge.html' with status=billing.status %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="10" class="px-4 py-8 text-center text-sm text-gray-400">No overdue accounts — all current!</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include 'includes/pagination.html' %}
+{% endblock %}

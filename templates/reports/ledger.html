@@ -1,0 +1,76 @@
+{% extends 'reports/report_base.html' %}
+{% load static %}
+{% load humanize %}
+{% block report_title %}Tenant Ledger Report{% endblock %}
+{% block report_heading %}Tenant Ledger Report{% endblock %}
+{% block report_title_display %}Tenant Ledger Report{% endblock %}
+{% block report_subtitle %}{{ date_from }} to {{ date_to }}{% endblock %}
+
+{% block report_actions %}
+<div class="no-print mb-4 flex flex-wrap items-end gap-4">
+  <form class="flex flex-wrap items-end gap-3">
+    <div>
+      <label class="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">Tenant ID</label>
+      <input type="text" name="tenant" value="{{ tenant_id|default:'' }}" placeholder="Tenant ID" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm w-32">
+    </div>
+    <div>
+      <label class="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">Date From</label>
+      <input type="date" name="date_from" value="{{ date_from }}" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
+    </div>
+    <div>
+      <label class="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">Date To</label>
+      <input type="date" name="date_to" value="{{ date_to }}" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
+    </div>
+    <button type="submit" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white">Filter</button>
+  </form>
+  <button onclick="window.print()" class="ml-auto rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm">Print</button>
+  <a href="{% url 'report_export_excel' %}?report=ledger&tenant={{ tenant_id }}&date_from={{ date_from }}&date_to={{ date_to }}" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white">Excel</a>
+</div>
+{% endblock %}
+
+{% block report_content %}
+<div class="mb-6 grid grid-cols-3 gap-4">
+  <div class="rounded-lg bg-red-50 p-4 text-center">
+    <p class="text-xs font-medium uppercase tracking-wider text-red-600">Total Debit (Billed)</p>
+    <p class="text-xl font-bold text-red-700">&#8369;{{ total_debit|floatformat:2|intcomma }}</p>
+  </div>
+  <div class="rounded-lg bg-green-50 p-4 text-center">
+    <p class="text-xs font-medium uppercase tracking-wider text-green-600">Total Credit (Paid)</p>
+    <p class="text-xl font-bold text-green-700">&#8369;{{ total_credit|floatformat:2|intcomma }}</p>
+  </div>
+  <div class="rounded-lg {% if total_debit|add:'-total_credit' > 0 %}bg-red-50{% else %}bg-green-50{% endif %} p-4 text-center">
+    <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Outstanding Balance</p>
+    <p class="text-xl font-bold {% if total_debit > total_credit %}text-red-700{% else %}text-green-700{% endif %}">&#8369;{{ total_debit|add:"-total_credit"|floatformat:2|intcomma }}</p>
+  </div>
+</div>
+
+<div class="overflow-x-auto">
+  <table class="w-full border-collapse">
+    <thead>
+      <tr class="bg-gray-50">
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Date</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Tenant</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Description</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Debit</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Credit</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Balance</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for entry in page_obj %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-4 py-3 text-sm text-gray-600">{{ entry.transaction_date|date:"M d, Y" }}</td>
+        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ entry.tenant.full_name }}</td>
+        <td class="px-4 py-3 text-sm text-gray-600">{{ entry.description }}</td>
+        <td class="px-4 py-3 text-right text-sm text-red-600">{% if entry.debit %}&#8369;{{ entry.debit|floatformat:2|intcomma }}{% else %}--{% endif %}</td>
+        <td class="px-4 py-3 text-right text-sm text-green-600">{% if entry.credit %}&#8369;{{ entry.credit|floatformat:2|intcomma }}{% else %}--{% endif %}</td>
+        <td class="px-4 py-3 text-right text-sm font-bold {% if entry.balance > 0 %}text-red-600{% else %}text-green-600{% endif %}">&#8369;{{ entry.balance|floatformat:2|intcomma }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="px-4 py-8 text-center text-sm text-gray-400">No ledger entries for this period</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include 'includes/pagination.html' %}
+{% endblock %}

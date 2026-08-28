@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.permissions import staff_required, admin_required, get_user_role
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum
@@ -14,20 +15,23 @@ def is_htmx(request):
 
 
 def compute_penalty(contract, billing_month, billing_year, due_date):
+    from datetime import timedelta
     settings = SystemSetting.objects.first()
     if not settings:
         return 0
-    today = date.today()
-    if today <= due_date:
-        return 0
-    days_overdue = (today - due_date).days
     penalty_settings = contract.penalty_settings.filter(is_active=True).first()
     if penalty_settings:
         p_type = penalty_settings.penalty_type
         p_value = penalty_settings.penalty_value
+        grace = penalty_settings.grace_period
     else:
         p_type = settings.penalty_type
         p_value = settings.penalty_value
+        grace = settings.grace_period
+    today = date.today()
+    # Honor grace period: penalty only after due_date + grace days
+    if today <= due_date + timedelta(days=grace or 0):
+        return 0
     if p_type == 'fixed':
         return p_value
     elif p_type == 'percentage':
@@ -35,11 +39,23 @@ def compute_penalty(contract, billing_month, billing_year, due_date):
     return 0
 
 
+def safe_due_date(year, month, due_day):
+    """Create due date safely handling 28/29/30/31 edge — use last day of month if due_day exceeds month length."""
+    import calendar
+    _, last_day = calendar.monthrange(int(year), int(month))
+    safe_day = min(int(due_day), last_day)
+    return date(int(year), int(month), safe_day)
+
+
 @login_required
 def billing_list(request):
     billings = Billing.objects.select_related(
         'tenant', 'stall', 'contract'
     ).all().order_by('-billing_year', '-billing_month')
+
+    # Tenant isolation: show only own billings
+    if get_user_role(request.user) == 'tenant':
+        billings = billings.filter(tenant__user=request.user)
 
     month_filter = request.GET.get('month')
     year_filter = request.GET.get('year')
@@ -78,7 +94,7 @@ def billing_list(request):
     return render(request, 'billing/list.html', context)
 
 
-@login_required
+@staff_required
 def billing_generate(request):
     if request.method == 'POST':
         tenant_id = request.POST.get('tenant')
@@ -99,7 +115,7 @@ def billing_generate(request):
             return redirect('billing_list')
 
         due_day = contract.due_day
-        due_date = date(int(billing_year), int(billing_month), due_day)
+        due_date = safe_due_date(billing_year, billing_month, due_day)
         rental_amount = contract.monthly_rent
         penalty_amount = compute_penalty(contract, billing_month, billing_year, due_date)
         total_due = rental_amount + penalty_amount
@@ -153,7 +169,7 @@ def billing_generate(request):
     return render(request, 'billing/generate.html', context)
 
 
-@login_required
+@staff_required
 def billing_generate_all(request):
     if request.method == 'POST':
         now = date.today()
@@ -171,7 +187,7 @@ def billing_generate_all(request):
                 continue
 
             due_day = contract.due_day
-            due_date = date(int(billing_year), int(billing_month), due_day)
+            due_date = safe_due_date(billing_year, billing_month, due_day)
             rental_amount = contract.monthly_rent
             penalty_amount = compute_penalty(contract, billing_month, billing_year, due_date)
             total_due = rental_amount + penalty_amount
@@ -228,6 +244,9 @@ def billing_view(request, pk):
         Billing.objects.select_related('tenant', 'stall', 'stall__section', 'contract'),
         pk=pk
     )
+    if get_user_role(request.user) == 'tenant' and billing.tenant.user != request.user:
+        messages.error(request, 'You can only view your own billing.')
+        return redirect('dashboard')
     payments = Payment.objects.filter(billing=billing).order_by('-payment_date')
     context = {
         'billing': billing,
@@ -236,7 +255,7 @@ def billing_view(request, pk):
     return render(request, 'billing/view.html', context)
 
 
-@login_required
+@staff_required
 def billing_add_modal(request):
     if request.method == 'POST':
         form = BillingForm(request.POST)
@@ -274,13 +293,24 @@ def billing_add_modal(request):
     return render(request, 'billing/_modal_form.html', {'form': form, 'is_add': True})
 
 
-@login_required
+@staff_required
 def billing_edit_modal(request, pk):
     billing = get_object_or_404(Billing, pk=pk)
     if request.method == 'POST':
         form = BillingForm(request.POST, instance=billing)
         if form.is_valid():
-            form.save()
+            billing = form.save()
+            # Update corresponding ledger debit and recompute chain
+            try:
+                ledger = TenantLedger.objects.filter(billing=billing, debit__gt=0).order_by('transaction_date').first()
+                if ledger:
+                    ledger.debit = billing.total_due
+                    ledger.save(update_fields=['debit'])
+                # Recompute running balances for this tenant
+                from core.helpers import recalc_tenant_ledger
+                recalc_tenant_ledger(billing.tenant)
+            except Exception:
+                pass
             AuditLog.objects.create(
                 user=request.user,
                 action='UPDATE',

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: sans-serif; font-size: 10pt; color: #111; }
+  h1 { text-align: center; font-size: 14pt; text-transform: uppercase; }
+  .meta { text-align: center; color: #555; font-size: 9pt; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+  th { background: #f3f4f6; text-transform: uppercase; font-size: 8pt; padding: 6px 8px; text-align: left; border-bottom: 2px solid #ddd; }
+  td { padding: 6px 8px; border-bottom: 1px solid #eee; }
+  .right { text-align: right; }
+  .footer { margin-top: 16px; text-align: center; font-size: 8pt; color: #888; border-top: 1px solid #ddd; padding-top: 8px; }
+  @page { size: A4 landscape; margin: 0.6in; }
+</style>
+</head>
+<body>
+  <h1>{{ report_type|default:"Collection by Section" }}</h1>
+  <p class="meta">{{ month_name }} {{ year }} • Generated {% now "F d, Y h:i A" %}</p>
+  <table>
+    <thead>
+      <tr><th>Section</th><th class="right">Stalls</th><th class="right">Occupied</th><th class="right">Vacant</th><th class="right">Billed</th><th class="right">Collected</th><th class="right">Balance</th></tr>
+    </thead>
+    <tbody>
+      {% for row in section_data %}
+      <tr>
+        <td>{{ row.section.name }}</td>
+        <td class="right">{{ row.total_stalls }}</td>
+        <td class="right">{{ row.occupied }}</td>
+        <td class="right">{{ row.vacant }}</td>
+        <td class="right">{{ row.total_billed|floatformat:2 }}</td>
+        <td class="right">{{ row.total_collected|floatformat:2 }}</td>
+        <td class="right"><strong>{{ row.total_balance|floatformat:2 }}</strong></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" style="text-align:center; padding:16px;">No sections</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="footer">Public Market Rental and Collection Management System • Computer-generated document</div>
+</body>
+</html>

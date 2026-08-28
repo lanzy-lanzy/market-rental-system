@@ -1,0 +1,65 @@
+{% extends 'reports/report_base.html' %}
+{% load static %}
+{% load humanize %}
+{% block report_title %}Vacant Stall Report{% endblock %}
+{% block report_heading %}Vacant Stall Report{% endblock %}
+{% block report_title_display %}Vacant Stall Report{% endblock %}
+{% block report_subtitle %}{{ total }} vacant stalls • Ready for lease{% endblock %}
+
+{% block report_actions %}
+<div class="no-print mb-4 flex flex-wrap items-end gap-4">
+  <form class="flex flex-wrap items-end gap-3">
+    <div>
+      <label class="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">Section</label>
+      <select name="section" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
+        <option value="">All Sections</option>
+        {% for section in marketsection_list|default:sections %}
+        <option value="{{ section.id }}" {% if section_filter == section.id|stringformat:"s" %}selected{% endif %}>{{ section.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white">Filter</button>
+  </form>
+  <button onclick="window.print()" class="ml-auto rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm">Print</button>
+  <a href="{% url 'report_export_excel' %}?report=vacant&section={{ section_filter }}" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white">Excel</a>
+</div>
+{% endblock %}
+
+{% block report_content %}
+<div class="mb-6">
+  <div class="rounded-lg bg-amber-50 p-4 text-center">
+    <p class="text-xs font-medium uppercase tracking-wider text-amber-700">Vacant Stalls Available</p>
+    <p class="text-3xl font-bold text-amber-700">{{ total }}</p>
+  </div>
+</div>
+
+<div class="overflow-x-auto">
+  <table class="w-full border-collapse">
+    <thead>
+      <tr class="bg-gray-50">
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Stall #</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Section</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Type</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Size (sqm)</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Monthly Rate</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for stall in page_obj %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ stall.stall_number }}</td>
+        <td class="px-4 py-3 text-sm text-gray-600">{{ stall.section.name }}</td>
+        <td class="px-4 py-3 text-sm text-gray-600">{{ stall.stall_type.name|default:"--" }}</td>
+        <td class="px-4 py-3 text-right text-sm">{{ stall.size|floatformat:2|default:"--" }}</td>
+        <td class="px-4 py-3 text-right text-sm font-medium">&#8369;{{ stall.monthly_rate|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3">{% include 'includes/status_badge.html' with status=stall.status %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="px-4 py-8 text-center text-sm text-gray-400">No vacant stalls — market fully occupied!</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include 'includes/pagination.html' %}
+{% endblock %}

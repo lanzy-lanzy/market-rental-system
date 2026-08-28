@@ -1,0 +1,70 @@
+{% extends 'reports/report_base.html' %}
+{% load static %}
+{% load humanize %}
+{% block report_title %}Collection by Section{% endblock %}
+{% block report_heading %}Collection by Market Section{% endblock %}
+{% block report_title_display %}Collection by Section{% endblock %}
+{% block report_subtitle %}{{ month_name }} {{ year }}{% endblock %}
+
+{% block report_actions %}
+<div class="no-print mb-4 flex flex-wrap items-end gap-4">
+  <form class="flex flex-wrap items-end gap-3">
+    <div>
+      <label class="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">Month</label>
+      <select name="month" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700">
+        {% for m in "123456789012"|make_list %}
+        <option value="{{ forloop.counter }}" {% if forloop.counter == month %}selected{% endif %}>{{ forloop.counter|stringformat:"02d" }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">Year</label>
+      <input type="number" name="year" value="{{ year }}" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm w-24">
+    </div>
+    <button type="submit" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">Filter</button>
+  </form>
+  <button onclick="window.print()" class="ml-auto rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm">Print</button>
+  <a href="{% url 'report_export_excel' %}?report=section&month={{ month }}&year={{ year }}" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white">Excel</a>
+  <a href="{% url 'report_export_pdf' %}?report=section&month={{ month }}&year={{ year }}" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white">PDF</a>
+</div>
+{% endblock %}
+
+{% block report_content %}
+<div class="overflow-x-auto">
+  <table class="w-full border-collapse">
+    <thead>
+      <tr class="bg-gray-50">
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Section</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Stalls</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Occupied</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Vacant</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Billed</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Collected</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Balance</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for row in section_data %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ row.section.name }}</td>
+        <td class="px-4 py-3 text-right text-sm text-gray-600">{{ row.total_stalls }}</td>
+        <td class="px-4 py-3 text-right text-sm text-green-600">{{ row.occupied }}</td>
+        <td class="px-4 py-3 text-right text-sm text-amber-600">{{ row.vacant }}</td>
+        <td class="px-4 py-3 text-right text-sm text-gray-900">&#8369;{{ row.total_billed|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3 text-right text-sm text-green-600">&#8369;{{ row.total_collected|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3 text-right text-sm font-medium {% if row.total_balance > 0 %}text-red-600{% else %}text-green-600{% endif %}">&#8369;{{ row.total_balance|floatformat:2|intcomma }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="px-4 py-8 text-center text-sm text-gray-400">No sections found</td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="bg-gray-100 font-semibold">
+        <td class="px-4 py-3 text-right text-sm" colspan="4">Totals:</td>
+        <td class="px-4 py-3 text-right text-sm">&#8369;{{ section_data|length }}</td>
+        <td colspan="2"></td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+{% endblock %}

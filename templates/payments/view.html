@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Payment {{ payment.receipt_number }} — Mercado{% endblock %}
+{% block page_title %}Payment Detail{% endblock %}
+{% block page_subtitle %}{{ payment.receipt_number }} • {{ payment.payment_date|date:"F d, Y" }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex flex-wrap gap-3">
+    <a href="{% url 'payment_receipt' payment.id %}" class="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-black"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg> View Receipt</a>
+    <a href="{% url 'payment_print_receipt' payment.id %}" target="_blank" class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold hover:bg-slate-50"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg> Print</a>
+    <a href="{% url 'payment_list' %}" class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold hover:bg-slate-50">← Back to Payments</a>
+  </div>
+
+  <div class="grid lg:grid-cols-2 gap-6">
+    <div class="rounded-[20px] border border-slate-200 bg-white p-6">
+      <h3 class="text-xs font-bold tracking-widest text-slate-500">PAYMENT INFORMATION</h3>
+      <dl class="mt-4 space-y-3 text-sm">
+        <div class="flex justify-between"><dt class="text-slate-500">Receipt Number</dt><dd class="font-mono font-bold text-slate-900">{{ payment.receipt_number }}</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">Official Receipt No.</dt><dd class="font-mono font-medium">{{ payment.official_receipt_no|default:"— (auto: " }}{{ payment.receipt_number }}{{ ")" }}</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">Payment Date</dt><dd class="font-medium">{{ payment.payment_date|date:"F d, Y" }}</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">Method</dt><dd><span class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold">{{ payment.payment_method }}</span></dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">Collector</dt><dd class="font-medium">{{ payment.collected_by.get_full_name|default:payment.collected_by.username }}</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">Status</dt><dd>{% include 'includes/status_badge.html' with status=payment.status %}</dd></div>
+      </dl>
+    </div>
+    <div class="rounded-[20px] border border-slate-200 bg-white p-6">
+      <h3 class="text-xs font-bold tracking-widest text-slate-500">TENANT & STALL</h3>
+      <dl class="mt-4 space-y-3 text-sm">
+        <div class="flex justify-between"><dt class="text-slate-500">Tenant</dt><dd class="font-bold"><a href="{% url 'tenant_view' payment.tenant.id %}" class="hover:text-primary-700">{{ payment.tenant.full_name }}</a> <span class="font-mono text-slate-500">({{ payment.tenant.tenant_id }})</span></dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">Stall</dt><dd class="font-mono font-bold">{{ payment.stall.stall_number }} <span class="text-slate-500">• {{ payment.stall.section.name }}</span></dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">Billing Period</dt><dd class="font-medium">{{ payment.billing_month|stringformat:"02d" }}/{{ payment.billing_year }}</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">Billing Ref</dt><dd class="text-xs"><a href="#" class="font-mono hover:underline">{{ payment.billing.id }}</a></dd></div>
+      </dl>
+    </div>
+  </div>
+
+  <div class="rounded-[20px] border border-slate-200 bg-white p-6">
+    <h3 class="text-xs font-bold tracking-widest text-slate-500">AMOUNTS</h3>
+    <div class="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="rounded-2xl bg-slate-50 p-4 text-center"><p class="text-xs font-bold tracking-widest text-slate-500">Rental Amount</p><p class="mt-1 text-lg font-bold">&#8369;{{ payment.rental_amount|floatformat:2|intcomma }}</p></div>
+      <div class="rounded-2xl bg-red-50 p-4 text-center"><p class="text-xs font-bold tracking-widest text-red-600">Penalty</p><p class="mt-1 text-lg font-bold text-red-700">&#8369;{{ payment.penalty_amount|floatformat:2|intcomma }}</p></div>
+      <div class="rounded-2xl bg-slate-900 p-4 text-center text-white"><p class="text-xs font-bold tracking-widest text-white/60">Total Due</p><p class="mt-1 text-lg font-bold">&#8369;{{ payment.total_amount_due|floatformat:2|intcomma }}</p></div>
+      <div class="rounded-2xl bg-emerald-50 p-4 text-center"><p class="text-xs font-bold tracking-widest text-emerald-700">Amount Paid</p><p class="mt-1 text-lg font-bold text-emerald-700">&#8369;{{ payment.amount_paid|floatformat:2|intcomma }}</p></div>
+    </div>
+    {% if payment.discount %}<p class="mt-3 text-xs text-slate-500">Discount applied: &#8369;{{ payment.discount }}</p>{% endif %}
+    <p class="mt-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-800">Remaining balance for billing period: <span class="font-bold">&#8369;{{ payment.billing.balance|floatformat:2|intcomma }}</span> • Billing status: <span class="font-bold">{{ payment.billing.status }}</span> • Due: {{ payment.billing.due_date|date:"M d, Y" }}</p>
+    {% if payment.remarks %}<div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4"><p class="text-xs font-bold tracking-widest text-slate-500">Remarks</p><p class="mt-1 text-sm">{{ payment.remarks }}</p></div>{% endif %}
+  </div>
+</div>
+{% endblock %}

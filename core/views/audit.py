@@ -1,15 +1,15 @@
 from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 
 from core.models import AuditLog
+from core.permissions import admin_required
 
 
 def is_htmx(request):
     return getattr(request, 'htmx', None) or request.headers.get('HX-Request') == 'true'
 
 
-@login_required
+@admin_required
 def audit_log_list(request):
     logs = AuditLog.objects.select_related('user').all().order_by('-created_at')
 

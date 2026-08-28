@@ -7,78 +7,87 @@
   <title>Ledger - {{ tenant.full_name }}</title>
   <link rel="stylesheet" href="{% static 'css/output.css' %}">
   <style>
-    @media print {
-      body { background: white; font-size: 10pt; }
-      @page { margin: 0.5in; }
-      table { page-break-inside: auto; }
-      tr { page-break-inside: avoid; page-break-after: auto; }
-      thead { display: table-header-group; }
-    }
+    @media print { body { background: white; font-size: 9pt; } @page { margin: 0.5in; } table { page-break-inside: auto; } tr { page-break-inside: avoid; page-break-after: auto; } thead { display: table-header-group; } }
   </style>
 </head>
-<body class="bg-white p-8 font-sans">
-  <div class="max-w-4xl mx-auto">
-    <!-- Header -->
+<body class="bg-white p-6 font-sans">
+  <div class="max-w-6xl mx-auto">
     <div class="text-center border-b-2 border-gray-300 pb-4 mb-6">
-      <h1 class="text-lg font-bold uppercase text-gray-900">Tenant Ledger</h1>
-      <p class="text-sm text-gray-500">{{ tenant.full_name }} - {{ tenant.tenant_id }}</p>
+      {% if system_settings.logo %}<img src="{{ system_settings.logo.url }}" alt="Logo" class="mx-auto h-12 w-auto mb-2">{% endif %}
+      <h1 class="text-sm font-bold uppercase tracking-wide text-gray-900">{{ system_settings.municipality_name|default:"Municipality" }} — {{ system_settings.market_name|default:"Public Market" }}</h1>
+      <p class="text-xs text-gray-500">{{ system_settings.office_name|default:"Market Administration Office" }}</p>
+      <h2 class="mt-3 text-lg font-bold uppercase text-gray-900">Tenant Ledger</h2>
+      <p class="text-sm text-gray-600">{{ tenant.full_name }} • {{ tenant.tenant_id }} • {{ tenant.business_name|default:"" }}</p>
+      <p class="text-xs text-gray-500">{{ tenant.contact_number }} • {{ tenant.address|truncatechars:80 }}</p>
     </div>
 
-    <!-- Summary -->
     <div class="grid grid-cols-3 gap-4 mb-6">
       <div class="border border-gray-200 rounded p-3 text-center">
-        <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Total Debits</p>
+        <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Total Billed</p>
         <p class="text-lg font-bold text-red-600">&#8369;{{ total_debits|floatformat:2|intcomma }}</p>
       </div>
       <div class="border border-gray-200 rounded p-3 text-center">
-        <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Total Credits</p>
+        <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Total Paid</p>
         <p class="text-lg font-bold text-green-600">&#8369;{{ total_credits|floatformat:2|intcomma }}</p>
       </div>
-      <div class="border border-gray-200 rounded p-3 text-center">
-        <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Running Balance</p>
+      <div class="border border-gray-200 rounded p-3 text-center {% if running_balance > 0 %}bg-red-50{% endif %}">
+        <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Outstanding Balance</p>
         <p class="text-lg font-bold {% if running_balance > 0 %}text-red-600{% else %}text-green-600{% endif %}">&#8369;{{ running_balance|floatformat:2|intcomma }}</p>
       </div>
     </div>
 
-    <!-- Table -->
-    <table class="w-full border-collapse">
+    <table class="w-full border-collapse text-xs">
       <thead>
         <tr class="bg-gray-100">
-          <th class="border border-gray-300 px-3 py-2 text-left text-xs font-semibold uppercase text-gray-600">Date</th>
-          <th class="border border-gray-300 px-3 py-2 text-left text-xs font-semibold uppercase text-gray-600">Description</th>
-          <th class="border border-gray-300 px-3 py-2 text-right text-xs font-semibold uppercase text-gray-600">Debit</th>
-          <th class="border border-gray-300 px-3 py-2 text-right text-xs font-semibold uppercase text-gray-600">Credit</th>
-          <th class="border border-gray-300 px-3 py-2 text-right text-xs font-semibold uppercase text-gray-600">Balance</th>
+          <th class="border border-gray-300 px-2 py-2 text-left uppercase">Date</th>
+          <th class="border border-gray-300 px-2 py-2 text-left uppercase">Period</th>
+          <th class="border border-gray-300 px-2 py-2 text-left uppercase">Stall</th>
+          <th class="border border-gray-300 px-2 py-2 text-left uppercase">Description</th>
+          <th class="border border-gray-300 px-2 py-2 text-right uppercase">Rental</th>
+          <th class="border border-gray-300 px-2 py-2 text-right uppercase">Penalty</th>
+          <th class="border border-gray-300 px-2 py-2 text-right uppercase">Debit</th>
+          <th class="border border-gray-300 px-2 py-2 text-right uppercase">Credit</th>
+          <th class="border border-gray-300 px-2 py-2 text-right uppercase">Balance</th>
+          <th class="border border-gray-300 px-2 py-2 text-left uppercase">Receipt / OR</th>
+          <th class="border border-gray-300 px-2 py-2 text-left uppercase">Status</th>
         </tr>
       </thead>
       <tbody>
         {% for entry in entries %}
         <tr>
-          <td class="border border-gray-200 px-3 py-2 text-sm text-gray-700">{{ entry.transaction_date|date:"M d, Y" }}</td>
-          <td class="border border-gray-200 px-3 py-2 text-sm text-gray-700">{{ entry.description }}</td>
-          <td class="border border-gray-200 px-3 py-2 text-sm text-right text-red-600">{{ entry.debit|floatformat:2|intcomma }}</td>
-          <td class="border border-gray-200 px-3 py-2 text-sm text-right text-green-600">{{ entry.credit|floatformat:2|intcomma }}</td>
-          <td class="border border-gray-200 px-3 py-2 text-sm text-right font-medium {% if entry.balance > 0 %}text-red-600{% else %}text-green-600{% endif %}">&#8369;{{ entry.balance|floatformat:2|intcomma }}</td>
+          <td class="border border-gray-200 px-2 py-1.5">{{ entry.transaction_date|date:"M d, Y" }}</td>
+          <td class="border border-gray-200 px-2 py-1.5 font-mono">{% if entry.billing %}{{ entry.billing.billing_month|stringformat:"02d" }}/{{ entry.billing.billing_year }}{% else %}--{% endif %}</td>
+          <td class="border border-gray-200 px-2 py-1.5 font-mono">{% if entry.billing %}{{ entry.billing.stall.stall_number }}{% elif entry.payment %}{{ entry.payment.stall.stall_number }}{% else %}--{% endif %}</td>
+          <td class="border border-gray-200 px-2 py-1.5">{{ entry.description }}</td>
+          <td class="border border-gray-200 px-2 py-1.5 text-right">{% if entry.billing and entry.debit > 0 %}{{ entry.billing.rental_amount|floatformat:2 }}{% else %}--{% endif %}</td>
+          <td class="border border-gray-200 px-2 py-1.5 text-right text-red-600">{% if entry.billing and entry.billing.penalty_amount > 0 and entry.debit > 0 %}{{ entry.billing.penalty_amount|floatformat:2 }}{% else %}--{% endif %}</td>
+          <td class="border border-gray-200 px-2 py-1.5 text-right text-red-600">{% if entry.debit %}{{ entry.debit|floatformat:2 }}{% else %}--{% endif %}</td>
+          <td class="border border-gray-200 px-2 py-1.5 text-right text-green-600">{% if entry.credit %}{{ entry.credit|floatformat:2 }}{% else %}--{% endif %}</td>
+          <td class="border border-gray-200 px-2 py-1.5 text-right font-bold {% if entry.balance > 0 %}text-red-600{% else %}text-green-600{% endif %}">{{ entry.balance|floatformat:2 }}</td>
+          <td class="border border-gray-200 px-2 py-1.5 font-mono text-[10px]">{% if entry.payment %}{{ entry.payment.receipt_number }}{% if entry.payment.official_receipt_no and entry.payment.official_receipt_no != entry.payment.receipt_number %}<br><span class="text-gray-500">OR: {{ entry.payment.official_receipt_no }}</span>{% endif %}{% else %}--{% endif %}</td>
+          <td class="border border-gray-200 px-2 py-1.5">{% if entry.payment %}{{ entry.payment.status }}{% elif entry.billing %}{{ entry.billing.status }}{% else %}--{% endif %}</td>
         </tr>
         {% empty %}
-        <tr>
-          <td colspan="5" class="border border-gray-200 px-3 py-4 text-center text-sm text-gray-400">No ledger entries</td>
-        </tr>
+        <tr><td colspan="11" class="border border-gray-200 px-3 py-4 text-center text-sm text-gray-400">No ledger entries</td></tr>
         {% endfor %}
       </tbody>
       <tfoot>
         <tr class="bg-gray-50 font-semibold">
-          <td colspan="2" class="border border-gray-300 px-3 py-2 text-sm text-gray-900">Totals</td>
-          <td class="border border-gray-300 px-3 py-2 text-sm text-right text-red-600">&#8369;{{ total_debits|floatformat:2|intcomma }}</td>
-          <td class="border border-gray-300 px-3 py-2 text-sm text-right text-green-600">&#8369;{{ total_credits|floatformat:2|intcomma }}</td>
-          <td class="border border-gray-300 px-3 py-2 text-sm text-right {% if running_balance > 0 %}text-red-600{% else %}text-green-600{% endif %}">&#8369;{{ running_balance|floatformat:2|intcomma }}</td>
+          <td colspan="6" class="border border-gray-300 px-2 py-2 text-right">Totals:</td>
+          <td class="border border-gray-300 px-2 py-2 text-right text-red-600">{{ total_debits|floatformat:2 }}</td>
+          <td class="border border-gray-300 px-2 py-2 text-right text-green-600">{{ total_credits|floatformat:2 }}</td>
+          <td class="border border-gray-300 px-2 py-2 text-right {% if running_balance > 0 %}text-red-600{% else %}text-green-600{% endif %}">{{ running_balance|floatformat:2 }}</td>
+          <td colspan="2" class="border border-gray-300"></td>
         </tr>
       </tfoot>
     </table>
 
+    <div class="mt-10 grid grid-cols-2 gap-8 text-center text-xs">
+      <div><div class="border-t border-gray-400 pt-2 mt-16"><p class="font-semibold">Prepared by</p><p class="text-gray-500">{{ user.get_full_name|default:user.username }} • {% now "M d, Y" %}</p></div></div>
+      <div><div class="border-t border-gray-400 pt-2 mt-16"><p class="font-semibold">Verified by</p><p class="text-gray-500">Market Administrator / Treasurer</p></div></div>
+    </div>
     <div class="mt-8 pt-4 border-t border-gray-200 text-center text-xs text-gray-400">
-      <p>Generated on {% now "F d, Y h:i A" %} by {{ user.get_full_name|default:user.username }}</p>
-      <p>Market Rental and Collection Management System</p>
+      <p>Generated on {% now "F d, Y h:i A" %} • Market Rental and Collection Management System • Computer-generated document</p>
     </div>
   </div>
 </body>

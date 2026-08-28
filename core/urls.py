@@ -2,6 +2,7 @@ from django.urls import path
 
 from core.views.auth import login_view, logout_view
 from core.views.dashboard import dashboard_view
+from core.views.landing import landing_view
 from core.views.tenants import (
     tenant_list, tenant_add, tenant_edit, tenant_delete,
     tenant_view, tenant_search, tenant_add_modal, tenant_edit_modal,
@@ -37,7 +38,8 @@ from core.views.audit import audit_log_list
 from core.views.users import user_list, user_add, user_edit, user_deactivate
 
 urlpatterns = [
-    path('', dashboard_view, name='dashboard'),
+    path('', landing_view, name='landing'),
+    path('dashboard/', dashboard_view, name='dashboard'),
 
     # Tenants
     path('tenants/', tenant_list, name='tenant_list'),

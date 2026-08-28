@@ -1,5 +1,4 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -7,13 +6,15 @@ from datetime import date
 
 from core.models import RentalContract, Tenant, Stall, Billing, AuditLog
 from core.forms import RentalContractForm
+from core.permissions import staff_required
+from django.contrib.auth.decorators import login_required
 
 
 def is_htmx(request):
     return getattr(request, 'htmx', None) or request.headers.get('HX-Request') == 'true'
 
 
-@login_required
+@staff_required
 def contract_list(request):
     contracts = RentalContract.objects.select_related(
         'tenant', 'stall', 'stall__section'
@@ -45,7 +46,7 @@ def contract_list(request):
     return render(request, 'contracts/list.html', context)
 
 
-@login_required
+@staff_required
 def contract_add(request):
     if request.method == 'POST':
         form = RentalContractForm(request.POST)
@@ -69,13 +70,34 @@ def contract_add(request):
     return render(request, 'contracts/form.html', {'form': form, 'is_add': True})
 
 
-@login_required
+@staff_required
 def contract_edit(request, pk):
     contract = get_object_or_404(RentalContract, pk=pk)
+    old_stall = contract.stall
+    old_status = contract.status
     if request.method == 'POST':
         form = RentalContractForm(request.POST, instance=contract)
         if form.is_valid():
             contract = form.save()
+            # Sync stall statuses on edit: handle stall change and status change
+            new_stall = contract.stall
+            if old_stall and old_stall.pk != new_stall.pk:
+                # Old stall may become vacant if no other active contract
+                has_other = RentalContract.objects.filter(stall=old_stall, status='Active').exclude(pk=contract.pk).exists()
+                if not has_other:
+                    old_stall.status = 'Vacant'
+                    old_stall.save()
+            # New stall status based on contract status
+            if contract.status == 'Active':
+                if new_stall.status != 'Occupied':
+                    new_stall.status = 'Occupied'
+                    new_stall.save()
+            else:
+                # If contract no longer active, check if new stall should be vacant
+                has_other_new = RentalContract.objects.filter(stall=new_stall, status='Active').exclude(pk=contract.pk).exists()
+                if not has_other_new and new_stall.status == 'Occupied':
+                    new_stall.status = 'Vacant'
+                    new_stall.save()
             AuditLog.objects.create(
                 user=request.user,
                 action='UPDATE',
@@ -92,7 +114,7 @@ def contract_edit(request, pk):
     return render(request, 'contracts/form.html', {'form': form, 'is_add': False, 'contract': contract})
 
 
-@login_required
+@staff_required
 def contract_delete(request, pk):
     contract = get_object_or_404(RentalContract, pk=pk)
     if request.method == 'POST':
@@ -117,7 +139,7 @@ def contract_delete(request, pk):
     return redirect('contract_list')
 
 
-@login_required
+@staff_required
 def contract_view(request, pk):
     contract = get_object_or_404(
         RentalContract.objects.select_related('tenant', 'stall', 'stall__section'),
@@ -131,7 +153,7 @@ def contract_view(request, pk):
     return render(request, 'contracts/view.html', context)
 
 
-@login_required
+@staff_required
 def contract_terminate(request, pk):
     contract = get_object_or_404(RentalContract, pk=pk)
     if request.method == 'POST':
@@ -155,7 +177,7 @@ def contract_terminate(request, pk):
     return redirect('contract_list')
 
 
-@login_required
+@staff_required
 def contract_add_modal(request):
     if request.method == 'POST':
         form = RentalContractForm(request.POST)
@@ -186,13 +208,29 @@ def contract_add_modal(request):
     return render(request, 'contracts/_modal_form.html', {'form': form, 'is_add': True})
 
 
-@login_required
+@staff_required
 def contract_edit_modal(request, pk):
     contract = get_object_or_404(RentalContract, pk=pk)
+    old_stall = contract.stall
     if request.method == 'POST':
         form = RentalContractForm(request.POST, instance=contract)
         if form.is_valid():
-            form.save()
+            contract = form.save()
+            new_stall = contract.stall
+            if old_stall and old_stall.pk != new_stall.pk:
+                has_other = RentalContract.objects.filter(stall=old_stall, status='Active').exclude(pk=contract.pk).exists()
+                if not has_other:
+                    old_stall.status = 'Vacant'
+                    old_stall.save()
+            if contract.status == 'Active':
+                if new_stall.status != 'Occupied':
+                    new_stall.status = 'Occupied'
+                    new_stall.save()
+            else:
+                has_other_new = RentalContract.objects.filter(stall=new_stall, status='Active').exclude(pk=contract.pk).exists()
+                if not has_other_new and new_stall.status == 'Occupied':
+                    new_stall.status = 'Vacant'
+                    new_stall.save()
             AuditLog.objects.create(
                 user=request.user,
                 action='UPDATE',

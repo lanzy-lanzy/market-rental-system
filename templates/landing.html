@@ -1,0 +1,370 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ system_settings.market_name|default:"Public Market" }} — Rental & Collection System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+  <script src="{% static 'js/alpine.min.js' %}" defer></script>
+  <style>[x-cloak]{display:none!important}</style>
+</head>
+<body class="bg-white text-slate-800 antialiased" style="font-family:'Inter',system-ui,sans-serif">
+
+<nav x-data="{ open:false }" class="sticky top-0 z-50 bg-white border-b border-slate-200">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6">
+    <div class="flex h-16 items-center justify-between">
+      <a href="{% url 'landing' %}" class="flex items-center gap-3">
+        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-600 text-white">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-slate-900 leading-none">Public Market</p>
+          <p class="text-xs font-medium text-slate-500">{{ system_settings.municipality_name|default:"Municipality" }} • Market Office</p>
+        </div>
+      </a>
+      <div class="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
+        <a href="#features" class="hover:text-slate-900">Features</a>
+        <a href="#sections" class="hover:text-slate-900">Sections</a>
+        <a href="#how-it-works" class="hover:text-slate-900">Process</a>
+      </div>
+      <div class="hidden md:flex items-center gap-3">
+        {% if user.is_authenticated %}
+        <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black">Dashboard</a>
+        {% else %}
+        <a href="{% url 'login' %}" class="text-sm font-medium text-slate-600 hover:text-slate-900">Sign in</a>
+        <a href="{% url 'login' %}" class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">Sign in</a>
+        {% endif %}
+      </div>
+      <button @click="open=!open" class="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600">
+        <svg x-show="!open" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        <svg x-show="open" x-cloak class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div x-show="open" x-cloak class="md:hidden border-t border-slate-200 py-3 space-y-2">
+      <a href="#features" class="block px-2 py-2 text-sm font-medium text-slate-600">Features</a>
+      <a href="#sections" class="block px-2 py-2 text-sm font-medium text-slate-600">Market Sections</a>
+      <a href="{% url 'login' %}" class="block rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white text-center">Sign in</a>
+    </div>
+  </div>
+</nav>
+
+<section class="mx-auto max-w-6xl px-4 sm:px-6 py-12 lg:py-16">
+  <div class="grid lg:grid-cols-2 gap-10 items-center">
+    <div>
+      <p class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+        <span class="h-2 w-2 rounded-full bg-green-600"></span>
+        {{ system_settings.municipality_name|default:"LGU Dumingag" }} • Official System
+      </p>
+      <h1 class="mt-4 text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900 leading-tight">
+        Public Market<br>
+        Rental & Collection<br>
+        <span class="text-primary-600">Management System</span>
+      </h1>
+      <p class="mt-4 text-base leading-6 text-slate-600 max-w-xl">
+        Centralized platform for stall rentals, tenant records, monthly billing, penalty computation and transparent collections — designed for Market Administrators, Collectors and Treasurers.
+      </p>
+      <div class="mt-6 flex flex-wrap gap-3">
+        {% if user.is_authenticated %}
+        <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-black">Open Dashboard</a>
+        {% else %}
+        <a href="{% url 'login' %}" class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-black">Access System</a>
+        {% endif %}
+        <a href="#features" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Learn more</a>
+      </div>
+      <div class="mt-6 flex flex-wrap gap-4 text-xs text-slate-500 border-t border-slate-200 pt-4">
+        <span>Works offline • No CDN</span>
+        <span class="hidden sm:inline">•</span>
+        <span>Role-based access</span>
+        <span class="hidden sm:inline">•</span>
+        <span>Mobile responsive</span>
+      </div>
+    </div>
+
+    <div class="relative">
+      <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
+          <div class="flex items-center gap-2">
+            <span class="h-3 w-3 rounded-full bg-slate-300"></span>
+            <span class="h-3 w-3 rounded-full bg-slate-300"></span>
+            <span class="h-3 w-3 rounded-full bg-slate-300"></span>
+            <span class="ml-3 text-xs font-medium text-slate-600">{{ system_settings.market_name|default:"Dumingag Public Market" }}</span>
+          </div>
+          <span class="text-xs font-medium text-slate-500">Dashboard Preview</span>
+        </div>
+        <div class="p-4 bg-slate-50">
+          <div class="grid grid-cols-3 gap-3">
+            <div class="rounded-lg border border-slate-200 bg-white p-3">
+              <p class="text-xs font-medium text-slate-500">Total Stalls</p>
+              <p class="mt-1 text-xl font-semibold text-slate-900">{{ total_stalls }}</p>
+              <p class="text-xs text-slate-500">{{ occupied }} occupied • {{ vacant }} vacant</p>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-white p-3">
+              <p class="text-xs font-medium text-slate-500">Tenants</p>
+              <p class="mt-1 text-xl font-semibold text-slate-900">{{ total_tenants }}</p>
+              <p class="text-xs text-slate-500">Active accounts</p>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-white p-3">
+              <p class="text-xs font-medium text-slate-500">Occupancy</p>
+              <p class="mt-1 text-xl font-semibold text-slate-900">{{ occupancy_rate }}%</p>
+              <div class="mt-2 h-1.5 rounded-full bg-slate-100"><div class="h-1.5 rounded-full bg-primary-600" style="width: {{ occupancy_rate }}%"></div></div>
+            </div>
+          </div>
+          <div class="mt-4 rounded-lg border border-slate-200 bg-white p-3">
+            <div class="flex items-center justify-between">
+              <p class="text-xs font-semibold text-slate-700">Recent Payments</p>
+              <span class="text-xs text-slate-500">View all →</span>
+            </div>
+            <div class="mt-3 space-y-2">
+              <div class="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                <div class="flex items-center gap-3">
+                  <div class="h-8 w-8 rounded-full bg-slate-200"></div>
+                  <div><p class="text-xs font-medium text-slate-900">Maria Santos • A-12</p><p class="text-xs text-slate-500">Paid ₱2,500 • Cash • Today</p></div>
+                </div>
+                <span class="rounded-full border border-green-200 bg-green-50 px-2 py-1 text-xs font-medium text-green-700">Paid</span>
+              </div>
+              <div class="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                <div class="flex items-center gap-3">
+                  <div class="h-8 w-8 rounded-full bg-slate-200"></div>
+                  <div><p class="text-xs font-medium text-slate-900">Juan Dela Cruz • F-03</p><p class="text-xs text-slate-500">Partial ₱1,200 • GCash</p></div>
+                </div>
+                <span class="rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700">Partial</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="mt-3 text-center text-xs text-slate-500">Live data • Updated on each request • Audit logged</p>
+    </div>
+  </div>
+</section>
+
+<section class="border-t border-slate-200 bg-slate-50">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 py-8">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 divide-x divide-slate-200">
+      <div class="px-4 first:pl-0">
+        <p class="text-2xl font-semibold text-slate-900">{{ total_stalls }}</p>
+        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Stalls managed</p>
+      </div>
+      <div class="px-4">
+        <p class="text-2xl font-semibold text-slate-900">{{ total_tenants }}</p>
+        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Active tenants</p>
+      </div>
+      <div class="px-4">
+        <p class="text-2xl font-semibold text-slate-900">{{ occupancy_rate }}%</p>
+        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Occupancy rate</p>
+      </div>
+      <div class="px-4">
+        <p class="text-2xl font-semibold text-slate-900">100%</p>
+        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Audit logged</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features" class="mx-auto max-w-6xl px-4 sm:px-6 py-12">
+  <div class="max-w-2xl">
+    <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Features</p>
+    <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Everything the market office needs</h2>
+    <p class="mt-2 text-sm leading-6 text-slate-600">Interconnected modules — tenant to stall to contract to billing to payment — with validation and audit trail.</p>
+  </div>
+  <div class="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+    <div class="rounded-xl border border-slate-200 bg-white p-5">
+      <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-700">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      </div>
+      <h3 class="mt-3 text-sm font-semibold text-slate-900">Tenant Management</h3>
+      <p class="mt-1 text-sm leading-6 text-slate-600">Complete profiles, IDs, business info, status and history with search and filters.</p>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-5">
+      <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-700">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+      </div>
+      <h3 class="mt-3 text-sm font-semibold text-slate-900">Stall & Sections</h3>
+      <p class="mt-1 text-sm leading-6 text-slate-600">Dry goods, fish, meat, vegetable and more — with rates, sizes and occupancy states.</p>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-5">
+      <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-700">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      </div>
+      <h3 class="mt-3 text-sm font-semibold text-slate-900">Contracts & Billing</h3>
+      <p class="mt-1 text-sm leading-6 text-slate-600">Contracts with due days and deposits, plus automated monthly billing.</p>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-5">
+      <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-700">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+      </div>
+      <h3 class="mt-3 text-sm font-semibold text-slate-900">Collections</h3>
+      <p class="mt-1 text-sm leading-6 text-slate-600">Cash, GCash, bank or check — partial payments, OR numbers and void safeguards.</p>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-5">
+      <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-700">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      </div>
+      <h3 class="mt-3 text-sm font-semibold text-slate-900">Reports</h3>
+      <p class="mt-1 text-sm leading-6 text-slate-600">Daily to annual, by section and collector, with PDF and Excel export.</p>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-5">
+      <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-700">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+      </div>
+      <h3 class="mt-3 text-sm font-semibold text-slate-900">Ledgers & Notices</h3>
+      <p class="mt-1 text-sm leading-6 text-slate-600">Per-tenant running balances and notices — from reminder to final demand.</p>
+    </div>
+  </div>
+</section>
+
+<section id="sections" class="border-t border-slate-200 bg-slate-50">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 py-10">
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div>
+        <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Market Sections</p>
+        <h2 class="mt-1 text-xl font-semibold text-slate-900">Coverage for every section</h2>
+        <p class="mt-1 text-sm text-slate-600 max-w-xl">Filter stalls, billings and collections by section to see which areas drive revenue.</p>
+      </div>
+      <p class="text-xs font-medium text-slate-500">9 sections • Custom types & rates</p>
+    </div>
+    <div class="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-3">
+      <div class="rounded-xl border border-slate-200 bg-white p-4">
+        <p class="text-xs font-semibold text-slate-900">Dry Goods</p><p class="mt-1 text-xs text-slate-500">28 stalls</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-4">
+        <p class="text-xs font-semibold text-slate-900">Fish</p><p class="mt-1 text-xs text-slate-500">18 stalls</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-4">
+        <p class="text-xs font-semibold text-slate-900">Meat</p><p class="mt-1 text-xs text-slate-500">14 stalls</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-4">
+        <p class="text-xs font-semibold text-slate-900">Vegetable</p><p class="mt-1 text-xs text-slate-500">22 stalls</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-4">
+        <p class="text-xs font-semibold text-slate-900">Fruit</p><p class="mt-1 text-xs text-slate-500">16 stalls</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-4">
+        <p class="text-xs font-semibold text-slate-900">Eatery</p><p class="mt-1 text-xs text-slate-500">12 stalls</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-4">
+        <p class="text-xs font-semibold text-slate-900">Grocery</p><p class="mt-1 text-xs text-slate-500">10 stalls</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-4">
+        <p class="text-xs font-semibold text-slate-900">Rice & Grains</p><p class="mt-1 text-xs text-slate-500">8 stalls</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-4">
+        <p class="text-xs font-semibold text-slate-900">Other</p><p class="mt-1 text-xs text-slate-500">6 stalls</p>
+      </div>
+    </div>
+    <div class="mt-6 grid md:grid-cols-3 gap-4">
+      <div class="rounded-xl border border-slate-200 bg-white p-4">
+        <p class="text-sm font-semibold text-slate-900">Daily • Weekly • Monthly</p><p class="mt-1 text-xs leading-5 text-slate-600">Collection reports with print and export.</p>
+        <div class="mt-3 flex gap-2 text-xs"><span class="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-medium">PDF</span><span class="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-medium">Excel</span><span class="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-medium">Print</span></div>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-4">
+        <p class="text-sm font-semibold text-slate-900">Role-based access</p><p class="mt-1 text-xs leading-5 text-slate-600">Admin, collector/cashier, supervisor/treasurer and tenant — each sees only what is needed.</p>
+        <div class="mt-3 flex gap-2 text-xs"><span class="rounded-full bg-slate-900 text-white px-2.5 py-1 font-medium">ADMIN</span><span class="rounded-full border border-slate-200 bg-white px-2.5 py-1 font-medium">COLLECTOR</span><span class="rounded-full border border-slate-200 bg-white px-2.5 py-1 font-medium">TENANT</span></div>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-4">
+        <p class="text-sm font-semibold text-slate-900">Offline-first</p><p class="mt-1 text-xs leading-5 text-slate-600">Tailwind, HTMX and Alpine bundled locally — works with limited connectivity.</p>
+        <p class="mt-3 text-xs text-slate-500">Fast • Secure • Mobile-first</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how-it-works" class="mx-auto max-w-6xl px-4 sm:px-6 py-12">
+  <div class="max-w-2xl">
+    <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">How it works</p>
+    <h2 class="mt-1 text-xl font-semibold text-slate-900">From stall to receipt in three steps</h2>
+    <p class="mt-2 text-sm leading-6 text-slate-600">Designed around the market office daily workflow — minimal clicks, clear records.</p>
+  </div>
+  <div class="mt-8 grid md:grid-cols-3 gap-6">
+    <div class="rounded-xl border border-slate-200 bg-white p-5">
+      <div class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">1</div>
+      <h3 class="mt-3 text-sm font-semibold text-slate-900">Register & assign</h3>
+      <p class="mt-1 text-sm leading-6 text-slate-600">Add tenants, create stalls by section, link via rental contracts with due days.</p>
+      <p class="mt-3 inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium">Tenant → Stall → Contract</p>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-5">
+      <div class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">2</div>
+      <h3 class="mt-3 text-sm font-semibold text-slate-900">Auto-bill & collect</h3>
+      <p class="mt-1 text-sm leading-6 text-slate-600">Generate monthly bills in bulk; penalties apply after grace period. Collect via cash/GCash/bank/check.</p>
+      <p class="mt-3 inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium">Partial & full payments</p>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-5">
+      <div class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">3</div>
+      <h3 class="mt-3 text-sm font-semibold text-slate-900">Report & remind</h3>
+      <p class="mt-1 text-sm leading-6 text-slate-600">Print receipts and ledgers, export reports and issue notices for overdue accounts.</p>
+      <p class="mt-3 inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium">Receipts • Ledgers • Notices</p>
+    </div>
+  </div>
+</section>
+
+<section class="mx-auto max-w-6xl px-4 sm:px-6 pb-12">
+  <div class="rounded-xl border border-slate-200 bg-slate-900 p-6 sm:p-8">
+    <div class="grid lg:grid-cols-[1.2fr_0.8fr] gap-8 items-center">
+      <div>
+        <h3 class="text-xl font-semibold text-white">Ready to streamline collections?</h3>
+        <p class="mt-2 text-sm leading-6 text-slate-300">Import tenants and stalls, set due day and penalty rules, and start collecting with proper receipts. Every action is audited.</p>
+        <ul class="mt-4 grid sm:grid-cols-2 gap-2 text-sm text-slate-300">
+          <li>• Municipal header on every printout</li>
+          <li>• Thermal & A4 receipt layouts</li>
+          <li>• Penalty waive with remarks</li>
+          <li>• Full audit trail</li>
+        </ul>
+      </div>
+      <div class="lg:text-right">
+        <div class="inline-flex flex-col gap-3 w-full lg:w-auto">
+          {% if user.is_authenticated %}
+          <a href="{% url 'dashboard' %}" class="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-slate-900 hover:bg-slate-50">Go to Dashboard</a>
+          {% else %}
+          <a href="{% url 'login' %}" class="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-slate-900 hover:bg-slate-50">Sign in to Continue</a>
+          {% endif %}
+          <a href="#features" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-600 bg-transparent px-5 py-2.5 text-sm font-medium text-white hover:bg-white/10">View Features</a>
+          <p class="text-center lg:text-right text-xs text-slate-400">Local deployment • SQLite → PostgreSQL ready</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="border-t border-slate-200 bg-white">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 py-8">
+    <div class="grid md:grid-cols-4 gap-8">
+      <div>
+        <p class="text-sm font-semibold text-slate-900">{{ system_settings.market_name|default:"Public Market" }}</p>
+        <p class="text-xs text-slate-500">{{ system_settings.municipality_name|default:"LGU Dumingag" }} • {{ system_settings.office_name|default:"Market Office" }}</p>
+        <p class="mt-3 text-xs leading-6 text-slate-600">Municipal rental and collection system for transparency and faster monitoring.</p>
+      </div>
+      <div>
+        <p class="text-xs font-semibold tracking-wider text-slate-900 uppercase">Modules</p>
+        <ul class="mt-3 space-y-2 text-sm text-slate-600">
+          <li><a href="#features" class="hover:text-slate-900">Tenants & Stalls</a></li>
+          <li><a href="#features" class="hover:text-slate-900">Contracts & Billing</a></li>
+          <li><a href="#features" class="hover:text-slate-900">Payments</a></li>
+          <li><a href="#features" class="hover:text-slate-900">Ledger & Notices</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="text-xs font-semibold tracking-wider text-slate-900 uppercase">Reports</p>
+        <ul class="mt-3 space-y-2 text-sm text-slate-600">
+          <li>Daily / Weekly / Monthly / Annual</li>
+          <li>By Section & Collector</li>
+          <li>Occupancy & Vacant</li>
+        </ul>
+      </div>
+      <div>
+        <p class="text-xs font-semibold tracking-wider text-slate-900 uppercase">System</p>
+        <ul class="mt-3 space-y-2 text-sm text-slate-600">
+          <li class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-green-600"></span> All actions audited</li>
+          <li><a href="{% url 'login' %}" class="inline-flex mt-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white hover:bg-black">Sign in →</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="mt-8 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200 pt-6 text-xs text-slate-500">
+      <p>© {% now "Y" %} {{ system_settings.municipality_name|default:"LGU" }}. All rights reserved.</p>
+      <p>v1.0 • For public service</p>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
