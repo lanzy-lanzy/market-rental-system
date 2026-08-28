@@ -12,6 +12,7 @@ from core.models import (
     TenantLedger, AuditLog, SystemSetting
 )
 from core.forms import PaymentForm
+from core.helpers import render_to_pdf_response
 
 
 def is_htmx(request):
@@ -55,6 +56,7 @@ def payment_list(request):
     collector_filter = request.GET.get('collector')
     status_filter = request.GET.get('status')
     payment_method = request.GET.get('payment_method')
+    search_query = (request.GET.get('search') or request.GET.get('q') or '').strip()
 
     if date_from:
         payments = payments.filter(payment_date__gte=date_from)
@@ -70,8 +72,19 @@ def payment_list(request):
         payments = payments.filter(status=status_filter)
     if payment_method:
         payments = payments.filter(payment_method=payment_method)
+    if search_query:
+        payments = payments.filter(
+            Q(tenant__full_name__icontains=search_query) |
+            Q(tenant__tenant_id__icontains=search_query) |
+            Q(stall__stall_number__icontains=search_query) |
+            Q(receipt_number__icontains=search_query) |
+            Q(official_receipt_no__icontains=search_query) |
+            Q(collected_by__first_name__icontains=search_query) |
+            Q(collected_by__last_name__icontains=search_query) |
+            Q(collected_by__username__icontains=search_query)
+        )
 
-    paginator = Paginator(payments, 20)
+    paginator = Paginator(payments, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -87,6 +100,8 @@ def payment_list(request):
         'collector_filter': collector_filter,
         'status_filter': status_filter,
         'payment_method': payment_method,
+        'search_query': search_query,
+        'pagination_target': 'payment-table-wrapper',
     }
     template = 'payments/_table.html' if is_htmx(request) else 'payments/list.html'
     return render(request, template, context)
@@ -226,6 +241,26 @@ def payment_print_receipt(request, pk):
         'settings': settings,
     }
     return render(request, 'payments/print_receipt.html', context)
+
+
+@login_required
+def payment_receipt_export_pdf(request, pk):
+    payment = get_object_or_404(
+        Payment.objects.select_related('tenant', 'stall', 'stall__section', 'collected_by'),
+        pk=pk
+    )
+    if get_user_role(request.user) == 'tenant' and payment.tenant.user != request.user:
+        messages.error(request, 'You can only view your own payment receipt.')
+        return redirect('dashboard')
+    from core.models import SystemSetting
+    context = {
+        'payment': payment,
+        'settings': SystemSetting.objects.first(),
+        'system_settings': SystemSetting.objects.first(),
+        'user': request.user,
+    }
+    filename = f"receipt_{payment.receipt_number}_{__import__('datetime').date.today().isoformat()}.pdf"
+    return render_to_pdf_response(request, 'payments/print_receipt.html', context, filename=filename)
 
 
 @staff_required
@@ -420,3 +455,109 @@ def payment_void(request, pk):
 
         messages.success(request, f'Payment {payment.receipt_number} has been voided.')
     return redirect('payment_list')
+
+
+@login_required
+def payment_list_print(request):
+    payments = Payment.objects.select_related('tenant', 'stall', 'collected_by').all().order_by('-payment_date', '-created_at')
+    if get_user_role(request.user) == 'tenant':
+        payments = payments.filter(tenant__user=request.user)
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    tenant_filter = request.GET.get('tenant')
+    stall_filter = request.GET.get('stall')
+    collector_filter = request.GET.get('collector')
+    status_filter = request.GET.get('status')
+    payment_method = request.GET.get('payment_method')
+    search_query = (request.GET.get('search') or '').strip()
+    if date_from:
+        payments = payments.filter(payment_date__gte=date_from)
+    if date_to:
+        payments = payments.filter(payment_date__lte=date_to)
+    if tenant_filter:
+        payments = payments.filter(tenant_id=tenant_filter)
+    if stall_filter:
+        payments = payments.filter(stall_id=stall_filter)
+    if collector_filter:
+        payments = payments.filter(collected_by_id=collector_filter)
+    if status_filter:
+        payments = payments.filter(status=status_filter)
+    if payment_method:
+        payments = payments.filter(payment_method=payment_method)
+    if search_query:
+        payments = payments.filter(
+            Q(tenant__full_name__icontains=search_query) |
+            Q(tenant__tenant_id__icontains=search_query) |
+            Q(stall__stall_number__icontains=search_query) |
+            Q(receipt_number__icontains=search_query) |
+            Q(official_receipt_no__icontains=search_query) |
+            Q(collected_by__username__icontains=search_query)
+        )
+    from core.models import SystemSetting
+    context = {
+        'payments': payments,
+        'date_from': date_from,
+        'date_to': date_to,
+        'tenant_filter': tenant_filter,
+        'stall_filter': stall_filter,
+        'collector_filter': collector_filter,
+        'status_filter': status_filter,
+        'payment_method': payment_method,
+        'search_query': search_query,
+        'system_settings': SystemSetting.objects.first(),
+        'user': request.user,
+        'now': __import__('django.utils.timezone', fromlist=['now']).now(),
+    }
+    return render(request, 'payments/print_list.html', context)
+
+
+@login_required
+def payment_list_export_pdf(request):
+    payments = Payment.objects.select_related('tenant', 'stall', 'collected_by').all().order_by('-payment_date', '-created_at')
+    if get_user_role(request.user) == 'tenant':
+        payments = payments.filter(tenant__user=request.user)
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    tenant_filter = request.GET.get('tenant')
+    stall_filter = request.GET.get('stall')
+    collector_filter = request.GET.get('collector')
+    status_filter = request.GET.get('status')
+    payment_method = request.GET.get('payment_method')
+    search_query = (request.GET.get('search') or '').strip()
+    if date_from:
+        payments = payments.filter(payment_date__gte=date_from)
+    if date_to:
+        payments = payments.filter(payment_date__lte=date_to)
+    if tenant_filter:
+        payments = payments.filter(tenant_id=tenant_filter)
+    if stall_filter:
+        payments = payments.filter(stall_id=stall_filter)
+    if collector_filter:
+        payments = payments.filter(collected_by_id=collector_filter)
+    if status_filter:
+        payments = payments.filter(status=status_filter)
+    if payment_method:
+        payments = payments.filter(payment_method=payment_method)
+    if search_query:
+        payments = payments.filter(
+            Q(tenant__full_name__icontains=search_query) |
+            Q(tenant__tenant_id__icontains=search_query) |
+            Q(stall__stall_number__icontains=search_query) |
+            Q(receipt_number__icontains=search_query) |
+            Q(official_receipt_no__icontains=search_query) |
+            Q(collected_by__username__icontains=search_query)
+        )
+    from core.models import SystemSetting
+    context = {
+        'payments': payments,
+        'date_from': date_from,
+        'date_to': date_to,
+        'status_filter': status_filter,
+        'payment_method': payment_method,
+        'search_query': search_query,
+        'system_settings': SystemSetting.objects.first(),
+        'user': request.user,
+        'now': __import__('django.utils.timezone', fromlist=['now']).now(),
+    }
+    filename = f"payments_list_{__import__('datetime').date.today().isoformat()}.pdf"
+    return render_to_pdf_response(request, 'payments/print_list.html', context, filename=filename)

@@ -50,6 +50,7 @@
   </div>
 
   <!-- Ledger Table -->
+  <div id="ledger-entries-wrapper" class="space-y-4">
   <div class="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm">
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-slate-100 text-sm">
@@ -126,7 +127,7 @@
       </table>
     </div>
   </div>
-
-  {% include 'includes/pagination.html' %}
+  {% include 'includes/pagination.html' with pagination_target='ledger-entries-wrapper' %}
+  </div>
 </div>
 {% endblock %}

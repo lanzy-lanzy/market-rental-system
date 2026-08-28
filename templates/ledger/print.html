@@ -7,10 +7,15 @@
   <title>Ledger - {{ tenant.full_name }}</title>
   <link rel="stylesheet" href="{% static 'css/output.css' %}">
   <style>
-    @media print { body { background: white; font-size: 9pt; } @page { margin: 0.5in; } table { page-break-inside: auto; } tr { page-break-inside: avoid; page-break-after: auto; } thead { display: table-header-group; } }
+    @media print { body { background: white; font-size: 9pt; } .no-print { display: none !important; } @page { margin: 0.5in; } table { page-break-inside: auto; } tr { page-break-inside: avoid; page-break-after: auto; } thead { display: table-header-group; } }
   </style>
 </head>
 <body class="bg-white p-6 font-sans">
+  <div class="no-print mb-4 flex justify-end gap-2">
+    <button onclick="window.print()" class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black">Print</button>
+    <a href="{% url 'ledger_view_export_pdf' tenant.id %}" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Export PDF</a>
+    <button onclick="window.close()" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Close</button>
+  </div>
   <div class="max-w-6xl mx-auto">
     <div class="text-center border-b-2 border-gray-300 pb-4 mb-6">
       {% if system_settings.logo %}<img src="{{ system_settings.logo.url }}" alt="Logo" class="mx-auto h-12 w-auto mb-2">{% endif %}

@@ -16,7 +16,7 @@ def is_htmx(request):
 @admin_required
 def user_list(request):
 
-    users = User.objects.select_related('profile').all().order_by('username')
+    users = User.objects.select_related('profile').all().order_by('-date_joined', '-id')
     role_filter = request.GET.get('role')
     search_query = request.GET.get('search')
 
@@ -30,7 +30,7 @@ def user_list(request):
             Q(email__icontains=search_query)
         )
 
-    paginator = Paginator(users, 20)
+    paginator = Paginator(users, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -38,6 +38,7 @@ def user_list(request):
         'page_obj': page_obj,
         'role_filter': role_filter,
         'search_query': search_query,
+        'pagination_target': 'user-table-wrapper',
     }
     template = 'users/_table.html' if is_htmx(request) else 'users/list.html'
     return render(request, template, context)

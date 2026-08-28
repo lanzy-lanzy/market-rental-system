@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django import forms
 from django.contrib.auth.forms import UserCreationForm as BaseUserCreationForm
 from django.contrib.auth.models import User
@@ -348,3 +350,66 @@ class UserCreationForm(BaseUserCreationForm):
         super().__init__(*args, **kwargs)
         self.fields['password1'].widget.attrs.update({'class': TW_INPUT, 'placeholder': 'Password'})
         self.fields['password2'].widget.attrs.update({'class': TW_INPUT, 'placeholder': 'Confirm password'})
+
+
+class QuickCollectForm(forms.Form):
+    """
+    Simplified collector workflow: only Amount and Paid confirmation.
+    Billing is inferred from view context — collector just enters amount to collect.
+    """
+    amount_paid = forms.DecimalField(
+        max_digits=10, decimal_places=2,
+        widget=forms.NumberInput(attrs={'class': TW_INPUT + ' !pl-8', 'step': '0.01', 'placeholder': '0.00', 'autofocus': 'autofocus', 'style': 'padding-left: 2rem;'}),
+        label='Amount Paid (₱)',
+        help_text='Defaults to outstanding balance. Adjust for partial payment.'
+    )
+    payment_method = forms.ChoiceField(
+        choices=Payment.PAYMENT_METHOD_CHOICES,
+        initial='Cash',
+        widget=forms.Select(attrs={'class': TW_SELECT}),
+        label='Method'
+    )
+    payment_date = forms.DateField(
+        widget=DateInput(attrs={'class': TW_INPUT}),
+        label='Payment Date'
+    )
+    remarks = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'class': TW_TEXTAREA, 'rows': 2, 'placeholder': 'Optional note (e.g., OR number)'}),
+        label='Remarks'
+    )
+    is_paid = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': TW_CHECKBOX}),
+        label='Mark as Paid (full amount)'
+    )
+
+    def __init__(self, *args, billing=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.billing = billing
+        if billing and not self.is_bound:
+            # Default amount to outstanding balance
+            self.fields['amount_paid'].initial = billing.balance if billing.balance > 0 else billing.total_due
+            from datetime import date
+            self.fields['payment_date'].initial = date.today()
+
+    def clean_amount_paid(self):
+        amt = self.cleaned_data.get('amount_paid')
+        if self.billing:
+            if amt is None or amt <= 0:
+                raise forms.ValidationError('Amount must be greater than 0.')
+            # Allow overpay slightly? Clamp to balance + small tolerance
+            if amt > self.billing.balance + Decimal('0.01'):
+                raise forms.ValidationError(f'Amount exceeds outstanding balance ₱{self.billing.balance:.2f}. For overpayment use partial then full.')
+        return amt
+
+    def clean(self):
+        cleaned = super().clean()
+        # If is_paid checked, ensure amount equals balance (full)
+        is_paid = cleaned.get('is_paid')
+        amt = cleaned.get('amount_paid')
+        if is_paid and self.billing and amt is not None:
+            # If user checks Paid but amount is less than balance, auto-fill to balance? Let validation pass but view will enforce full
+            pass
+        return cleaned

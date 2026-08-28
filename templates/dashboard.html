@@ -16,8 +16,8 @@
         <p class="mt-1 text-sm text-slate-600">Overview of stalls, tenants and collections for <span class="font-medium text-slate-900">{{ system_settings.market_name|default:"the market" }}</span>.</p>
       </div>
       <div class="flex gap-2">
-        <a href="{% url 'payment_add' %}" class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black">Record Payment</a>
-        <a href="{% url 'billing_generate' %}" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Generate Bills</a>
+        <a href="{% url 'billing_list' %}" class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 shadow"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1"/></svg> Collect via Billing</a>
+        <a href="{% url 'billing_generate' %}" class="hidden sm:inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Generate Bills</a>
       </div>
     </div>
   </div>
@@ -114,7 +114,8 @@
         {% empty %}
         <div class="px-4 py-10 text-center">
           <p class="text-sm text-slate-500">No recent payments</p>
-          <a href="{% url 'payment_add' %}" class="mt-2 inline-flex rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white">Record payment</a>
+          <p class="text-xs text-slate-400">Payments are auto-created via Billing → Collect</p>
+          <a href="{% url 'billing_list' %}" class="mt-2 inline-flex rounded-full bg-emerald-600 px-4 py-2 text-xs font-bold text-white">Go to Billing</a>
         </div>
         {% endfor %}
       </div>

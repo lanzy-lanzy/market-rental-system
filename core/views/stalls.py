@@ -7,6 +7,7 @@ from django.db.models import Q
 from core.models import Stall, MarketSection, StallType, RentalContract, AuditLog
 from core.forms import StallForm
 from core.permissions import staff_required
+from core.helpers import render_to_pdf_response
 
 
 def is_htmx(request):
@@ -15,16 +16,24 @@ def is_htmx(request):
 
 @login_required
 def stall_list(request):
-    stalls = Stall.objects.select_related('section', 'stall_type').all().order_by('stall_number')
+    stalls = Stall.objects.select_related('section', 'stall_type').all().order_by('-created_at', '-id')
     section_filter = request.GET.get('section')
     status_filter = request.GET.get('status')
+    search_query = (request.GET.get('search') or request.GET.get('q') or '').strip()
 
     if section_filter:
         stalls = stalls.filter(section_id=section_filter)
     if status_filter:
         stalls = stalls.filter(status=status_filter)
+    if search_query:
+        stalls = stalls.filter(
+            Q(stall_number__icontains=search_query) |
+            Q(section__name__icontains=search_query) |
+            Q(stall_type__name__icontains=search_query) |
+            Q(remarks__icontains=search_query)
+        )
 
-    paginator = Paginator(stalls, 20)
+    paginator = Paginator(stalls, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -34,6 +43,8 @@ def stall_list(request):
         'sections': sections,
         'section_filter': section_filter,
         'status_filter': status_filter,
+        'search_query': search_query,
+        'pagination_target': 'stall-table-wrapper',
     }
 
     if is_htmx(request):
@@ -171,3 +182,93 @@ def stall_edit_modal(request, pk):
     else:
         form = StallForm(instance=stall)
     return render(request, 'stalls/_modal_form.html', {'form': form, 'is_add': False, 'stall': stall})
+
+
+@staff_required
+def stall_list_print(request):
+    stalls = Stall.objects.select_related('section', 'stall_type').all().order_by('-created_at', '-id')
+    section_filter = request.GET.get('section')
+    status_filter = request.GET.get('status')
+    search_query = (request.GET.get('search') or '').strip()
+    if section_filter:
+        stalls = stalls.filter(section_id=section_filter)
+    if status_filter:
+        stalls = stalls.filter(status=status_filter)
+    if search_query:
+        stalls = stalls.filter(
+            Q(stall_number__icontains=search_query) |
+            Q(section__name__icontains=search_query) |
+            Q(stall_type__name__icontains=search_query)
+        )
+    from core.models import SystemSetting
+    context = {
+        'stalls': stalls,
+        'section_filter': section_filter,
+        'status_filter': status_filter,
+        'search_query': search_query,
+        'system_settings': SystemSetting.objects.first(),
+        'user': request.user,
+        'now': __import__('django.utils.timezone', fromlist=['now']).now(),
+    }
+    return render(request, 'stalls/print_list.html', context)
+
+
+@staff_required
+def stall_list_export_pdf(request):
+    stalls = Stall.objects.select_related('section', 'stall_type').all().order_by('-created_at', '-id')
+    section_filter = request.GET.get('section')
+    status_filter = request.GET.get('status')
+    search_query = (request.GET.get('search') or '').strip()
+    if section_filter:
+        stalls = stalls.filter(section_id=section_filter)
+    if status_filter:
+        stalls = stalls.filter(status=status_filter)
+    if search_query:
+        stalls = stalls.filter(
+            Q(stall_number__icontains=search_query) |
+            Q(section__name__icontains=search_query) |
+            Q(stall_type__name__icontains=search_query)
+        )
+    from core.models import SystemSetting
+    context = {
+        'stalls': stalls,
+        'section_filter': section_filter,
+        'status_filter': status_filter,
+        'search_query': search_query,
+        'system_settings': SystemSetting.objects.first(),
+        'user': request.user,
+        'now': __import__('django.utils.timezone', fromlist=['now']).now(),
+    }
+    filename = f"stalls_list_{__import__('datetime').date.today().isoformat()}.pdf"
+    return render_to_pdf_response(request, 'stalls/print_list.html', context, filename=filename)
+
+
+@login_required
+def stall_view_print(request, pk):
+    stall = get_object_or_404(Stall.objects.select_related('section', 'stall_type'), pk=pk)
+    contracts = RentalContract.objects.filter(stall=stall).select_related('tenant').order_by('-start_date')
+    from core.models import SystemSetting
+    context = {
+        'stall': stall,
+        'contracts': contracts,
+        'system_settings': SystemSetting.objects.first(),
+        'user': request.user,
+        'now': __import__('django.utils.timezone', fromlist=['now']).now(),
+    }
+    return render(request, 'stalls/print_view.html', context)
+
+
+@login_required
+def stall_view_export_pdf(request, pk):
+    stall = get_object_or_404(Stall.objects.select_related('section', 'stall_type'), pk=pk)
+    contracts = RentalContract.objects.filter(stall=stall).select_related('tenant').order_by('-start_date')
+    from core.models import SystemSetting
+    context = {
+        'stall': stall,
+        'contracts': contracts,
+        'system_settings': SystemSetting.objects.first(),
+        'user': request.user,
+        'now': __import__('django.utils.timezone', fromlist=['now']).now(),
+    }
+    filename = f"stall_{stall.stall_number}_{__import__('datetime').date.today().isoformat()}.pdf"
+    return render_to_pdf_response(request, 'stalls/print_view.html', context, filename=filename)

@@ -14,8 +14,9 @@
   </style>
 </head>
 <body class="bg-white p-8 font-sans">
-  <div class="no-print mb-4 flex justify-end">
+  <div class="no-print mb-4 flex justify-end gap-2">
     <button onclick="window.print()" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 transition-colors">Print</button>
+    <a href="{% url 'notice_export_pdf' notice.id %}" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black">Export PDF</a>
   </div>
 
   <div class="max-w-2xl mx-auto border border-gray-300 p-8">

@@ -1,0 +1,56 @@
+{% load static humanize %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Billing List - Print Preview</title>
+  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+  <style>@media print { .no-print { display:none!important } @page { margin:0.4in; size:A4 landscape; } }</style>
+</head>
+<body class="bg-white p-6 font-sans">
+  <div class="max-w-6xl mx-auto">
+    <div class="no-print mb-4 flex justify-end gap-2">
+      <button onclick="window.print()" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">Print</button>
+      <a href="{% url 'billing_list_export_pdf' %}?{{ request.GET.urlencode }}" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium">Export PDF</a>
+      <button onclick="window.close()" class="rounded-lg border px-4 py-2 text-sm">Close</button>
+    </div>
+    <div class="text-center border-b-2 border-slate-800 pb-4 mb-6">
+      <h1 class="text-sm font-bold uppercase">{{ system_settings.municipality_name|default:"Municipality" }} — {{ system_settings.market_name|default:"Public Market" }}</h1>
+      <p class="text-xs text-slate-500">{{ system_settings.office_name|default:"" }}</p>
+      <h2 class="mt-3 text-lg font-bold uppercase">Billing Records</h2>
+      <p class="text-xs text-slate-500">Generated {{ now|date:"F d, Y h:i A" }} • By {{ user.get_full_name|default:user.username }}{% if search_query %} • Search: "{{ search_query }}"{% endif %}{% if month_filter %} • Month: {{ month_filter }}{% endif %}{% if year_filter %} • Year: {{ year_filter }}{% endif %}{% if status_filter %} • Status: {{ status_filter }}{% endif %}</p>
+    </div>
+    <div class="grid grid-cols-3 gap-4 mb-4 text-center">
+      <div class="border rounded p-3 bg-slate-900 text-white"><p class="text-xs uppercase tracking-wider text-white/60">Total Due</p><p class="font-bold">₱{{ billings|length|default:0 }} records • Sum placeholder</p></div>
+      <div class="border rounded p-3"><p class="text-xs uppercase tracking-wider text-slate-500">Filters</p><p class="text-xs">Month {% if month_filter %}{{ month_filter }}{% else %}All{% endif %} • Year {% if year_filter %}{{ year_filter }}{% else %}All{% endif %} • Status {% if status_filter %}{{ status_filter }}{% else %}All{% endif %}</p></div>
+      <div class="border rounded p-3"><p class="text-xs uppercase tracking-wider text-slate-500">Count</p><p class="font-bold">{{ billings.count }} billings</p></div>
+    </div>
+    <table class="w-full border-collapse text-xs">
+      <thead><tr class="bg-slate-100">
+        <th class="border border-slate-300 px-2 py-2 text-left uppercase">Tenant</th>
+        <th class="border border-slate-300 px-2 py-2 text-left uppercase">Stall</th>
+        <th class="border border-slate-300 px-2 py-2 text-left uppercase">Period</th>
+        <th class="border border-slate-300 px-2 py-2 text-right uppercase">Due</th>
+        <th class="border border-slate-300 px-2 py-2 text-right uppercase">Paid</th>
+        <th class="border border-slate-300 px-2 py-2 text-right uppercase">Balance</th>
+        <th class="border border-slate-300 px-2 py-2 text-left uppercase">Due Date</th>
+        <th class="border border-slate-300 px-2 py-2 text-left uppercase">Status</th>
+      </tr></thead>
+      <tbody>
+        {% for b in billings %}
+        <tr class="even:bg-slate-50/50">
+          <td class="border border-slate-200 px-2 py-1.5 font-semibold">{{ b.tenant.full_name }}<br><span class="font-mono text-[10px] text-slate-500">{{ b.tenant.tenant_id }}</span></td>
+          <td class="border border-slate-200 px-2 py-1.5 font-mono font-bold">{{ b.stall.stall_number }}</td>
+          <td class="border border-slate-200 px-2 py-1.5">{{ b.billing_month|stringformat:"02d" }}/{{ b.billing_year }}</td>
+          <td class="border border-slate-200 px-2 py-1.5 text-right">₱{{ b.total_due|floatformat:2|intcomma }}</td>
+          <td class="border border-slate-200 px-2 py-1.5 text-right text-emerald-600">₱{{ b.amount_paid|floatformat:2|intcomma }}</td>
+          <td class="border border-slate-200 px-2 py-1.5 text-right font-bold {% if b.balance > 0 %}text-red-600{% else %}text-emerald-600{% endif %}">₱{{ b.balance|floatformat:2|intcomma }}</td>
+          <td class="border border-slate-200 px-2 py-1.5">{{ b.due_date|date:"M d, Y" }}</td>
+          <td class="border border-slate-200 px-2 py-1.5">{{ b.status }}</td>
+        </tr>
+        {% empty %}<tr><td colspan="8" class="border text-center py-4 text-slate-400">No billings found</td></tr>{% endfor %}
+      </tbody>
+    </table>
+    <div class="mt-8 grid grid-cols-2 gap-8 text-center text-xs"><div class="border-t pt-2 mt-12">Prepared by<br><span class="font-semibold">{{ user.get_full_name|default:user.username }}</span></div><div class="border-t pt-2 mt-12">Verified by<br><span class="font-semibold">Market Administrator</span></div></div>
+  </div>
+</body>
+</html>

@@ -7,6 +7,7 @@ from datetime import date
 from core.models import RentalContract, Tenant, Stall, Billing, AuditLog
 from core.forms import RentalContractForm
 from core.permissions import staff_required
+from core.helpers import ensure_initial_billing, render_to_pdf_response
 from django.contrib.auth.decorators import login_required
 
 
@@ -18,11 +19,12 @@ def is_htmx(request):
 def contract_list(request):
     contracts = RentalContract.objects.select_related(
         'tenant', 'stall', 'stall__section'
-    ).all().order_by('-start_date')
+    ).all().order_by('-created_at', '-id')
 
     status_filter = request.GET.get('status')
     tenant_filter = request.GET.get('tenant')
     stall_filter = request.GET.get('stall')
+    search_query = (request.GET.get('search') or request.GET.get('q') or '').strip()
 
     if status_filter:
         contracts = contracts.filter(status=status_filter)
@@ -30,8 +32,16 @@ def contract_list(request):
         contracts = contracts.filter(tenant_id=tenant_filter)
     if stall_filter:
         contracts = contracts.filter(stall_id=stall_filter)
+    if search_query:
+        contracts = contracts.filter(
+            Q(tenant__full_name__icontains=search_query) |
+            Q(tenant__tenant_id__icontains=search_query) |
+            Q(tenant__business_name__icontains=search_query) |
+            Q(stall__stall_number__icontains=search_query) |
+            Q(stall__section__name__icontains=search_query)
+        )
 
-    paginator = Paginator(contracts, 20)
+    paginator = Paginator(contracts, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -40,6 +50,8 @@ def contract_list(request):
         'status_filter': status_filter,
         'tenant_filter': tenant_filter,
         'stall_filter': stall_filter,
+        'search_query': search_query,
+        'pagination_target': 'contract-table-wrapper',
     }
     if is_htmx(request):
         return render(request, 'contracts/_table.html', context)
@@ -54,6 +66,13 @@ def contract_add(request):
             contract = form.save()
             contract.stall.status = 'Occupied'
             contract.stall.save()
+            # Auto-generate billing(s) for this contract so collector sees amount immediately
+            try:
+                billing, created = ensure_initial_billing(contract)
+                if created:
+                    messages.info(request, f'Auto-generated billing for {billing.billing_month:02d}/{billing.billing_year} (₱{billing.total_due}) ready for collection.')
+            except Exception:
+                pass
             AuditLog.objects.create(
                 user=request.user,
                 action='CREATE',
@@ -92,6 +111,10 @@ def contract_edit(request, pk):
                 if new_stall.status != 'Occupied':
                     new_stall.status = 'Occupied'
                     new_stall.save()
+                try:
+                    ensure_initial_billing(contract)
+                except Exception:
+                    pass
             else:
                 # If contract no longer active, check if new stall should be vacant
                 has_other_new = RentalContract.objects.filter(stall=new_stall, status='Active').exclude(pk=contract.pk).exists()
@@ -185,6 +208,10 @@ def contract_add_modal(request):
             contract = form.save()
             contract.stall.status = 'Occupied'
             contract.stall.save()
+            try:
+                ensure_initial_billing(contract)
+            except Exception:
+                pass
             AuditLog.objects.create(
                 user=request.user,
                 action='CREATE',
@@ -226,6 +253,10 @@ def contract_edit_modal(request, pk):
                 if new_stall.status != 'Occupied':
                     new_stall.status = 'Occupied'
                     new_stall.save()
+                try:
+                    ensure_initial_billing(contract)
+                except Exception:
+                    pass
             else:
                 has_other_new = RentalContract.objects.filter(stall=new_stall, status='Active').exclude(pk=contract.pk).exists()
                 if not has_other_new and new_stall.status == 'Occupied':
@@ -252,3 +283,87 @@ def contract_edit_modal(request, pk):
     else:
         form = RentalContractForm(instance=contract)
     return render(request, 'contracts/_modal_form.html', {'form': form, 'is_add': False, 'contract': contract})
+
+
+@staff_required
+def contract_list_print(request):
+    contracts = RentalContract.objects.select_related('tenant', 'stall', 'stall__section').all().order_by('-created_at', '-id')
+    status_filter = request.GET.get('status')
+    search_query = (request.GET.get('search') or '').strip()
+    if status_filter:
+        contracts = contracts.filter(status=status_filter)
+    if search_query:
+        contracts = contracts.filter(
+            Q(tenant__full_name__icontains=search_query) |
+            Q(tenant__tenant_id__icontains=search_query) |
+            Q(stall__stall_number__icontains=search_query) |
+            Q(stall__section__name__icontains=search_query)
+        )
+    from core.models import SystemSetting
+    context = {
+        'contracts': contracts,
+        'status_filter': status_filter,
+        'search_query': search_query,
+        'system_settings': SystemSetting.objects.first(),
+        'user': request.user,
+        'now': __import__('django.utils.timezone', fromlist=['now']).now(),
+    }
+    return render(request, 'contracts/print_list.html', context)
+
+
+@staff_required
+def contract_list_export_pdf(request):
+    contracts = RentalContract.objects.select_related('tenant', 'stall', 'stall__section').all().order_by('-created_at', '-id')
+    status_filter = request.GET.get('status')
+    search_query = (request.GET.get('search') or '').strip()
+    if status_filter:
+        contracts = contracts.filter(status=status_filter)
+    if search_query:
+        contracts = contracts.filter(
+            Q(tenant__full_name__icontains=search_query) |
+            Q(tenant__tenant_id__icontains=search_query) |
+            Q(stall__stall_number__icontains=search_query) |
+            Q(stall__section__name__icontains=search_query)
+        )
+    from core.models import SystemSetting
+    context = {
+        'contracts': contracts,
+        'status_filter': status_filter,
+        'search_query': search_query,
+        'system_settings': SystemSetting.objects.first(),
+        'user': request.user,
+        'now': __import__('django.utils.timezone', fromlist=['now']).now(),
+    }
+    filename = f"contracts_list_{__import__('datetime').date.today().isoformat()}.pdf"
+    return render_to_pdf_response(request, 'contracts/print_list.html', context, filename=filename)
+
+
+@staff_required
+def contract_view_print(request, pk):
+    contract = get_object_or_404(RentalContract.objects.select_related('tenant', 'stall', 'stall__section'), pk=pk)
+    billings = Billing.objects.filter(contract=contract).order_by('-billing_year', '-billing_month')
+    from core.models import SystemSetting
+    context = {
+        'contract': contract,
+        'billings': billings,
+        'system_settings': SystemSetting.objects.first(),
+        'user': request.user,
+        'now': __import__('django.utils.timezone', fromlist=['now']).now(),
+    }
+    return render(request, 'contracts/print_view.html', context)
+
+
+@staff_required
+def contract_view_export_pdf(request, pk):
+    contract = get_object_or_404(RentalContract.objects.select_related('tenant', 'stall', 'stall__section'), pk=pk)
+    billings = Billing.objects.filter(contract=contract).order_by('-billing_year', '-billing_month')
+    from core.models import SystemSetting
+    context = {
+        'contract': contract,
+        'billings': billings,
+        'system_settings': SystemSetting.objects.first(),
+        'user': request.user,
+        'now': __import__('django.utils.timezone', fromlist=['now']).now(),
+    }
+    filename = f"contract_{contract.id}_{__import__('datetime').date.today().isoformat()}.pdf"
+    return render_to_pdf_response(request, 'contracts/print_view.html', context, filename=filename)

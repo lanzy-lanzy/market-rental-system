@@ -1,0 +1,41 @@
+{% load static humanize %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stall {{ stall.stall_number }} - Print</title>
+  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+  <style>@media print { .no-print { display:none!important } @page { margin:0.6in; } }</style>
+</head>
+<body class="bg-white p-6 font-sans">
+  <div class="max-w-3xl mx-auto">
+    <div class="no-print mb-4 flex justify-end gap-2">
+      <button onclick="window.print()" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">Print</button>
+      <a href="{% url 'stall_view_export_pdf' stall.id %}" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium">Export PDF</a>
+      <button onclick="window.close()" class="rounded-lg border px-4 py-2 text-sm">Close</button>
+    </div>
+    <div class="text-center border-b-2 border-slate-800 pb-4 mb-6">
+      <h1 class="text-sm font-bold uppercase">{{ system_settings.municipality_name|default:"Municipality" }} — {{ system_settings.market_name|default:"Public Market" }}</h1>
+      <p class="text-xs text-slate-500">{{ system_settings.office_name|default:"" }}</p>
+      <h2 class="mt-2 text-base font-bold uppercase">Stall Detail — {{ stall.stall_number }}</h2>
+      <p class="text-xs text-slate-500">{{ stall.section.name }} • {{ stall.stall_type.name|default:"" }} • {{ now|date:"F d, Y" }}</p>
+    </div>
+    <div class="grid grid-cols-2 gap-4 text-sm border border-slate-200 rounded-lg p-4">
+      <div><p class="text-xs uppercase tracking-wider text-slate-500">Stall Number</p><p class="font-mono font-bold text-lg">{{ stall.stall_number }}</p></div>
+      <div><p class="text-xs uppercase tracking-wider text-slate-500">Status</p><p><span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-bold">{{ stall.status }}</span></p></div>
+      <div><p class="text-xs uppercase tracking-wider text-slate-500">Section</p><p>{{ stall.section.name }}</p></div>
+      <div><p class="text-xs uppercase tracking-wider text-slate-500">Type</p><p>{{ stall.stall_type.name|default:"—" }}</p></div>
+      <div><p class="text-xs uppercase tracking-wider text-slate-500">Size</p><p>{{ stall.size|default:"—" }} sqm</p></div>
+      <div><p class="text-xs uppercase tracking-wider text-slate-500">Monthly Rate</p><p class="font-bold">₱{{ stall.monthly_rate|floatformat:2|intcomma }}</p></div>
+      <div class="col-span-2"><p class="text-xs uppercase tracking-wider text-slate-500">Remarks</p><p class="text-sm">{{ stall.remarks|default:"—" }}</p></div>
+    </div>
+    <div class="mt-6">
+      <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Contracts ({{ contracts|length }})</h3>
+      <table class="w-full border-collapse text-xs">
+        <thead><tr class="bg-slate-100"><th class="border px-2 py-1.5 text-left">Tenant</th><th class="border px-2 py-1.5">Period</th><th class="border px-2 py-1.5 text-right">Rent</th><th class="border px-2 py-1.5">Status</th></tr></thead>
+        <tbody>{% for c in contracts %}<tr><td class="border px-2 py-1.5 font-semibold">{{ c.tenant.full_name }} ({{ c.tenant.tenant_id }})</td><td class="border px-2 py-1.5">{{ c.start_date|date:"M d, Y" }} — {{ c.end_date|date:"M d, Y"|default:"Open" }}</td><td class="border px-2 py-1.5 text-right">₱{{ c.monthly_rent|floatformat:2 }}</td><td class="border px-2 py-1.5">{{ c.status }}</td></tr>{% empty %}<tr><td colspan="4" class="border text-center py-3 text-slate-400">No contracts</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+    <div class="mt-8 grid grid-cols-2 gap-8 text-center text-xs"><div class="border-t pt-2 mt-12">Prepared by<br><span class="font-semibold">{{ user.get_full_name|default:user.username }}</span></div><div class="border-t pt-2 mt-12">Verified by<br><span class="font-semibold">Market Administrator</span></div></div>
+  </div>
+</body>
+</html>

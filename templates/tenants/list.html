@@ -16,6 +16,12 @@
       </div>
     </div>
     <div class="flex items-center gap-2">
+      <a href="{% url 'tenant_list_print' %}?{{ request.GET.urlencode }}" target="_blank" class="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg> Print Preview
+      </a>
+      <a href="{% url 'tenant_list_export_pdf' %}?{{ request.GET.urlencode }}" class="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-2 text-xs font-bold text-white hover:bg-black">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2"/></svg> Export PDF
+      </a>
       <a href="{% url 'tenant_add' %}" class="hidden sm:inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold hover:bg-slate-50">
         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
         New Page
@@ -31,15 +37,18 @@
   <div class="rounded-[18px] border border-slate-200 bg-slate-50/70 p-3 flex flex-col sm:flex-row gap-3">
     <div class="relative flex-1">
       <svg class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-      <input type="text" name="search" placeholder="Search by name, ID or business..." hx-get="{% url 'tenant_list' %}" hx-target="#tenant-table" hx-trigger="keyup changed delay:500ms" hx-include="[name='status']" value="{{ search_query|default:'' }}" class="w-full rounded-full border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm font-medium placeholder:text-slate-400 focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10 outline-none">
+      <input type="text" name="search" placeholder="Search by name, ID or business..." hx-get="{% url 'tenant_list' %}" hx-target="#tenant-table-wrapper" hx-trigger="keyup changed delay:400ms" hx-include="[name='status']" hx-push-url="true" value="{{ search_query|default:'' }}" class="w-full rounded-full border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm font-medium placeholder:text-slate-400 focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10 outline-none">
     </div>
-    <select name="status" hx-get="{% url 'tenant_list' %}" hx-target="#tenant-table" hx-trigger="change" hx-include="[name='search']" class="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10 outline-none">
+    <select name="status" hx-get="{% url 'tenant_list' %}" hx-target="#tenant-table-wrapper" hx-trigger="change" hx-include="[name='search']" hx-push-url="true" class="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10 outline-none">
       <option value="">All Status</option>
       <option value="Active" {% if status_filter == 'Active' %}selected{% endif %}>● Active</option>
       <option value="Inactive" {% if status_filter == 'Inactive' %}selected{% endif %}>○ Inactive</option>
       <option value="Suspended" {% if status_filter == 'Suspended' %}selected{% endif %}>◐ Suspended</option>
       <option value="Terminated" {% if status_filter == 'Terminated' %}selected{% endif %}>✕ Terminated</option>
     </select>
+    {% if search_query or status_filter %}
+    <a href="{% url 'tenant_list' %}" class="inline-flex items-center gap-1.5 rounded-full bg-white border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">Clear ✕</a>
+    {% endif %}
   </div>
 
   {% include 'tenants/_table.html' %}

@@ -1,40 +1,55 @@
+<div id="tenant-table-wrapper" class="space-y-4">
 <div id="tenant-table" class="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm">
   <div class="overflow-x-auto">
-    <table class="min-w-full divide-y divide-slate-100">
+    <table class="w-full min-w-[1180px] table-fixed divide-y divide-slate-100">
+      <colgroup>
+        <col class="w-[110px]">
+        <col class="w-[210px]">
+        <col class="w-[280px]">
+        <col class="w-[150px]">
+        <col class="w-[125px]">
+        <col class="w-[120px]">
+        <col class="w-[145px]">
+      </colgroup>
       <thead>
         <tr class="bg-slate-50">
-          <th class="px-6 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">TENANT ID</th>
-          <th class="px-6 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">FULL NAME</th>
-          <th class="px-6 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">BUSINESS</th>
-          <th class="px-6 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">CONTACT</th>
-          <th class="px-6 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">STALL(S)</th>
-          <th class="px-6 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">STATUS</th>
-          <th class="px-6 py-3.5 text-right text-xs font-bold tracking-widest text-slate-500">ACTIONS</th>
+          <th class="px-4 lg:px-5 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500 whitespace-nowrap">TENANT ID</th>
+          <th class="px-4 lg:px-5 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">FULL NAME</th>
+          <th class="px-4 lg:px-5 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">BUSINESS</th>
+          <th class="px-4 lg:px-5 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">CONTACT</th>
+          <th class="px-4 lg:px-5 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">STALL(S)</th>
+          <th class="px-4 lg:px-5 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">STATUS</th>
+          <th class="px-4 lg:px-5 py-3.5 text-right text-xs font-bold tracking-widest text-slate-500">ACTIONS</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-50">
         {% for tenant in page_obj %}
         <tr class="group hover:bg-slate-50/70 transition">
-          <td class="whitespace-nowrap px-6 py-4"><span class="inline-flex rounded-full bg-slate-900 px-2.5 py-1 text-xs font-mono font-bold text-white">{{ tenant.tenant_id }}</span></td>
-          <td class="whitespace-nowrap px-6 py-4">
-            <a href="{% url 'tenant_view' tenant.id %}" class="flex items-center gap-3 group/link">
-              <span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary-50 border border-primary-100 text-xs font-bold text-primary-700">{{ tenant.full_name|slice:":1"|upper }}</span>
-              <span class="text-sm font-semibold text-slate-900 group-hover/link:text-primary-700">{{ tenant.full_name }}</span>
+          <td class="whitespace-nowrap px-4 lg:px-5 py-4"><span class="inline-flex rounded-full bg-slate-900 px-2.5 py-1 text-xs font-mono font-bold text-white tracking-wide">{{ tenant.tenant_id }}</span></td>
+          <td class="px-4 lg:px-5 py-4">
+            <a href="{% url 'tenant_view' tenant.id %}" class="flex items-center gap-3 group/link min-w-0">
+              <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-50 border border-primary-100 text-xs font-bold text-primary-700">{{ tenant.full_name|slice:":1"|upper }}</span>
+              <span class="truncate text-sm font-semibold text-slate-900 group-hover/link:text-primary-700" title="{{ tenant.full_name }}">{{ tenant.full_name }}</span>
             </a>
           </td>
-          <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-600">{{ tenant.business_name|default:"—" }} {% if tenant.business_type %}<span class="text-xs text-slate-400">• {{ tenant.business_type }}</span>{% endif %}</td>
-          <td class="whitespace-nowrap px-6 py-4 text-sm text-slate-600">{{ tenant.contact_number }}</td>
-          <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-700">
+          <td class="px-4 lg:px-5 py-4">
+            <div class="min-w-0">
+              <p class="truncate text-sm font-medium text-slate-700 leading-tight" title="{{ tenant.business_name }}">{{ tenant.business_name|default:"—" }}</p>
+              {% if tenant.business_type %}<p class="truncate text-xs text-slate-400 leading-tight" title="{{ tenant.business_type }}">{{ tenant.business_type }}</p>{% endif %}
+            </div>
+          </td>
+          <td class="whitespace-nowrap px-4 lg:px-5 py-4 text-sm font-medium text-slate-600 tabular-nums">{{ tenant.contact_number }}</td>
+          <td class="px-4 lg:px-5 py-4">
             {% with stall_list=tenant.contracts.all %}
               {% if stall_list %}
-                <span class="inline-flex flex-wrap gap-1">{% for c in stall_list %}<span class="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-xs font-bold">{{ c.stall.stall_number }}</span>{% endfor %}</span>
+                <span class="inline-flex flex-wrap gap-1">{% for c in stall_list %}<span class="inline-flex whitespace-nowrap rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold leading-none">{{ c.stall.stall_number }}</span>{% endfor %}</span>
               {% else %}
-                <span class="text-slate-400">—</span>
+                <span class="text-sm text-slate-400">—</span>
               {% endif %}
             {% endwith %}
           </td>
-          <td class="whitespace-nowrap px-6 py-4">{% include 'includes/status_badge.html' with status=tenant.status %}</td>
-          <td class="whitespace-nowrap px-6 py-4 text-right">
+          <td class="whitespace-nowrap px-4 lg:px-5 py-4">{% include 'includes/status_badge.html' with status=tenant.status %}</td>
+          <td class="whitespace-nowrap px-4 lg:px-5 py-4 text-right">
             <div class="flex items-center justify-end gap-1.5">
               <a href="{% url 'tenant_view' tenant.id %}" class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition" title="View">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
@@ -63,4 +78,5 @@
     </table>
   </div>
 </div>
-{% include 'includes/pagination.html' %}
+{% include 'includes/pagination.html' with pagination_target='tenant-table-wrapper' %}
+</div>

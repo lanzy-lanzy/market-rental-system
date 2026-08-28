@@ -1,3 +1,5 @@
 django>=5.0
 openpyxl
 weasyprint
+reportlab>=4.0
+xhtml2pdf>=0.2.11

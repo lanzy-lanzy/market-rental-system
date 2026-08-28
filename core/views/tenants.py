@@ -9,6 +9,7 @@ from core.models import Tenant, Stall, RentalContract, Billing, Payment, AuditLo
 from core.forms import TenantForm
 from core.permissions import staff_required, admin_required, get_user_role
 from django.contrib.auth.decorators import login_required
+from core.helpers import render_to_pdf_response
 
 
 def is_htmx(request):
@@ -17,7 +18,7 @@ def is_htmx(request):
 
 @staff_required
 def tenant_list(request):
-    tenants = Tenant.objects.all().order_by('full_name')
+    tenants = Tenant.objects.all().order_by('-created_at', '-id')
     status_filter = request.GET.get('status')
     search_query = request.GET.get('search')
 
@@ -30,7 +31,7 @@ def tenant_list(request):
             Q(business_name__icontains=search_query)
         )
 
-    paginator = Paginator(tenants, 20)
+    paginator = Paginator(tenants, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -38,6 +39,7 @@ def tenant_list(request):
         'page_obj': page_obj,
         'status_filter': status_filter,
         'search_query': search_query,
+        'pagination_target': 'tenant-table-wrapper',
     }
     if is_htmx(request):
         return render(request, 'tenants/_table.html', context)
@@ -221,3 +223,107 @@ def tenant_edit_modal(request, pk):
     else:
         form = TenantForm(instance=tenant)
     return render(request, 'tenants/_modal_form.html', {'form': form, 'is_add': False, 'tenant': tenant})
+
+
+@staff_required
+def tenant_list_print(request):
+    """Print preview for tenants — respects same search/status filters as list, shows all matching records."""
+    tenants = Tenant.objects.all().order_by('-created_at', '-id')
+    status_filter = request.GET.get('status')
+    search_query = request.GET.get('search')
+    if status_filter:
+        tenants = tenants.filter(status=status_filter)
+    if search_query:
+        tenants = tenants.filter(
+            Q(full_name__icontains=search_query) |
+            Q(tenant_id__icontains=search_query) |
+            Q(business_name__icontains=search_query)
+        )
+    from core.models import SystemSetting
+    context = {
+        'tenants': tenants,
+        'status_filter': status_filter,
+        'search_query': search_query,
+        'system_settings': SystemSetting.objects.first(),
+        'user': request.user,
+        'now': __import__('django.utils.timezone', fromlist=['now']).now(),
+    }
+    return render(request, 'tenants/print_list.html', context)
+
+
+@staff_required
+def tenant_list_export_pdf(request):
+    """Export tenants list as PDF — same filtered queryset as print preview."""
+    tenants = Tenant.objects.all().order_by('-created_at', '-id')
+    status_filter = request.GET.get('status')
+    search_query = request.GET.get('search')
+    if status_filter:
+        tenants = tenants.filter(status=status_filter)
+    if search_query:
+        tenants = tenants.filter(
+            Q(full_name__icontains=search_query) |
+            Q(tenant_id__icontains=search_query) |
+            Q(business_name__icontains=search_query)
+        )
+    from core.models import SystemSetting
+    context = {
+        'tenants': tenants,
+        'status_filter': status_filter,
+        'search_query': search_query,
+        'system_settings': SystemSetting.objects.first(),
+        'user': request.user,
+        'now': __import__('django.utils.timezone', fromlist=['now']).now(),
+    }
+    filename = f"tenants_list_{__import__('datetime').date.today().isoformat()}.pdf"
+    return render_to_pdf_response(request, 'tenants/print_list.html', context, filename=filename)
+
+
+@staff_required
+def tenant_view_print(request, pk):
+    tenant = get_object_or_404(Tenant, pk=pk)
+    role = get_user_role(request.user)
+    if role == 'tenant' and tenant.user != request.user:
+        messages.error(request, 'You can only view your own tenant profile.')
+        return redirect('dashboard')
+    contracts = RentalContract.objects.filter(tenant=tenant).select_related('stall', 'stall__section')
+    billings = Billing.objects.filter(tenant=tenant).order_by('-billing_year', '-billing_month')
+    payments = Payment.objects.filter(tenant=tenant).order_by('-payment_date')[:10]
+    total_balance = billings.aggregate(total=Sum('balance'))['total'] or 0
+    from core.models import SystemSetting
+    context = {
+        'tenant': tenant,
+        'contracts': contracts,
+        'billings': billings,
+        'payments': payments,
+        'total_balance': total_balance,
+        'system_settings': SystemSetting.objects.first(),
+        'user': request.user,
+        'now': __import__('django.utils.timezone', fromlist=['now']).now(),
+    }
+    return render(request, 'tenants/print_view.html', context)
+
+
+@staff_required
+def tenant_view_export_pdf(request, pk):
+    tenant = get_object_or_404(Tenant, pk=pk)
+    role = get_user_role(request.user)
+    if role == 'tenant' and tenant.user != request.user:
+        messages.error(request, 'You can only view your own tenant profile.')
+        return redirect('dashboard')
+    contracts = RentalContract.objects.filter(tenant=tenant).select_related('stall', 'stall__section')
+    billings = Billing.objects.filter(tenant=tenant).order_by('-billing_year', '-billing_month')
+    payments = Payment.objects.filter(tenant=tenant).order_by('-payment_date')[:10]
+    total_balance = billings.aggregate(total=Sum('balance'))['total'] or 0
+    from core.models import SystemSetting
+    context = {
+        'tenant': tenant,
+        'contracts': contracts,
+        'billings': billings,
+        'payments': payments,
+        'total_balance': total_balance,
+        'system_settings': SystemSetting.objects.first(),
+        'user': request.user,
+        'now': __import__('django.utils.timezone', fromlist=['now']).now(),
+    }
+    filename = f"tenant_{tenant.tenant_id}_{__import__('datetime').date.today().isoformat()}.pdf"
+    return render_to_pdf_response(request, 'tenants/print_view.html', context, filename=filename)

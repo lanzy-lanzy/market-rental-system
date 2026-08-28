@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.core.paginator import Paginator
+from django.db.models import Q
 
 from core.models import AuditLog
 from core.permissions import admin_required
@@ -18,6 +19,7 @@ def audit_log_list(request):
     module_filter = request.GET.get('module')
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
+    search_query = (request.GET.get('search') or request.GET.get('q') or '').strip()
 
     if user_filter:
         logs = logs.filter(user_id=user_filter)
@@ -29,8 +31,18 @@ def audit_log_list(request):
         logs = logs.filter(created_at__date__gte=date_from)
     if date_to:
         logs = logs.filter(created_at__date__lte=date_to)
+    if search_query:
+        logs = logs.filter(
+            Q(user__username__icontains=search_query) |
+            Q(user__first_name__icontains=search_query) |
+            Q(user__last_name__icontains=search_query) |
+            Q(action__icontains=search_query) |
+            Q(module__icontains=search_query) |
+            Q(description__icontains=search_query) |
+            Q(ip_address__icontains=search_query)
+        )
 
-    paginator = Paginator(logs, 50)
+    paginator = Paginator(logs, 15)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -41,6 +53,8 @@ def audit_log_list(request):
         'module_filter': module_filter,
         'date_from': date_from,
         'date_to': date_to,
+        'search_query': search_query,
+        'pagination_target': 'audit-table-wrapper',
     }
     template = 'audit/_table.html' if is_htmx(request) else 'audit/list.html'
     return render(request, template, context)

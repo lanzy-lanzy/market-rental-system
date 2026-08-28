@@ -19,9 +19,9 @@
   <div class="rounded-[18px] border border-slate-200 bg-slate-50/70 p-3 flex flex-col sm:flex-row gap-3">
     <div class="relative flex-1">
       <svg class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-      <input type="text" name="search" placeholder="Search users..." hx-get="{% url 'user_list' %}" hx-target="#user-table" hx-trigger="keyup changed delay:500ms" hx-include="[name='role']" value="{{ search_query|default:'' }}" class="w-full rounded-full border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm font-medium placeholder:text-slate-400 focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10 outline-none">
+      <input type="text" name="search" placeholder="Search users..." hx-get="{% url 'user_list' %}" hx-target="#user-table-wrapper" hx-trigger="keyup changed delay:400ms" hx-include="[name='role']" hx-push-url="true" value="{{ search_query|default:'' }}" class="w-full rounded-full border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm font-medium placeholder:text-slate-400 focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10 outline-none">
     </div>
-    <select name="role" hx-get="{% url 'user_list' %}" hx-target="#user-table" hx-trigger="change" hx-include="[name='search']" class="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10 outline-none">
+    <select name="role" hx-get="{% url 'user_list' %}" hx-target="#user-table-wrapper" hx-trigger="change" hx-include="[name='search']" hx-push-url="true" class="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10 outline-none">
       <option value="">All Roles</option>
       <option value="admin">Admin</option>
       <option value="collector">Collector</option>

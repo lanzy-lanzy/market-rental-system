@@ -1,3 +1,4 @@
+<div id="audit-table-wrapper" class="space-y-4">
 <div id="audit-table" class="overflow-x-auto rounded-xl border border-gray-100 bg-card shadow-sm">
   <table class="min-w-full divide-y divide-gray-100">
     <thead>
@@ -44,4 +45,6 @@
       {% endfor %}
     </tbody>
   </table>
+</div>
+{% include 'includes/pagination.html' with pagination_target='audit-table-wrapper' %}
 </div>

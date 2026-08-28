@@ -1,0 +1,52 @@
+{% load static humanize %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ tenant.tenant_id }} - {{ tenant.full_name }}</title>
+  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+  <style>@media print { .no-print { display: none !important; } @page { margin: 0.6in; } }</style>
+</head>
+<body class="bg-white p-6 font-sans">
+  <div class="max-w-3xl mx-auto">
+    <div class="no-print mb-4 flex justify-end gap-2">
+      <button onclick="window.print()" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black">Print</button>
+      <a href="{% url 'tenant_view_export_pdf' tenant.id %}" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Export PDF</a>
+      <button onclick="window.close()" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium">Close</button>
+    </div>
+    <div class="text-center border-b-2 border-slate-800 pb-4 mb-6">
+      <h1 class="text-sm font-bold uppercase">{{ system_settings.municipality_name|default:"Municipality" }} — {{ system_settings.market_name|default:"Public Market" }}</h1>
+      <p class="text-xs text-slate-500">{{ system_settings.office_name|default:"Market Administration Office" }}</p>
+      <h2 class="mt-2 text-base font-bold uppercase">Tenant Profile</h2>
+      <p class="text-xs text-slate-500">{{ tenant.tenant_id }} • {{ tenant.full_name }} • {{ now|date:"F d, Y" }}</p>
+    </div>
+    <div class="grid grid-cols-2 gap-4 text-sm border border-slate-200 rounded-lg p-4">
+      <div><p class="text-xs uppercase tracking-wider text-slate-500">Full Name</p><p class="font-semibold">{{ tenant.full_name }}</p></div>
+      <div><p class="text-xs uppercase tracking-wider text-slate-500">Tenant ID</p><p class="font-mono font-bold">{{ tenant.tenant_id }}</p></div>
+      <div class="col-span-2"><p class="text-xs uppercase tracking-wider text-slate-500">Address</p><p>{{ tenant.address }}</p></div>
+      <div><p class="text-xs uppercase tracking-wider text-slate-500">Contact</p><p>{{ tenant.contact_number }}<br><span class="text-xs text-slate-500">{{ tenant.email|default:"" }}</span></p></div>
+      <div><p class="text-xs uppercase tracking-wider text-slate-500">Status</p><p><span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-bold">{{ tenant.status }}</span></p></div>
+      <div><p class="text-xs uppercase tracking-wider text-slate-500">Business</p><p>{{ tenant.business_name|default:"—" }} <span class="text-xs text-slate-500">• {{ tenant.business_type|default:"" }}</span></p></div>
+      <div><p class="text-xs uppercase tracking-wider text-slate-500">Outstanding Balance</p><p class="font-bold {% if total_balance > 0 %}text-red-600{% else %}text-emerald-600{% endif %}">₱{{ total_balance|floatformat:2|intcomma }}</p></div>
+    </div>
+    <div class="mt-6">
+      <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Contracts ({{ contracts|length }})</h3>
+      <table class="w-full border-collapse text-xs">
+        <thead><tr class="bg-slate-100"><th class="border px-2 py-1.5 text-left">Stall</th><th class="border px-2 py-1.5 text-left">Section</th><th class="border px-2 py-1.5 text-left">Period</th><th class="border px-2 py-1.5 text-right">Rent</th><th class="border px-2 py-1.5 text-left">Status</th></tr></thead>
+        <tbody>{% for c in contracts %}<tr><td class="border px-2 py-1.5 font-mono font-bold">{{ c.stall.stall_number }}</td><td class="border px-2 py-1.5">{{ c.stall.section.name }}</td><td class="border px-2 py-1.5">{{ c.start_date|date:"M d, Y" }} — {{ c.end_date|date:"M d, Y"|default:"Open" }}</td><td class="border px-2 py-1.5 text-right">₱{{ c.monthly_rent|floatformat:2 }}</td><td class="border px-2 py-1.5">{{ c.status }}</td></tr>{% empty %}<tr><td colspan="5" class="border px-2 py-3 text-center text-slate-400">No contracts</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+    <div class="mt-6">
+      <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Recent Billings</h3>
+      <table class="w-full border-collapse text-xs">
+        <thead><tr class="bg-slate-100"><th class="border px-2 py-1.5">Period</th><th class="border px-2 py-1.5">Stall</th><th class="border px-2 py-1.5 text-right">Due</th><th class="border px-2 py-1.5 text-right">Paid</th><th class="border px-2 py-1.5 text-right">Balance</th><th class="border px-2 py-1.5">Status</th></tr></thead>
+        <tbody>{% for b in billings|slice:":10" %}<tr><td class="border px-2 py-1.5">{{ b.billing_month|stringformat:"02d" }}/{{ b.billing_year }}</td><td class="border px-2 py-1.5 font-mono">{{ b.stall.stall_number }}</td><td class="border px-2 py-1.5 text-right">₱{{ b.total_due|floatformat:2 }}</td><td class="border px-2 py-1.5 text-right text-emerald-600">₱{{ b.amount_paid|floatformat:2 }}</td><td class="border px-2 py-1.5 text-right font-bold {% if b.balance > 0 %}text-red-600{% else %}text-emerald-600{% endif %}">₱{{ b.balance|floatformat:2 }}</td><td class="border px-2 py-1.5">{{ b.status }}</td></tr>{% empty %}<tr><td colspan="6" class="border text-center py-3 text-slate-400">No billings</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+    <div class="mt-8 grid grid-cols-2 gap-8 text-center text-xs">
+      <div><div class="border-t pt-2 mt-12">Prepared by<br><span class="font-semibold">{{ user.get_full_name|default:user.username }}</span></div></div>
+      <div><div class="border-t pt-2 mt-12">Verified by<br><span class="font-semibold">Market Administrator</span></div></div>
+    </div>
+    <p class="mt-6 text-center text-[10px] text-slate-400">Generated {{ now|date:"F d, Y h:i A" }} • Computer-generated</p>
+  </div>
+</body>
+</html>

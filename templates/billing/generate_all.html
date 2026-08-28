@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load market_tags %}
 {% block title %}Generate All Billings — Mercado{% endblock %}
 {% block page_title %}Generate All Billings{% endblock %}
 {% block page_subtitle %}Bulk creation for all active contracts • Skips existing{% endblock %}
@@ -22,8 +23,8 @@
         <div>
           <label class="block text-xs font-bold tracking-widest text-slate-500">Billing Month</label>
           <select name="billing_month" class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium">
-            {% for m in "123456789012"|make_list %}
-            <option value="{{ forloop.counter }}" {% if forloop.counter == current_month %}selected{% endif %}>{{ forloop.counter|stringformat:"02d" }}</option>
+            {% for m in "January,February,March,April,May,June,July,August,September,October,November,December"|split:"," %}
+            <option value="{{ forloop.counter }}" {% if forloop.counter == current_month %}selected{% endif %}>{{ m }}</option>
             {% endfor %}
           </select>
         </div>

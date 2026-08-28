@@ -8,6 +8,8 @@ dependencies = [
     "openpyxl",
     "weasyprint",
     "django-shortcuts",
+    "reportlab>=4.0",
+    "xhtml2pdf>=0.2.11",
 ]
 
 [tool.uv]

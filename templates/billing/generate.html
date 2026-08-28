@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static market_tags %}
 {% block title %}Generate Billing - Market Rental System{% endblock %}
 {% block page_title %}Generate Billing{% endblock %}
 
@@ -44,10 +44,8 @@
           <div>
             <label class="block text-sm font-medium text-gray-700">Month</label>
             <select name="billing_month" class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200">
-              {% for m in 1|rjust:12|make_list %}
-              <option value="{{ forloop.counter }}" {% if forloop.counter == current_month %}selected{% endif %}>
-                {{ forloop.counter|stringformat:"02d" }}
-              </option>
+              {% for m in "January,February,March,April,May,June,July,August,September,October,November,December"|split:"," %}
+              <option value="{{ forloop.counter }}" {% if forloop.counter == current_month %}selected{% endif %}>{{ m }}</option>
               {% endfor %}
             </select>
           </div>
@@ -89,8 +87,8 @@
             <div>
               <label class="block text-sm font-medium text-gray-700">Month</label>
               <select name="billing_month" class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200">
-                {% for m in "123456789012"|make_list %}
-                <option value="{{ forloop.counter }}" {% if forloop.counter == current_month %}selected{% endif %}>{{ forloop.counter|stringformat:"02d" }}</option>
+                {% for m in "January,February,March,April,May,June,July,August,September,October,November,December"|split:"," %}
+                <option value="{{ forloop.counter }}" {% if forloop.counter == current_month %}selected{% endif %}>{{ m }}</option>
                 {% endfor %}
               </select>
             </div>
