@@ -1,0 +1,21 @@
+[project]
+name = "market_rental_system"
+version = "0.1.0"
+description = "Dumingag Public Market Rental and Installment Management System"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.0",
+    "openpyxl",
+    "weasyprint",
+    "django-shortcuts",
+]
+
+[tool.uv]
+dev-dependencies = []
+
+[tool.setuptools.packages.find]
+include = ["market_rental*", "accounts*", "core*"]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
