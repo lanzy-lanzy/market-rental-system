@@ -1,0 +1,9 @@
+# Never package local credentials or development data in a Vercel deployment.
+credentials.md
+db.sqlite3
+.venv
+node_modules
+media
+staticfiles
+*.pyc
+__pycache__

@@ -11,6 +11,10 @@
   </div>
   <form hx-post="{% url 'tenant_add_modal' %}" hx-target="#modal-content" class="mt-4 space-y-4">
     {% csrf_token %}
+    <div class="flex items-start gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
+      <svg class="mt-0.5 h-5 w-5 shrink-0 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <p class="text-sm text-sky-900">Portal login credentials are <span class="font-semibold">generated automatically</span> on creation and shown here for you to share — no manual entry needed.</p>
+    </div>
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 {% else %}
 <div class="p-6">

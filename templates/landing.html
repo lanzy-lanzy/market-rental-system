@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ system_settings.market_name|default:"Public Market" }} — Rental & Collection System</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/output.css' %}">
-  <script src="{% static 'js/alpine.min.js' %}" defer></script>
+  <link rel="stylesheet" href="{% static 'css/output.css' %}?v={{ STATIC_VERSION }}">
+  <script src="{% static 'js/alpine.min.js' %}?v={{ STATIC_VERSION }}" defer></script>
   <style>[x-cloak]{display:none!important}</style>
 </head>
 <body class="bg-white text-slate-800 antialiased" style="font-family:'Inter',system-ui,sans-serif">

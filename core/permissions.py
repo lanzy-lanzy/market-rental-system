@@ -70,3 +70,28 @@ def tenant_isolation_queryset(request, queryset, tenant_field='tenant__user'):
     if role == 'tenant':
         return queryset.filter(**{tenant_field: request.user})
     return queryset
+
+
+def tenant_required(view_func):
+    """Restrict a view to the Tenant self-service portal.
+
+    Unlike the staff decorators, this deliberately does NOT grant access to
+    superusers: the portal is always scoped to the ``Tenant`` record linked to
+    the logged-in user, so non-tenant accounts (even admins) have no data to
+    show here and are redirected with an explanatory message.
+    """
+    @wraps(view_func)
+    @login_required
+    def _wrapped(request, *args, **kwargs):
+        role = get_user_role(request.user)
+        if role != 'tenant':
+            messages.error(request, 'This area is reserved for tenant accounts. Please use the staff dashboard instead.')
+            return redirect('dashboard')
+        return view_func(request, *args, **kwargs)
+    return _wrapped
+
+
+def get_request_tenant(user):
+    """Return the Tenant record linked to ``user`` or ``None`` if not linked."""
+    from core.models import Tenant
+    return Tenant.objects.filter(user=user).first()

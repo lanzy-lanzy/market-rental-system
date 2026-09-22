@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Billing List - Print Preview</title>
-  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+  <link rel="stylesheet" href="{% static 'css/output.css' %}?v={{ STATIC_VERSION }}">
   <style>@media print { .no-print { display:none!important } @page { margin:0.4in; size:A4 landscape; } }</style>
 </head>
 <body class="bg-white p-6 font-sans">

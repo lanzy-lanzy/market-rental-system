@@ -1,11 +1,94 @@
 import calendar
+import re
+import secrets
 from datetime import date, timedelta
 from decimal import Decimal
 
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 
 from core.models import TenantLedger, Billing, SystemSetting
+
+
+def _username_from_tenant_id(tenant_id):
+    """Derive a clean base username from a tenant ID (kept as the TENANT<prefix>
+    convention used across the system) so it is a valid Django username."""
+    base = f"TENANT{tenant_id}"
+    # Django usernames allow letters, digits and @ . + - _ only.
+    base = re.sub(r'[^A-Za-z0-9._+-]', '-', base).strip('-')
+    return base[:140] or 'TENANT'
+
+
+def _unique_username(base):
+    """Append a numeric suffix until the username is unused."""
+    from django.contrib.auth.models import User
+    username = base
+    suffix = 2
+    while User.objects.filter(username=username).exists():
+        username = f"{base}-{suffix}"
+        suffix += 1
+    return username
+
+
+def generate_strong_password(length=14, user=None):
+    """Generate a random password that satisfies the project's
+    AUTH_PASSWORD_VALIDATORS (mixed case, digits and symbols)."""
+    upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ'      # ambiguous chars (I, O) removed
+    lower = 'abcdefghijkmnopqrstuvwxyz'     # ambiguous chars (l) removed
+    digits = '23456789'                     # ambiguous chars (0, 1) removed
+    symbols = '!@#$%^&*-_=+'
+    all_chars = upper + lower + digits + symbols
+    for _attempt in range(50):
+        chars = (
+            [secrets.choice(upper) for _ in range(2)]
+            + [secrets.choice(lower) for _ in range(2)]
+            + [secrets.choice(digits) for _ in range(2)]
+            + [secrets.choice(symbols) for _ in range(1)]
+        )
+        chars += [secrets.choice(all_chars) for _ in range(length - len(chars))]
+        secrets.SystemRandom().shuffle(chars)
+        password = ''.join(chars)
+        try:
+            validate_password(password, user)
+            return password
+        except ValidationError:
+            continue
+    # Defensive fallback: extremely unlikely to be reached.
+    return ''.join(secrets.choice(all_chars) for _ in range(max(length, 16)))
+
+
+def create_tenant_login(tenant):
+    """Create (or reuse) a tenant login linked to ``tenant``.
+
+    Generates a secure username derived from the tenant ID and a strong
+    temporary password, marks the account so the tenant is forced to change
+    the password on first login, and returns ``(user, raw_password)``.
+    """
+    from django.contrib.auth.models import User
+    from core.models import UserProfile
+
+    base_username = _username_from_tenant_id(tenant.tenant_id)
+    username = _unique_username(base_username)
+    first, _, rest = tenant.full_name.partition(' ')
+    password = generate_strong_password(user=None)
+
+    user = User.objects.create_user(
+        username=username,
+        email=tenant.email,
+        password=password,
+        first_name=first.strip(),
+        last_name=rest.strip(),
+    )
+    profile, _ = UserProfile.objects.get_or_create(user=user, defaults={'role': 'tenant'})
+    profile.role = 'tenant'
+    profile.must_change_password = True
+    profile.save()
+
+    tenant.user = user
+    tenant.save(update_fields=['user'])
+    return user, password
 
 
 def safe_due_date(year, month, due_day):

@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django import forms
 from django.contrib.auth.forms import UserCreationForm as BaseUserCreationForm
+from django.contrib.auth.forms import PasswordChangeForm as BasePasswordChangeForm
 from django.contrib.auth.models import User
 
 from .models import (
@@ -350,6 +351,27 @@ class UserCreationForm(BaseUserCreationForm):
         super().__init__(*args, **kwargs)
         self.fields['password1'].widget.attrs.update({'class': TW_INPUT, 'placeholder': 'Password'})
         self.fields['password2'].widget.attrs.update({'class': TW_INPUT, 'placeholder': 'Confirm password'})
+
+
+class TenantPasswordChangeForm(BasePasswordChangeForm):
+    """Self-service password change for tenants in their portal.
+
+    Inherits old/new/confirm validation and Django's password validators;
+    only restyles widgets to match the Tailwind form look used elsewhere.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        placeholders = {
+            'old_password': 'Enter your current password',
+            'new_password1': 'Enter a new password',
+            'new_password2': 'Re-enter the new password',
+        }
+        for name, field in self.fields.items():
+            field.widget.attrs.update({
+                'class': TW_INPUT,
+                'placeholder': placeholders.get(name, ''),
+                'autocomplete': 'new-password' if name != 'old_password' else 'current-password',
+            })
 
 
 class QuickCollectForm(forms.Form):

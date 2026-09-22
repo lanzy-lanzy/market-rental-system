@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load market_tags %}
+{% block title %}Transaction History — My Portal{% endblock %}
+{% block page_title %}Transaction History{% endblock %}
+{% block page_subtitle %}Every billing charge and payment on your account • {{ tenant.tenant_id }}{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="hidden sm:flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+      <div><p class="text-sm font-bold text-slate-900">Statement of Account</p><p class="text-xs text-slate-500">{{ tenant.full_name }} • Filter and review your full transaction record</p></div>
+    </div>
+    <a href="{% url 'tenant_portal' %}" class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">← Back to Portal</a>
+  </div>
+
+  <div class="rounded-[18px] border border-slate-200 bg-slate-50/70 p-3 flex flex-col lg:flex-row gap-3">
+    <div class="relative flex-1">
+      <svg class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <input type="text" name="search" value="{{ search_query|default:'' }}" placeholder="Search description, receipt no, stall..." hx-get="{% url 'tenant_portal_history' %}" hx-target="#portal-history-wrapper" hx-trigger="keyup changed delay:400ms" hx-include="[name='type'],[name='year'],[name='month'],[name='status']" hx-push-url="true" class="w-full rounded-full border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm font-medium placeholder:text-slate-400 focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10 outline-none">
+    </div>
+    <div class="flex flex-wrap gap-3 items-center">
+      <select name="type" hx-get="{% url 'tenant_portal_history' %}" hx-target="#portal-history-wrapper" hx-trigger="change" hx-include="[name='search'],[name='year'],[name='month'],[name='status']" hx-push-url="true" class="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10 outline-none">
+        <option value="">All Types</option>
+        <option value="billing" {% if type_filter == 'billing' %}selected{% endif %}>Billing / Charges</option>
+        <option value="payment" {% if type_filter == 'payment' %}selected{% endif %}>Payments</option>
+      </select>
+      <select name="month" hx-get="{% url 'tenant_portal_history' %}" hx-target="#portal-history-wrapper" hx-trigger="change" hx-include="[name='search'],[name='type'],[name='year'],[name='status']" hx-push-url="true" class="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10 outline-none">
+        <option value="">All Months</option>
+        {% for m in "January,February,March,April,May,June,July,August,September,October,November,December"|split:"," %}
+        <option value="{{ forloop.counter }}" {% if month_filter|stringformat:"s" == forloop.counter|stringformat:"s" %}selected{% endif %}>{{ m }}</option>
+        {% endfor %}
+      </select>
+      <select name="year" hx-get="{% url 'tenant_portal_history' %}" hx-target="#portal-history-wrapper" hx-trigger="change" hx-include="[name='search'],[name='type'],[name='month'],[name='status']" hx-push-url="true" class="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10 outline-none">
+        <option value="">All Years</option>
+        {% for y in available_years %}
+        <option value="{{ y }}" {% if year_filter == y|stringformat:"s" %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+      <select name="status" hx-get="{% url 'tenant_portal_history' %}" hx-target="#portal-history-wrapper" hx-trigger="change" hx-include="[name='search'],[name='type'],[name='month'],[name='year']" hx-push-url="true" class="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10 outline-none">
+        <option value="">All Status</option>
+        <option value="Paid" {% if status_filter == 'Paid' %}selected{% endif %}>Paid</option>
+        <option value="Partial" {% if status_filter == 'Partial' %}selected{% endif %}>Partial</option>
+        <option value="Unpaid" {% if status_filter == 'Unpaid' %}selected{% endif %}>Unpaid</option>
+        <option value="Overdue" {% if status_filter == 'Overdue' %}selected{% endif %}>Overdue</option>
+      </select>
+      {% if search_query or type_filter or month_filter or year_filter or status_filter %}
+      <a href="{% url 'tenant_portal_history' %}" class="inline-flex items-center gap-1.5 rounded-full bg-white border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">Clear ✕</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% include 'tenant_portal/_history_table.html' %}
+</div>
+{% endblock %}

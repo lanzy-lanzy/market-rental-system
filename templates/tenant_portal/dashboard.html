@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load market_tags %}
+{% block title %}My Portal — Public Market{% endblock %}
+{% block page_title %}My Portal{% endblock %}
+{% block page_subtitle %}Your account, balances and payment records • {{ system_settings.market_name|default:"Public Market" }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Welcome / account header -->
+  <div class="rounded-xl border border-slate-200 bg-white p-5">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-lg font-semibold text-white">
+          {{ tenant.full_name|first|upper }}
+        </div>
+        <div>
+          <p class="text-xs font-medium text-slate-500">Tenant • {% now "l, F d, Y" %}</p>
+          <h2 class="mt-0.5 text-xl font-semibold text-slate-900">{{ tenant.full_name }}</h2>
+          <p class="mt-0.5 text-sm text-slate-600">
+            <span class="font-mono font-semibold text-slate-900">{{ tenant.tenant_id }}</span>
+            {% if active_contract %} • Stall <span class="font-mono font-semibold text-slate-900">{{ active_contract.stall.stall_number }}</span> ({{ active_contract.stall.section.name }}){% endif %}
+            {% if tenant.business_name %} • {{ tenant.business_name }}{% endif %}
+          </p>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        {% if active_contract %}
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-xs font-bold text-emerald-700">
+          <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Monthly rent &#8369;{{ active_contract.monthly_rent|floatformat:2|intcomma }}
+        </span>
+        {% endif %}
+        <a href="{% url 'tenant_portal_history' %}" class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black">Transaction History</a>
+        <a href="{% url 'tenant_portal_password' %}" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50" title="Change your password">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+          Change Password
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {% if outstanding_balance > 0 %}
+  <div class="rounded-2xl border {% if overdue_count %}border-red-200 bg-red-50{% else %}border-amber-200 bg-amber-50{% endif %} px-5 py-4 flex items-start gap-3">
+    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {% if overdue_count %}bg-red-600{% else %}bg-amber-500{% endif %} text-white">
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+    </div>
+    <div class="flex-1">
+      <p class="text-sm font-bold {% if overdue_count %}text-red-900{% else %}text-amber-900{% endif %}">You have an outstanding balance of &#8369;{{ outstanding_balance|floatformat:2|intcomma }}</p>
+      <p class="text-xs {% if overdue_count %}text-red-700{% else %}text-amber-700{% endif %}">Please settle your account at the market collection office. Please bring your Tenant ID ({{ tenant.tenant_id }}).{% if overdue_count %} <span class="font-bold">{{ overdue_count }} billing(s) are overdue.</span>{% endif %}</p>
+    </div>
+  </div>
+  {% else %}
+  <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 flex items-center gap-3">
+    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div>
+    <p class="text-sm font-bold text-emerald-900">Great news — your account is fully paid up. No outstanding balance.</p>
+  </div>
+  {% endif %}
+
+  <!-- Stat cards -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="rounded-xl border border-slate-200 bg-white p-4">
+      <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Outstanding Balance</p>
+      <p class="mt-2 text-2xl font-semibold {% if outstanding_balance > 0 %}text-red-700{% else %}text-emerald-700{% endif %} tabular-nums">&#8369;{{ outstanding_balance|floatformat:2|intcomma }}</p>
+      <p class="mt-1 text-xs text-slate-500">{{ overdue_count }} overdue account(s)</p>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-4">
+      <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Total Paid</p>
+      <p class="mt-2 text-2xl font-semibold text-emerald-700 tabular-nums">&#8369;{{ total_paid|floatformat:2|intcomma }}</p>
+      <p class="mt-1 text-xs text-slate-500">All-time contributions</p>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-4">
+      <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Total Billed</p>
+      <p class="mt-2 text-2xl font-semibold text-slate-900 tabular-nums">&#8369;{{ total_billed|floatformat:2|intcomma }}</p>
+      <p class="mt-1 text-xs text-slate-500">Across all cycles</p>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-4">
+      <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Next Due Date</p>
+      {% if upcoming %}
+      <p class="mt-2 text-2xl font-semibold text-slate-900">{{ upcoming.0.due_date|date:"M d" }}</p>
+      <p class="mt-1 text-xs text-slate-500">{{ upcoming.0.billing_month|stringformat:"02d" }}/{{ upcoming.0.billing_year }} • &#8369;{{ upcoming.0.balance|floatformat:2|intcomma }}</p>
+      {% else %}
+      <p class="mt-2 text-2xl font-semibold text-emerald-700">—</p>
+      <p class="mt-1 text-xs text-slate-500">Nothing scheduled</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Upcoming due dates + payment milestones -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+      <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+        <div>
+          <h3 class="text-sm font-semibold text-slate-900">Upcoming &amp; Pending Due Dates</h3>
+          <p class="text-xs text-slate-500">Bills not yet fully settled</p>
+        </div>
+        <a href="{% url 'billing_list' %}" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">All bills</a>
+      </div>
+      <div class="divide-y divide-slate-100">
+        {% for billing in upcoming %}
+        <div class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
+          <div class="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-lg bg-slate-100 border border-slate-200 text-center leading-none">
+            <span class="text-[10px] font-bold text-slate-500">{{ billing.due_date|date:"M" }}</span>
+            <span class="text-sm font-bold text-slate-800">{{ billing.due_date|date:"d" }}</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-slate-900 truncate">Rent {{ billing.billing_month|stringformat:"02d" }}/{{ billing.billing_year }} <span class="font-normal text-slate-500">• {{ billing.stall.stall_number }}</span></p>
+            <p class="text-xs text-slate-500">Due {{ billing.due_date|date:"M d, Y" }}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-sm font-semibold {% if billing.balance > 0 %}text-red-700{% else %}text-emerald-700{% endif %} tabular-nums">&#8369;{{ billing.balance|floatformat:2|intcomma }}</p>
+            {% include 'includes/status_badge.html' with status=billing.status %}
+          </div>
+        </div>
+        {% empty %}
+        <div class="px-4 py-10 text-center">
+          <p class="text-sm font-medium text-emerald-700">No pending bills</p>
+          <p class="text-xs text-slate-500">You're all caught up.</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+      <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+        <div>
+          <h3 class="text-sm font-semibold text-slate-900">Payment Milestones</h3>
+          <p class="text-xs text-slate-500">When your payments were posted</p>
+        </div>
+      </div>
+      <div class="p-4 space-y-4">
+        <div>
+          <p class="flex items-center gap-1.5 text-xs font-bold tracking-wide text-emerald-700 uppercase"><svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Fully Paid</p>
+          {% if fully_paid %}
+          <div class="mt-2 flex flex-wrap gap-2">
+            {% for p in fully_paid %}
+            <a href="{% url 'payment_receipt' p.id %}" class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100" title="{{ p.receipt_number }} • &#8369;{{ p.amount_paid|floatformat:2|intcomma }}">
+              {{ p.payment_date|date:"M d, Y" }}
+            </a>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="mt-1 text-xs text-slate-400">No full payments recorded yet.</p>
+          {% endif %}
+        </div>
+        <div class="border-t border-slate-100 pt-3">
+          <p class="flex items-center gap-1.5 text-xs font-bold tracking-wide text-amber-700 uppercase"><svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01"/></svg> Partial Payments</p>
+          {% if partial_paid %}
+          <div class="mt-2 flex flex-wrap gap-2">
+            {% for p in partial_paid %}
+            <a href="{% url 'payment_receipt' p.id %}" class="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-100" title="{{ p.receipt_number }} • &#8369;{{ p.amount_paid|floatformat:2|intcomma }}">
+              {{ p.payment_date|date:"M d, Y" }} <span class="opacity-70">&#8369;{{ p.amount_paid|floatformat:0 }}</span>
+            </a>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="mt-1 text-xs text-slate-400">No partial payments recorded.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent transaction history -->
+  <div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+    <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+      <div>
+        <h3 class="text-sm font-semibold text-slate-900">Recent Transactions</h3>
+        <p class="text-xs text-slate-500">Latest billing and payment activity</p>
+      </div>
+      <a href="{% url 'tenant_portal_history' %}" class="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-black">View full history</a>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[640px] divide-y divide-slate-100">
+        <thead><tr class="bg-slate-50">
+          <th class="px-4 lg:px-5 py-3 text-left text-xs font-bold tracking-widest text-slate-500">DATE</th>
+          <th class="px-4 lg:px-5 py-3 text-left text-xs font-bold tracking-widest text-slate-500">DESCRIPTION</th>
+          <th class="px-4 lg:px-5 py-3 text-right text-xs font-bold tracking-widest text-slate-500">CHARGE</th>
+          <th class="px-4 lg:px-5 py-3 text-right text-xs font-bold tracking-widest text-slate-500">PAYMENT</th>
+          <th class="px-4 lg:px-5 py-3 text-right text-xs font-bold tracking-widest text-slate-500">BALANCE</th>
+        </tr></thead>
+        <tbody class="divide-y divide-slate-50">
+          {% for entry in recent_ledger %}
+          <tr class="hover:bg-slate-50/70">
+            <td class="whitespace-nowrap px-4 lg:px-5 py-3 text-sm text-slate-600 tabular-nums">{{ entry.transaction_date|date:"M d, Y" }}</td>
+            <td class="px-4 lg:px-5 py-3 text-sm font-medium text-slate-900">
+              {{ entry.description }}
+              {% if entry.payment_id %}<a href="{% url 'payment_receipt' entry.payment_id %}" class="ml-1 text-xs font-semibold text-primary-700 hover:underline">Receipt</a>{% endif %}
+            </td>
+            <td class="whitespace-nowrap px-4 lg:px-5 py-3 text-right text-sm font-semibold text-red-600 tabular-nums">{% if entry.debit > 0 %}&#8369;{{ entry.debit|floatformat:2|intcomma }}{% else %}<span class="text-slate-300">—</span>{% endif %}</td>
+            <td class="whitespace-nowrap px-4 lg:px-5 py-3 text-right text-sm font-semibold text-emerald-600 tabular-nums">{% if entry.credit > 0 %}&#8369;{{ entry.credit|floatformat:2|intcomma }}{% else %}<span class="text-slate-300">—</span>{% endif %}</td>
+            <td class="whitespace-nowrap px-4 lg:px-5 py-3 text-right text-sm font-bold text-slate-900 tabular-nums">&#8369;{{ entry.balance|floatformat:2|intcomma }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="px-6 py-14 text-center"><p class="text-sm font-bold text-slate-700">No transactions yet</p><p class="mt-1 text-xs text-slate-500">Your billing and payment history will appear here.</p></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

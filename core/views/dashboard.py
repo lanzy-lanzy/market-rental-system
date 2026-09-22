@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Q, Count
 from datetime import datetime, date
@@ -15,6 +15,10 @@ def dashboard_view(request):
     current_year = today.year
 
     role = get_user_role(request.user)
+
+    # Tenants are routed to their dedicated self-service portal.
+    if role == 'tenant' and not request.user.is_superuser:
+        return redirect('tenant_portal')
 
     # Tenant isolated view: show only own data
     if role == 'tenant':

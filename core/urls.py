@@ -42,10 +42,16 @@ from core.views.notices import notice_list, notice_add, notice_print, notice_mar
 from core.views.settings_views import settings_view, settings_update
 from core.views.audit import audit_log_list
 from core.views.users import user_list, user_add, user_edit, user_deactivate
+from core.views.tenant_portal import tenant_portal_dashboard, tenant_portal_history, tenant_portal_password
 
 urlpatterns = [
     path('', landing_view, name='landing'),
     path('dashboard/', dashboard_view, name='dashboard'),
+
+    # Tenant self-service portal (RBAC: tenant role only, own data only)
+    path('portal/', tenant_portal_dashboard, name='tenant_portal'),
+    path('portal/history/', tenant_portal_history, name='tenant_portal_history'),
+    path('portal/password/', tenant_portal_password, name='tenant_portal_password'),
 
     # Tenants
     path('tenants/', tenant_list, name='tenant_list'),

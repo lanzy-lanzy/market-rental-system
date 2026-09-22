@@ -1,15 +1,14 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum
 from django.http import JsonResponse
 
-from core.models import Tenant, Stall, RentalContract, Billing, Payment, AuditLog, UserProfile
+from core.models import Tenant, Stall, RentalContract, Billing, Payment, AuditLog
 from core.forms import TenantForm
 from core.permissions import staff_required, admin_required, get_user_role
 from django.contrib.auth.decorators import login_required
-from core.helpers import render_to_pdf_response
+from core.helpers import render_to_pdf_response, create_tenant_login
 
 
 def is_htmx(request):
@@ -52,31 +51,23 @@ def tenant_add(request):
         form = TenantForm(request.POST)
         if form.is_valid():
             tenant = form.save()
-            username = f"TENANT{tenant.tenant_id}"
-            import secrets
-            import string
-            password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(10))
-            user = User.objects.create_user(
-                username=username,
-                email=tenant.email,
-                password=password,
-                first_name=tenant.full_name.split()[0] if tenant.full_name.split() else '',
-                last_name=' '.join(tenant.full_name.split()[1:]) if len(tenant.full_name.split()) > 1 else '',
-            )
-            UserProfile.objects.create(user=user, role='tenant')
-            tenant.user = user
-            tenant.save()
+            # Auto-provision the tenant login with a secure username + temp password.
+            user, password = create_tenant_login(tenant)
 
             AuditLog.objects.create(
                 user=request.user,
                 action='CREATE',
                 module='Tenant',
-                description=f'Created tenant {tenant.tenant_id} - {tenant.full_name}',
+                description=f'Created tenant {tenant.tenant_id} - {tenant.full_name} (login {user.username})',
                 ip_address=request.META.get('REMOTE_ADDR'),
             )
 
-            messages.success(request, f'Tenant {tenant.full_name} created successfully. Username: {username}, Password: {password}')
-            return redirect('tenant_list')
+            # Render the credentials on a dedicated page so the admin can copy/share them.
+            return render(request, 'tenants/credentials.html', {
+                'tenant': tenant,
+                'generated_username': user.username,
+                'generated_password': password,
+            })
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
@@ -172,22 +163,24 @@ def tenant_add_modal(request):
         form = TenantForm(request.POST)
         if form.is_valid():
             tenant = form.save()
+            # Auto-provision the tenant login (fixes prior gap where no user was made).
+            user, password = create_tenant_login(tenant)
             AuditLog.objects.create(
                 user=request.user,
                 action='CREATE',
                 module='Tenant',
-                description=f'Created tenant {tenant.tenant_id} - {tenant.full_name} (modal)',
+                description=f'Created tenant {tenant.tenant_id} - {tenant.full_name} (login {user.username}, modal)',
                 ip_address=request.META.get('REMOTE_ADDR'),
             )
+            ctx = {
+                'tenant': tenant,
+                'generated_username': user.username,
+                'generated_password': password,
+            }
             if is_htmx(request):
-                from django.http import HttpResponse
-                return HttpResponse('''<script>
-                    closeModal();
-                    showToast('Tenant created.', 'success');
-                    setTimeout(function() { location.reload(); }, 500);
-                </script>''')
-            messages.success(request, f'Tenant created.')
-            return redirect('tenant_list')
+                # Swap the modal body with the generated credentials.
+                return render(request, 'tenants/_credentials_fragment.html', ctx)
+            return render(request, 'tenants/credentials.html', ctx)
         if is_htmx(request):
             return render(request, 'tenants/_modal_form.html', {'form': form, 'is_add': True})
     else:

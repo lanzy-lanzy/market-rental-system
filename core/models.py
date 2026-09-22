@@ -17,6 +17,7 @@ class UserProfile(models.Model):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='tenant')
     phone = models.CharField(max_length=20, blank=True)
     address = models.TextField(blank=True)
+    must_change_password = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.get_full_name() or self.user.username} ({self.get_role_display()})"

@@ -5,6 +5,9 @@ description = "Dumingag Public Market Rental and Installment Management System"
 requires-python = ">=3.12"
 dependencies = [
     "django>=5.0",
+    "dj-database-url>=2.3",
+    "psycopg[binary]>=3.2",
+    "whitenoise>=6.8",
     "openpyxl",
     "weasyprint",
     "django-shortcuts",

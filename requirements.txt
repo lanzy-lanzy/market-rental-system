@@ -1,4 +1,7 @@
 django>=5.0
+dj-database-url>=2.3
+psycopg[binary]>=3.2
+whitenoise>=6.8
 openpyxl
 weasyprint
 reportlab>=4.0
