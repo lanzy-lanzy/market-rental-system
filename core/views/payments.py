@@ -12,31 +12,13 @@ from core.models import (
     TenantLedger, AuditLog, SystemSetting
 )
 from core.forms import PaymentForm
-from core.helpers import render_to_pdf_response
+from core.helpers import (
+    render_to_pdf_response, record_payment, recalc_billing_from_payments,
+)
 
 
 def is_htmx(request):
     return getattr(request, 'htmx', None) or request.headers.get('HX-Request') == 'true'
-
-
-def generate_receipt_number():
-    settings = SystemSetting.objects.first()
-    prefix = (settings.receipt_prefix if settings else 'RCP').strip().rstrip('-')
-    if not prefix:
-        prefix = 'RCP'
-    today = date.today()
-    last_payment = Payment.objects.filter(
-        receipt_number__startswith=f'{prefix}-'
-    ).order_by('-created_at').first()
-    if last_payment:
-        try:
-            last_num = int(last_payment.receipt_number.split('-')[-1])
-            new_num = last_num + 1
-        except (ValueError, IndexError):
-            new_num = 1
-    else:
-        new_num = 1
-    return f'{prefix}-{today.strftime("%Y%m")}-{new_num:06d}'
 
 
 @login_required
@@ -113,55 +95,18 @@ def payment_add(request):
     if request.method == 'POST':
         form = PaymentForm(request.POST)
         if form.is_valid():
-            payment = form.save(commit=False)
-            payment.receipt_number = generate_receipt_number()
-            # Auto-fill official receipt if blank (spec requires OR)
-            if not payment.official_receipt_no:
-                payment.official_receipt_no = payment.receipt_number
-            payment.collected_by = request.user
-            payment.save()
-
-            billing = payment.billing
-            total_paid_so_far = Payment.objects.filter(
-                billing=billing, status__in=['Paid', 'Partial']
-            ).exclude(pk=payment.pk).aggregate(
-                total=Sum('amount_paid')
-            )['total'] or 0
-            total_paid_so_far += payment.amount_paid
-
-            if total_paid_so_far >= billing.total_due:
-                billing.amount_paid = total_paid_so_far
-                billing.balance = 0
-                billing.status = 'Paid'
-            elif total_paid_so_far > 0:
-                billing.amount_paid = total_paid_so_far
-                billing.balance = billing.total_due - total_paid_so_far
-                billing.status = 'Partial'
-            billing.save()
-
-            # Ledger: create credit entry then recompute chain for tenant
-            # Use tenant-wide last balance for correct chaining
-            last_tenant_entry = TenantLedger.objects.filter(tenant=payment.tenant).order_by('-transaction_date', '-id').first()
-            current_balance = last_tenant_entry.balance if last_tenant_entry else 0
-            # If no prior tenant entry but billing has debit, use that debit as baseline (billing total)
-            if not last_tenant_entry:
-                billing_debit_entry = TenantLedger.objects.filter(billing=billing, debit__gt=0).first()
-                if billing_debit_entry:
-                    current_balance = billing_debit_entry.balance
-
-            TenantLedger.objects.create(
-                tenant=payment.tenant,
-                billing=billing,
-                transaction_date=payment.payment_date,
-                description=f'Payment {payment.receipt_number} - {payment.payment_method}',
-                debit=0,
-                credit=payment.amount_paid,
-                balance=max(0, current_balance - float(payment.amount_paid)),
-                payment=payment,
+            draft = form.save(commit=False)
+            # Single source of truth: creates Payment, updates Billing, posts ledger credit.
+            payment = record_payment(
+                tenant=draft.tenant,
+                billing=draft.billing,
+                amount=draft.amount_paid,
+                payment_date=draft.payment_date,
+                payment_method=draft.payment_method,
+                collected_by=request.user,
+                remarks=draft.remarks,
+                official_receipt_no=draft.official_receipt_no,
             )
-            # Recompute full ledger chain to ensure consistency
-            from core.helpers import recalc_tenant_ledger
-            recalc_tenant_ledger(payment.tenant)
 
             AuditLog.objects.create(
                 user=request.user,
@@ -264,53 +209,22 @@ def payment_receipt_export_pdf(request, pk):
 
 
 @staff_required
+@transaction.atomic
 def payment_add_modal(request):
     if request.method == 'POST':
         form = PaymentForm(request.POST)
         if form.is_valid():
-            payment = form.save(commit=False)
-            payment.receipt_number = generate_receipt_number()
-            if not payment.official_receipt_no:
-                payment.official_receipt_no = payment.receipt_number
-            payment.collected_by = request.user
-            payment.save()
-
-            billing = payment.billing
-            total_paid_so_far = Payment.objects.filter(
-                billing=billing, status__in=['Paid', 'Partial']
-            ).exclude(pk=payment.pk).aggregate(
-                total=Sum('amount_paid')
-            )['total'] or 0
-            total_paid_so_far += payment.amount_paid
-
-            if total_paid_so_far >= billing.total_due:
-                billing.amount_paid = total_paid_so_far
-                billing.balance = 0
-                billing.status = 'Paid'
-            elif total_paid_so_far > 0:
-                billing.amount_paid = total_paid_so_far
-                billing.balance = billing.total_due - total_paid_so_far
-                billing.status = 'Partial'
-            billing.save()
-
-            last_tenant_entry = TenantLedger.objects.filter(tenant=payment.tenant).order_by('-transaction_date', '-id').first()
-            current_balance = last_tenant_entry.balance if last_tenant_entry else 0
-            if not last_tenant_entry:
-                billing_debit_entry = TenantLedger.objects.filter(billing=billing, debit__gt=0).first()
-                if billing_debit_entry:
-                    current_balance = billing_debit_entry.balance
-            TenantLedger.objects.create(
-                tenant=payment.tenant,
-                billing=billing,
-                transaction_date=payment.payment_date,
-                description=f'Payment {payment.receipt_number} - {payment.payment_method}',
-                debit=0,
-                credit=payment.amount_paid,
-                balance=max(0, current_balance - float(payment.amount_paid)),
-                payment=payment,
+            draft = form.save(commit=False)
+            payment = record_payment(
+                tenant=draft.tenant,
+                billing=draft.billing,
+                amount=draft.amount_paid,
+                payment_date=draft.payment_date,
+                payment_method=draft.payment_method,
+                collected_by=request.user,
+                remarks=draft.remarks,
+                official_receipt_no=draft.official_receipt_no,
             )
-            from core.helpers import recalc_tenant_ledger
-            recalc_tenant_ledger(payment.tenant)
 
             AuditLog.objects.create(
                 user=request.user,
@@ -337,6 +251,7 @@ def payment_add_modal(request):
 
 
 @staff_required
+@transaction.atomic
 def payment_edit_modal(request, pk):
     payment = get_object_or_404(Payment, pk=pk)
     old_billing = payment.billing
@@ -344,22 +259,10 @@ def payment_edit_modal(request, pk):
         form = PaymentForm(request.POST, instance=payment)
         if form.is_valid():
             payment = form.save()
-            # Recalculate billing totals after amount/method change
-            billing = payment.billing
-            total_valid = Payment.objects.filter(billing=billing, status__in=['Paid', 'Partial']).aggregate(total=Sum('amount_paid'))['total'] or 0
-            if total_valid >= billing.total_due:
-                billing.amount_paid = total_valid
-                billing.balance = 0
-                billing.status = 'Paid'
-            elif total_valid > 0:
-                billing.amount_paid = total_valid
-                billing.balance = billing.total_due - total_valid
-                billing.status = 'Partial'
-            else:
-                billing.amount_paid = 0
-                billing.balance = billing.total_due
-                billing.status = 'Unpaid'
-            billing.save()
+            # Recompute the affected billing(s) authoritatively from valid payments.
+            billing = recalc_billing_from_payments(payment.billing)
+            if old_billing and old_billing.pk != billing.pk:
+                recalc_billing_from_payments(old_billing)
             # Update ledger entry for this payment
             ledger_qs = TenantLedger.objects.filter(payment=payment)
             if ledger_qs.exists():
@@ -417,25 +320,8 @@ def payment_void(request, pk):
         payment.status = 'Void'
         payment.save()
 
-        billing = payment.billing
-        valid_payments = Payment.objects.filter(
-            billing=billing, status__in=['Paid', 'Partial']
-        ).exclude(pk=payment.pk)
-        total_valid = valid_payments.aggregate(total=Sum('amount_paid'))['total'] or 0
-
-        if total_valid == 0:
-            billing.amount_paid = 0
-            billing.balance = billing.total_due
-            billing.status = 'Unpaid'
-        elif total_valid >= billing.total_due:
-            billing.amount_paid = total_valid
-            billing.balance = 0
-            billing.status = 'Paid'
-        else:
-            billing.amount_paid = total_valid
-            billing.balance = billing.total_due - total_valid
-            billing.status = 'Partial'
-        billing.save()
+        # Payment is now Void, so recompute the bill from the remaining valid payments.
+        recalc_billing_from_payments(payment.billing)
 
         ledger_entries = TenantLedger.objects.filter(payment=payment)
         tenant_to_recalc = payment.tenant

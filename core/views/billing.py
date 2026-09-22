@@ -6,11 +6,13 @@ from django.core.paginator import Paginator
 from django.db.models import Q, Sum
 from django.db import transaction
 from datetime import date, datetime
-from decimal import Decimal
 
 from core.models import Billing, Tenant, Stall, RentalContract, Payment, TenantLedger, AuditLog, SystemSetting
 from core.forms import BillingForm, QuickCollectForm
-from core.helpers import ensure_current_month_billings, render_to_pdf_response
+from core.helpers import (
+    ensure_current_month_billings, render_to_pdf_response, record_payment,
+    maybe_apply_overdue_penalties,
+)
 
 
 def is_htmx(request):
@@ -56,6 +58,7 @@ def billing_list(request):
     try:
         if get_user_role(request.user) in {'admin', 'collector', 'cashier', 'supervisor', 'treasurer'} or request.user.is_superuser:
             ensure_current_month_billings()
+            maybe_apply_overdue_penalties()
     except Exception:
         pass
 
@@ -358,26 +361,6 @@ def billing_edit_modal(request, pk):
     return render(request, 'billing/_modal_form.html', {'form': form, 'is_add': False, 'billing': billing})
 
 
-def _generate_receipt_number():
-    settings = SystemSetting.objects.first()
-    prefix = (settings.receipt_prefix if settings else 'RCP').strip().rstrip('-')
-    if not prefix:
-        prefix = 'RCP'
-    today = date.today()
-    last_payment = Payment.objects.filter(
-        receipt_number__startswith=f'{prefix}-'
-    ).order_by('-created_at').first()
-    if last_payment:
-        try:
-            last_num = int(last_payment.receipt_number.split('-')[-1])
-            new_num = last_num + 1
-        except (ValueError, IndexError):
-            new_num = 1
-    else:
-        new_num = 1
-    return f'{prefix}-{today.strftime("%Y%m")}-{new_num:06d}'
-
-
 @collector_required
 @transaction.atomic
 def billing_collect(request, pk):
@@ -405,65 +388,20 @@ def billing_collect(request, pk):
             # Safety: cap to balance
             if amount > billing.balance:
                 amount = billing.balance
-            payment_method = form.cleaned_data['payment_method']
-            payment_date = form.cleaned_data['payment_date']
-            remarks = form.cleaned_data.get('remarks', '')
 
-            receipt_number = _generate_receipt_number()
-            # Create Payment linked to billing
-            payment = Payment.objects.create(
-                receipt_number=receipt_number,
+            # Single source of truth for Payment + Billing totals + Ledger credit.
+            payment = record_payment(
                 tenant=billing.tenant,
-                stall=billing.stall,
                 billing=billing,
-                billing_month=billing.billing_month,
-                billing_year=billing.billing_year,
-                rental_amount=billing.rental_amount,
-                penalty_amount=billing.penalty_amount,
-                discount=billing.discount,
-                total_amount_due=billing.total_due,
-                amount_paid=amount,
-                payment_date=payment_date,
-                payment_method=payment_method,
-                official_receipt_no=receipt_number,
+                amount=amount,
+                payment_date=form.cleaned_data['payment_date'],
+                payment_method=form.cleaned_data['payment_method'],
                 collected_by=request.user,
-                status='Paid',
-                remarks=remarks,
+                remarks=form.cleaned_data.get('remarks', ''),
             )
-
-            # Update billing aggregates
-            total_valid = Payment.objects.filter(billing=billing, status__in=['Paid', 'Partial']).aggregate(total=Sum('amount_paid'))['total'] or Decimal('0.00')
-            # total_valid includes the new payment (since we just created)
-            if total_valid >= billing.total_due:
-                billing.amount_paid = total_valid
-                billing.balance = Decimal('0.00')
-                billing.status = 'Paid'
-            elif total_valid > 0:
-                billing.amount_paid = total_valid
-                billing.balance = (billing.total_due - total_valid).quantize(Decimal('0.01'))
-                billing.status = 'Partial'
-            else:
-                billing.amount_paid = Decimal('0.00')
-                billing.balance = billing.total_due
-                billing.status = 'Unpaid'
-            billing.save()
-
-            # Ledger credit entry
-            last_entry = TenantLedger.objects.filter(tenant=billing.tenant).order_by('-transaction_date', '-id').first()
-            current_balance = last_entry.balance if last_entry else billing.total_due
-            # Use helper recalc to keep chain correct, but create entry first
-            TenantLedger.objects.create(
-                tenant=billing.tenant,
-                billing=billing,
-                transaction_date=payment_date,
-                description=f'Payment {receipt_number} - {payment_method} (collected by {request.user.get_full_name() or request.user.username})',
-                debit=Decimal('0.00'),
-                credit=amount,
-                balance=max(Decimal('0.00'), Decimal(current_balance) - amount),
-                payment=payment,
-            )
-            from core.helpers import recalc_tenant_ledger
-            recalc_tenant_ledger(billing.tenant)
+            billing = payment.billing
+            amount = payment.amount_paid
+            receipt_number = payment.receipt_number
 
             AuditLog.objects.create(
                 user=request.user,
@@ -503,6 +441,7 @@ def billing_list_print(request):
     try:
         if get_user_role(request.user) in {'admin', 'collector', 'cashier', 'supervisor', 'treasurer'} or request.user.is_superuser:
             ensure_current_month_billings()
+            maybe_apply_overdue_penalties()
     except Exception:
         pass
     billings = Billing.objects.select_related('tenant', 'stall', 'contract').all().order_by('-billing_year', '-billing_month', '-created_at', '-id')
@@ -548,6 +487,7 @@ def billing_list_export_pdf(request):
     try:
         if get_user_role(request.user) in {'admin', 'collector', 'cashier', 'supervisor', 'treasurer'} or request.user.is_superuser:
             ensure_current_month_billings()
+            maybe_apply_overdue_penalties()
     except Exception:
         pass
     billings = Billing.objects.select_related('tenant', 'stall', 'contract').all().order_by('-billing_year', '-billing_month', '-created_at', '-id')

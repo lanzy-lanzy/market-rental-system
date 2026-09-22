@@ -6,6 +6,8 @@ from decimal import Decimal
 
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.db import transaction, IntegrityError
+from django.db.models import Sum
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 
@@ -230,16 +232,241 @@ def recalc_tenant_ledger(tenant):
     """
     Recompute running balance for all ledger entries of a tenant in chronological order.
     Ensures debit/credit chain remains consistent after edits/voids/penalties.
+    Uses Decimal end-to-end to avoid float drift in financial totals.
     """
     entries = TenantLedger.objects.filter(tenant=tenant).order_by('transaction_date', 'id')
-    running = 0
+    running = Decimal('0.00')
     for e in entries:
-        running += float(e.debit or 0) - float(e.credit or 0)
-        # Avoid float precision issues; round to 2 decimals
-        running = round(running, 2)
-        if float(e.balance) != running:
+        running += (e.debit or Decimal('0.00')) - (e.credit or Decimal('0.00'))
+        running = running.quantize(Decimal('0.01'))
+        if e.balance != running:
             TenantLedger.objects.filter(pk=e.pk).update(balance=running)
     return running
+
+
+def generate_receipt_number():
+    """Build the next receipt number as ``<prefix>-<YYYYMM>-<000001>``.
+
+    The monthly sequence is derived from the highest existing suffix for the
+    current period (not the newest row by timestamp), so a receipt created in
+    an earlier month can never push a later month's numbering off-by-one.
+    Suffixes are zero-padded, so lexicographic ordering equals numeric ordering.
+    """
+    from core.models import Payment
+    settings = SystemSetting.objects.first()
+    prefix = ((settings.receipt_prefix if settings else '') or 'RCP').strip().rstrip('-') or 'RCP'
+    pattern = f'{prefix}-{date.today().strftime("%Y%m")}-'
+    last = (
+        Payment.objects.filter(receipt_number__startswith=pattern)
+        .order_by('-receipt_number')
+        .values_list('receipt_number', flat=True)
+        .first()
+    )
+    seq = 1
+    if last:
+        try:
+            seq = int(last[len(pattern):]) + 1
+        except (ValueError, IndexError):
+            seq = Payment.objects.filter(receipt_number__startswith=pattern).count() + 1
+    return f'{pattern}{seq:06d}'
+
+
+def recalc_billing_from_payments(billing):
+    """Recompute a billing's paid/balance/status from its valid payments.
+
+    Locks the billing row (call inside an ``atomic`` block) and is the single
+    place that decides a bill's settlement state, so edits/voids and new
+    collections stay consistent.
+    """
+    from core.models import Payment
+    billing = Billing.objects.select_for_update().get(pk=billing.pk)
+    total_paid = Decimal(
+        Payment.objects.filter(billing=billing, status__in=['Paid', 'Partial'])
+        .aggregate(t=Sum('amount_paid'))['t'] or 0
+    )
+    total_due = Decimal(billing.total_due)
+    if total_paid >= total_due:
+        billing.amount_paid = total_due
+        billing.balance = Decimal('0.00')
+        billing.status = 'Paid'
+    elif total_paid > 0:
+        billing.amount_paid = total_paid
+        billing.balance = (total_due - total_paid).quantize(Decimal('0.01'))
+        billing.status = 'Partial'
+    else:
+        billing.amount_paid = Decimal('0.00')
+        billing.balance = total_due
+        billing.status = 'Unpaid'
+    billing.save()
+    return billing
+
+
+def record_payment(*, tenant, billing, amount, payment_date, payment_method='Cash',
+                   collected_by=None, remarks='', official_receipt_no=''):
+    """Single source of truth for posting a rental payment.
+
+    Creates the ``Payment``, updates the ``Billing`` totals/status, posts a
+    ledger credit and recomputes the running balance. The target billing row is
+    locked with ``select_for_update`` so concurrent collections against the same
+    bill cannot both mark it Paid or clobber each other's totals. A rare receipt
+    number collision is retried.
+
+    Must be called inside an ``atomic`` block (all callers are). Returns the
+    created ``Payment``. ``amount`` is the full sum received; the amount applied
+    to the billing is clamped to the outstanding balance so the ledger never
+    over-settles a bill.
+    """
+    from core.models import Payment
+
+    amount = Decimal(str(amount)).quantize(Decimal('0.01'))
+    locked = Billing.objects.select_for_update().get(pk=billing.pk)
+    pre_balance = Decimal(locked.balance or 0)
+
+    payment = None
+    for attempt in range(5):
+        try:
+            with transaction.atomic():
+                receipt_number = generate_receipt_number()
+                payment = Payment.objects.create(
+                    receipt_number=receipt_number,
+                    tenant=tenant,
+                    stall=locked.stall,
+                    billing=locked,
+                    billing_month=locked.billing_month,
+                    billing_year=locked.billing_year,
+                    rental_amount=locked.rental_amount,
+                    penalty_amount=locked.penalty_amount,
+                    discount=locked.discount,
+                    total_amount_due=locked.total_due,
+                    amount_paid=amount,
+                    payment_date=payment_date,
+                    payment_method=payment_method,
+                    official_receipt_no=official_receipt_no or receipt_number,
+                    collected_by=collected_by,
+                    status='Paid' if amount >= pre_balance else 'Partial',
+                    remarks=remarks,
+                )
+            break
+        except IntegrityError:
+            if attempt == 4:
+                raise
+
+    # Recompute the billing authoritatively from all valid payments.
+    locked = recalc_billing_from_payments(locked)
+
+    # Ledger credit reflects what was actually applied to this bill.
+    applied = amount if amount <= pre_balance else (pre_balance if pre_balance > 0 else amount)
+    TenantLedger.objects.create(
+        tenant=tenant,
+        billing=locked,
+        transaction_date=payment_date,
+        description=f'Payment {payment.receipt_number} - {payment_method}',
+        debit=Decimal('0.00'),
+        credit=applied,
+        balance=Decimal('0.00'),
+        payment=payment,
+    )
+    recalc_tenant_ledger(tenant)
+    return payment
+
+
+def apply_overdue_penalties(today=None):
+    """Mark past-due billings Overdue and accrue the one-time late penalty.
+
+    Idempotent: a penalty is only added while ``penalty_amount`` is still zero,
+    so repeated runs never double-charge. Includes billings already flagged
+    ``Overdue`` (e.g. seeded directly) so a missed penalty is still applied.
+    Uses Decimal and the shared ``recalc_tenant_ledger`` so it stays consistent
+    with ``record_payment``. Returns ``(overdue_marked, penalties_applied)``.
+    """
+    from django.contrib.auth.models import User
+    from core.models import Tenant, AuditLog
+    today = today or date.today()
+    settings = SystemSetting.objects.first()
+    default_grace = settings.grace_period if settings else 5
+
+    billings = Billing.objects.filter(
+        status__in=['Unpaid', 'Partial', 'Overdue']
+    ).select_related('contract', 'tenant', 'stall')
+
+    overdue_marked = 0
+    penalties_applied = 0
+    affected_tenants = set()
+
+    for billing in billings:
+        penalty_setting = (
+            billing.contract.penalty_settings.filter(is_active=True).first()
+            if billing.contract_id else None
+        )
+        grace = penalty_setting.grace_period if penalty_setting else default_grace
+        effective_due = billing.due_date + timedelta(days=grace or 0)
+        if today <= effective_due:
+            continue
+
+        fields = []
+        # Accrue a one-time penalty if none has been applied yet.
+        if Decimal(billing.penalty_amount or 0) == 0:
+            penalty = Decimal(str(compute_penalty_for_contract(
+                billing.contract, billing.billing_month, billing.billing_year, billing.due_date
+            ) or 0)).quantize(Decimal('0.01'))
+            if penalty > 0:
+                billing.penalty_amount = penalty
+                billing.total_due = (
+                    Decimal(billing.rental_amount) + penalty - Decimal(billing.discount or 0)
+                ).quantize(Decimal('0.01'))
+                billing.balance = billing.total_due - Decimal(billing.amount_paid)
+                fields += ['penalty_amount', 'total_due', 'balance']
+                TenantLedger.objects.create(
+                    tenant=billing.tenant,
+                    billing=billing,
+                    transaction_date=today,
+                    description=f'Overdue penalty for {billing.billing_month:02d}/{billing.billing_year} - {billing.stall.stall_number}',
+                    debit=penalty,
+                    credit=Decimal('0.00'),
+                    balance=Decimal('0.00'),
+                )
+                affected_tenants.add(billing.tenant_id)
+                penalties_applied += 1
+                AuditLog.objects.create(
+                    user=User.objects.filter(is_superuser=True).first(),
+                    action='AUTO_PENALTY',
+                    module='Billing',
+                    description=f'Auto-applied penalty {penalty} to billing {billing.id} for {billing.tenant.full_name} {billing.stall.stall_number} {billing.billing_month}/{billing.billing_year}',
+                )
+
+        # Resolve status from the (possibly updated) balance.
+        new_status = 'Paid' if Decimal(billing.balance) <= 0 else 'Overdue'
+        if billing.status != new_status:
+            if new_status == 'Overdue':
+                overdue_marked += 1
+            billing.status = new_status
+            fields.append('status')
+
+        if fields:
+            billing.save(update_fields=list(dict.fromkeys(fields)))
+
+    for tenant_id in affected_tenants:
+        recalc_tenant_ledger(Tenant.objects.get(pk=tenant_id))
+    return overdue_marked, penalties_applied
+
+
+def maybe_apply_overdue_penalties(today=None):
+    """Best-effort, throttled trigger for request-time accrual.
+
+    Runs ``apply_overdue_penalties`` at most once per day per cache instance so
+    overdue status and penalties stay current without an external scheduler.
+    Never raises — an accrual error must not break the page that triggered it.
+    """
+    from django.core.cache import cache
+    today = today or date.today()
+    key = f'apply_overdue_penalties:{today.isoformat()}'
+    # cache.add claims the day's slot atomically -> a single run per day.
+    if not cache.add(key, 1, timeout=60 * 60 * 24):
+        return
+    try:
+        apply_overdue_penalties(today)
+    except Exception:
+        cache.delete(key)  # allow a retry on the next request
 
 
 def render_to_pdf_response(request, template_name, context, filename="document.pdf", base_url=None):

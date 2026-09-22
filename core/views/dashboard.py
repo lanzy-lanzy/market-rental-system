@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from core.models import Stall, Tenant, RentalContract, Billing, Payment, TenantLedger, Notice, AuditLog
 from core.permissions import get_user_role
+from core.helpers import maybe_apply_overdue_penalties
 
 
 @login_required
@@ -55,6 +56,11 @@ def dashboard_view(request):
             recent_payments = Payment.objects.none()
             tenants_with_unpaid = []
     else:
+        # Keep overdue status/penalties current (throttled to ~once a day, best-effort).
+        try:
+            maybe_apply_overdue_penalties()
+        except Exception:
+            pass
         total_stalls = Stall.objects.count()
         occupied_stalls = Stall.objects.filter(status='Occupied').count()
         vacant_stalls = Stall.objects.filter(status='Vacant').count()
