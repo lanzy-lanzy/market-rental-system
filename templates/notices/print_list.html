@@ -22,12 +22,12 @@
     <div class="mb-4 text-xs text-slate-600">Total: <strong>{{ notices.count }}</strong> notices</div>
     <table class="w-full border-collapse text-xs">
       <thead><tr class="bg-slate-100">
-        <th class="border border-slate-300 px-2 py-2 text-left uppercase">Notice #</th>
-        <th class="border border-slate-300 px-2 py-2 text-left uppercase">Tenant</th>
-        <th class="border border-slate-300 px-2 py-2 text-left uppercase">Type</th>
-        <th class="border border-slate-300 px-2 py-2 text-left uppercase">Issued</th>
-        <th class="border border-slate-300 px-2 py-2 text-left uppercase">Served</th>
-        <th class="border border-slate-300 px-2 py-2 text-left uppercase">Served Date</th>
+        <th class="font-bold border border-slate-300 px-2 py-2 text-left uppercase">Notice #</th>
+        <th class="font-bold border border-slate-300 px-2 py-2 text-left uppercase">Tenant</th>
+        <th class="font-bold border border-slate-300 px-2 py-2 text-left uppercase">Type</th>
+        <th class="font-bold border border-slate-300 px-2 py-2 text-left uppercase">Issued</th>
+        <th class="font-bold border border-slate-300 px-2 py-2 text-left uppercase">Served</th>
+        <th class="font-bold border border-slate-300 px-2 py-2 text-left uppercase">Served Date</th>
       </tr></thead>
       <tbody>
         {% for n in notices %}

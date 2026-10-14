@@ -22,14 +22,14 @@
     <div class="mb-4 text-xs text-slate-600">Total: <strong>{{ payments.count }}</strong> payments {% if date_from or date_to %}• Period {{ date_from|default:"—" }} to {{ date_to|default:"—" }}{% endif %}</div>
     <table class="w-full border-collapse text-xs">
       <thead><tr class="bg-slate-100">
-        <th class="border border-slate-300 px-2 py-2 text-left uppercase">Receipt #</th>
-        <th class="border border-slate-300 px-2 py-2 text-left uppercase">Tenant</th>
-        <th class="border border-slate-300 px-2 py-2 text-left uppercase">Stall</th>
-        <th class="border border-slate-300 px-2 py-2 text-right uppercase">Amount</th>
-        <th class="border border-slate-300 px-2 py-2 text-left uppercase">Method</th>
-        <th class="border border-slate-300 px-2 py-2 text-left uppercase">Date</th>
-        <th class="border border-slate-300 px-2 py-2 text-left uppercase">Collector</th>
-        <th class="border border-slate-300 px-2 py-2 text-left uppercase">Status</th>
+        <th class="font-bold border border-slate-300 px-2 py-2 text-left uppercase">Receipt #</th>
+        <th class="font-bold border border-slate-300 px-2 py-2 text-left uppercase">Tenant</th>
+        <th class="font-bold border border-slate-300 px-2 py-2 text-left uppercase">Stall</th>
+        <th class="font-bold border border-slate-300 px-2 py-2 text-right uppercase">Amount</th>
+        <th class="font-bold border border-slate-300 px-2 py-2 text-left uppercase">Method</th>
+        <th class="font-bold border border-slate-300 px-2 py-2 text-left uppercase">Date</th>
+        <th class="font-bold border border-slate-300 px-2 py-2 text-left uppercase">Collector</th>
+        <th class="font-bold border border-slate-300 px-2 py-2 text-left uppercase">Status</th>
       </tr></thead>
       <tbody>
         {% for p in payments %}

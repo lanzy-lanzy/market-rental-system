@@ -19,7 +19,7 @@
   <p class="meta">{{ date_from }} to {{ date_to }} • Generated {% now "F d, Y h:i A" %} • Grand: &#8369;{{ grand_total|floatformat:2 }}</p>
   <table>
     <thead>
-      <tr><th>Collector</th><th class="right">Transactions</th><th class="right">Total Collected</th><th class="right">% of Grand</th></tr>
+      <tr><th class="font-bold">Collector</th><th class="font-bold right">Transactions</th><th class="font-bold right">Total Collected</th><th class="font-bold right">% of Grand</th></tr>
     </thead>
     <tbody>
       {% for row in collector_data %}

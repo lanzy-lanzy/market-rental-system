@@ -19,7 +19,7 @@
   <p class="meta">{{ month_name }} {{ year }} • Generated {% now "F d, Y h:i A" %}</p>
   <table>
     <thead>
-      <tr><th>Section</th><th class="right">Stalls</th><th class="right">Occupied</th><th class="right">Vacant</th><th class="right">Billed</th><th class="right">Collected</th><th class="right">Balance</th></tr>
+      <tr><th class="font-bold">Section</th><th class="font-bold right">Stalls</th><th class="font-bold right">Occupied</th><th class="font-bold right">Vacant</th><th class="font-bold right">Billed</th><th class="font-bold right">Collected</th><th class="font-bold right">Balance</th></tr>
     </thead>
     <tbody>
       {% for row in section_data %}

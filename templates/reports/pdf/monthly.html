@@ -20,7 +20,7 @@
   <p style="text-align:right; font-size:9pt; margin-bottom:8px;"><strong>Total Billed:</strong> &#8369;{{ total_billed|floatformat:2 }} &nbsp; <strong>Collected:</strong> &#8369;{{ total_collected|floatformat:2 }}</p>
   <table>
     <thead>
-      <tr><th>Tenant ID</th><th>Tenant</th><th>Stall</th><th>Section</th><th class="right">Rental</th><th class="right">Penalty</th><th class="right">Total Due</th><th class="right">Paid</th><th class="right">Balance</th><th>Status</th></tr>
+      <tr><th class="font-bold">Tenant ID</th><th class="font-bold">Tenant</th><th class="font-bold">Stall</th><th class="font-bold">Section</th><th class="font-bold right">Rental</th><th class="font-bold right">Penalty</th><th class="font-bold right">Total Due</th><th class="font-bold right">Paid</th><th class="font-bold right">Balance</th><th class="font-bold">Status</th></tr>
     </thead>
     <tbody>
       {% for billing in billings %}

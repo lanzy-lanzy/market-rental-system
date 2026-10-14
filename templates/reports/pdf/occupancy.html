@@ -19,7 +19,7 @@
   <p class="meta">Generated {% now "F d, Y h:i A" %} • Total: {{ total|default:stalls|length }} stalls</p>
   <table>
     <thead>
-      <tr><th>Stall #</th><th>Section</th><th>Type</th><th class="right">Size</th><th class="right">Rate</th><th>Status</th><th>Tenant</th></tr>
+      <tr><th class="font-bold">Stall #</th><th class="font-bold">Section</th><th class="font-bold">Type</th><th class="font-bold right">Size</th><th class="font-bold right">Rate</th><th class="font-bold">Status</th><th class="font-bold">Tenant</th></tr>
     </thead>
     <tbody>
       {% for stall in stalls|default:page_obj %}

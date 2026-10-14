@@ -31,14 +31,14 @@
     <div class="mt-6">
       <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Contracts ({{ contracts|length }})</h3>
       <table class="w-full border-collapse text-xs">
-        <thead><tr class="bg-slate-100"><th class="border px-2 py-1.5 text-left">Stall</th><th class="border px-2 py-1.5 text-left">Section</th><th class="border px-2 py-1.5 text-left">Period</th><th class="border px-2 py-1.5 text-right">Rent</th><th class="border px-2 py-1.5 text-left">Status</th></tr></thead>
+        <thead><tr class="bg-slate-100"><th class="font-bold border px-2 py-1.5 text-left">Stall</th><th class="font-bold border px-2 py-1.5 text-left">Section</th><th class="font-bold border px-2 py-1.5 text-left">Period</th><th class="font-bold border px-2 py-1.5 text-right">Rent</th><th class="font-bold border px-2 py-1.5 text-left">Status</th></tr></thead>
         <tbody>{% for c in contracts %}<tr><td class="border px-2 py-1.5 font-mono font-bold">{{ c.stall.stall_number }}</td><td class="border px-2 py-1.5">{{ c.stall.section.name }}</td><td class="border px-2 py-1.5">{{ c.start_date|date:"M d, Y" }} — {{ c.end_date|date:"M d, Y"|default:"Open" }}</td><td class="border px-2 py-1.5 text-right">₱{{ c.monthly_rent|floatformat:2 }}</td><td class="border px-2 py-1.5">{{ c.status }}</td></tr>{% empty %}<tr><td colspan="5" class="border px-2 py-3 text-center text-slate-400">No contracts</td></tr>{% endfor %}</tbody>
       </table>
     </div>
     <div class="mt-6">
       <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Recent Billings</h3>
       <table class="w-full border-collapse text-xs">
-        <thead><tr class="bg-slate-100"><th class="border px-2 py-1.5">Period</th><th class="border px-2 py-1.5">Stall</th><th class="border px-2 py-1.5 text-right">Due</th><th class="border px-2 py-1.5 text-right">Paid</th><th class="border px-2 py-1.5 text-right">Balance</th><th class="border px-2 py-1.5">Status</th></tr></thead>
+        <thead><tr class="bg-slate-100"><th class="font-bold border px-2 py-1.5">Period</th><th class="font-bold border px-2 py-1.5">Stall</th><th class="font-bold border px-2 py-1.5 text-right">Due</th><th class="font-bold border px-2 py-1.5 text-right">Paid</th><th class="font-bold border px-2 py-1.5 text-right">Balance</th><th class="font-bold border px-2 py-1.5">Status</th></tr></thead>
         <tbody>{% for b in billings|slice:":10" %}<tr><td class="border px-2 py-1.5">{{ b.billing_month|stringformat:"02d" }}/{{ b.billing_year }}</td><td class="border px-2 py-1.5 font-mono">{{ b.stall.stall_number }}</td><td class="border px-2 py-1.5 text-right">₱{{ b.total_due|floatformat:2 }}</td><td class="border px-2 py-1.5 text-right text-emerald-600">₱{{ b.amount_paid|floatformat:2 }}</td><td class="border px-2 py-1.5 text-right font-bold {% if b.balance > 0 %}text-red-600{% else %}text-emerald-600{% endif %}">₱{{ b.balance|floatformat:2 }}</td><td class="border px-2 py-1.5">{{ b.status }}</td></tr>{% empty %}<tr><td colspan="6" class="border text-center py-3 text-slate-400">No billings</td></tr>{% endfor %}</tbody>
       </table>
     </div>
