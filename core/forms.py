@@ -1,4 +1,5 @@
 from decimal import Decimal
+from datetime import date
 import json
 
 from django import forms
@@ -198,43 +199,92 @@ class RentalContractForm(forms.ModelForm):
         # Limit tenant to Active, stall to Vacant + current selection for edit
         from core.models import Tenant, Stall
         self.fields['tenant'].queryset = Tenant.objects.filter(status='Active').order_by('full_name')
-        stall_qs = Stall.objects.all().order_by('stall_number')
-        # If editing and current stall is not Vacant, include it
-        if self.instance and self.instance.pk and self.instance.stall_id:
-            stall_qs = Stall.objects.filter(status='Vacant').order_by('stall_number') | Stall.objects.filter(pk=self.instance.stall_id)
-            self.fields['stall'].queryset = stall_qs.distinct().order_by('stall_number')
+        self.assignable_stalls = (
+            Stall.objects.filter(status='Vacant')
+            .exclude(contracts__status='Active').order_by('stall_number')
+        )
+        # A brand new contract may cover several stalls at once, so the encoder
+        # picks from a vacant-only checklist and one contract is created per
+        # stall. An existing contract always maps to exactly one stall.
+        self.is_new_contract = not (self.instance and self.instance.pk)
+        if self.is_new_contract:
+            self.fields['stall'].required = False
+            self.fields['monthly_rent'].required = False
+            self.fields['monthly_rent'].widget.attrs['placeholder'] = "Blank = each stall's own rate"
+            self.fields['stalls'] = forms.ModelMultipleChoiceField(
+                queryset=self.assignable_stalls,
+                label='Stalls (select one or more)',
+                help_text='Only vacant stalls are listed. Each ticked stall gets its own contract at its own monthly rate.',
+                error_messages={'required': 'Select at least one vacant stall.'},
+                widget=forms.CheckboxSelectMultiple(attrs={'class': 'h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/20'}),
+            )
+            self.fields['stalls'].label_from_instance = (
+                lambda stall: f'{stall.stall_number} — ₱{stall.monthly_rate}'
+            )
         else:
-            self.fields['stall'].queryset = Stall.objects.filter(status='Vacant').order_by('stall_number')
+            # Keep the stall being edited selectable even though it is Occupied.
+            self.fields['stall'].queryset = (
+                self.assignable_stalls | Stall.objects.filter(pk=self.instance.stall_id)
+            ).distinct().order_by('stall_number')
 
-        # Lets the form pre-select the stall a tenant is already assigned to.
+        # Lets the form pre-select a stall the tenant already holds.
         self.fields['tenant'].widget.attrs['data-assigned-stalls'] = json.dumps(
             self._assigned_stall_map()
         )
 
+    def save(self, commit=True):
+        """Create one contract per ticked stall; ``saved_contracts`` holds them all."""
+        if not self.is_new_contract:
+            self.saved_contracts = [super().save(commit=commit)]
+            return self.saved_contracts[0]
+
+        stalls = list(self.cleaned_data.get('stalls') or [])
+        single_rent = self.cleaned_data.get('monthly_rent')
+        self.saved_contracts = []
+        for stall in stalls:
+            # Several stalls never share one rate, so each falls back to its own.
+            rent = (single_rent if len(stalls) == 1 and single_rent is not None
+                    else stall.monthly_rate)
+            contract = RentalContract(
+                tenant=self.cleaned_data['tenant'],
+                stall=stall,
+                start_date=self.cleaned_data['start_date'],
+                end_date=self.cleaned_data['end_date'],
+                monthly_rent=rent,
+                due_day=self.cleaned_data['due_day'],
+                security_deposit=self.cleaned_data.get('security_deposit') or 0,
+                status=self.cleaned_data['status'],
+                remarks=self.cleaned_data.get('remarks', ''),
+            )
+            if commit:
+                contract.save()
+            self.saved_contracts.append(contract)
+        self.instance = self.saved_contracts[0]
+        return self.instance
+
     @staticmethod
     def _assigned_stall_map():
-        """tenant pk -> assigned stall, for the auto-select in the contract form.
+        """tenant pk -> every stall on record for that tenant, for auto-select.
 
-        Prefers the tenant's current Active contract and falls back to their most
-        recent one, so renewals jump straight back to the stall they vacated.
+        A tenant may hold several stalls, so the value is a list with the
+        currently Active stalls first and lapsed ones after (newest first in
+        each group), letting a renewal jump straight back to any stall they
+        already occupied.
         """
-        latest = {}
-        for contract in RentalContract.objects.select_related('stall').order_by('tenant_id', 'start_date'):
-            latest[contract.tenant_id] = contract
-        active = {}
-        for contract in RentalContract.objects.select_related('stall').filter(
-                status='Active').order_by('-start_date'):
-            active.setdefault(contract.tenant_id, contract)
-
-        mapping = {}
-        for tenant_id, contract in latest.items():
-            chosen = active.get(tenant_id) or contract
-            mapping[str(tenant_id)] = {
-                'stall': str(chosen.stall_id),
-                'number': chosen.stall.stall_number,
-                'rate': str(chosen.stall.monthly_rate),
+        groups = {}
+        for contract in RentalContract.objects.select_related('stall').order_by('-start_date'):
+            group = groups.setdefault(contract.tenant_id, {'active': [], 'lapsed': []})
+            entry = {
+                'stall': str(contract.stall_id),
+                'number': contract.stall.stall_number,
+                'rate': str(contract.stall.monthly_rate),
+                'status': contract.status,
             }
-        return mapping
+            bucket = group['active'] if contract.status == 'Active' else group['lapsed']
+            if entry['stall'] not in [item['stall'] for item in bucket]:
+                bucket.append(entry)
+        return {str(tenant_id): group['active'] + group['lapsed']
+                for tenant_id, group in groups.items()}
 
     def clean(self):
         cleaned = super().clean()
@@ -475,6 +525,82 @@ class TenantPasswordChangeForm(BasePasswordChangeForm):
                 'placeholder': placeholders.get(name, ''),
                 'autocomplete': 'new-password' if name != 'old_password' else 'current-password',
             })
+
+
+class BulkAssignStallsForm(forms.Form):
+    """Assign one Tenant to multiple Vacant Stalls in a single operation.
+
+    Creates one Active RentalContract per selected stall, each inheriting that
+    stall's monthly_rate. Validates that every chosen stall is still Vacant at
+    submission time to prevent double-assignment races.
+    """
+    tenant = forms.ModelChoiceField(
+        queryset=Tenant.objects.none(),
+        widget=forms.Select(attrs={'class': TW_SELECT}),
+        label='Tenant',
+    )
+    stalls = forms.ModelMultipleChoiceField(
+        queryset=Stall.objects.none(),
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/20'}),
+        label='Select Vacant Stalls',
+        help_text='Choose one or more vacant stalls to assign to this tenant.',
+        error_messages={'required': 'Select at least one vacant stall.'},
+    )
+    start_date = forms.DateField(
+        widget=DateInput(attrs={'class': TW_INPUT}),
+        label='Start Date',
+        initial=date.today,
+    )
+    end_date = forms.DateField(
+        widget=DateInput(attrs={'class': TW_INPUT}),
+        label='End Date (optional)',
+        required=False,
+    )
+    due_day = forms.IntegerField(
+        min_value=1, max_value=28, initial=5,
+        widget=forms.NumberInput(attrs={'class': TW_INPUT, 'placeholder': 'Day of month (e.g., 5)'}),
+        label='Due Day',
+    )
+    security_deposit = forms.DecimalField(
+        max_digits=10, decimal_places=2, initial=0, required=False,
+        widget=forms.NumberInput(attrs={'class': TW_INPUT, 'placeholder': 'Per stall (optional)', 'step': '0.01'}),
+        label='Security Deposit per Stall (\u20b1)',
+    )
+    remarks = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'class': TW_TEXTAREA, 'rows': 2, 'placeholder': 'Optional remarks for all contracts'}),
+        label='Remarks',
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['tenant'].queryset = Tenant.objects.filter(status='Active').order_by('full_name')
+        # Only stalls that can legally receive a new Active contract. The status
+        # column can drift out of sync after manual edits, so the active
+        # contract is checked too rather than trusting 'Vacant' alone.
+        self.fields['stalls'].queryset = (
+            Stall.objects.filter(status='Vacant')
+            .exclude(contracts__status='Active')
+            .order_by('stall_number')
+        )
+
+    def clean_stalls(self):
+        stalls = self.cleaned_data['stalls']
+        # Re-check vacancy at submission time to prevent race conditions
+        non_vacant = [s.stall_number for s in stalls if s.status != 'Vacant']
+        if non_vacant:
+            raise forms.ValidationError(
+                f'The following stalls are no longer vacant: {", ".join(non_vacant)}. Refresh and try again.'
+            )
+        return stalls
+
+    def clean(self):
+        cleaned = super().clean()
+        start = cleaned.get('start_date')
+        end = cleaned.get('end_date')
+        if start and end and end <= start:
+            self.add_error('end_date', 'End date must be later than the start date.')
+        return cleaned
 
 
 class QuickCollectForm(forms.Form):

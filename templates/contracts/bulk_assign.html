@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Bulk Assign Stalls - Market Rental System{% endblock %}
+{% block page_title %}Bulk Assign Tenant to Stalls{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-4xl">
+  <div class="rounded-xl border border-gray-100 bg-card shadow-sm">
+    <div class="border-b border-gray-100 px-6 py-4">
+      <h3 class="text-lg font-semibold text-gray-900">Assign Tenant to Multiple Vacant Stalls</h3>
+      <p class="mt-1 text-sm text-gray-500">Create rental contracts for one tenant across multiple stalls in a single operation. Each stall's own monthly rate will be used.</p>
+      <div class="mt-3 rounded-xl bg-emerald-50 border border-emerald-200 p-3 flex gap-2 text-xs text-emerald-800 leading-snug">
+        <svg class="h-4 w-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span><b>{{ vacant_count }} stall(s) currently vacant.</b> A separate Active contract will be created for each selected stall. Billing is auto-generated after assignment.</span>
+      </div>
+    </div>
+
+    <form method="post" action="{% url 'contract_bulk_assign' %}" class="p-6" id="bulk-assign-form">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+      <div class="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+        {% for err in form.non_field_errors %}<p>{{ err }}</p>{% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <!-- Left Column: Tenant + Date Fields -->
+        <div class="space-y-5">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Tenant <span class="text-red-500">*</span></label>
+            {{ form.tenant }}
+            {% if form.tenant.errors %}<p class="mt-1 text-xs text-red-500">{{ form.tenant.errors.0 }}</p>{% endif %}
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Start Date <span class="text-red-500">*</span></label>
+              {{ form.start_date }}
+              {% if form.start_date.errors %}<p class="mt-1 text-xs text-red-500">{{ form.start_date.errors.0 }}</p>{% endif %}
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">End Date <span class="text-gray-400">(optional)</span></label>
+              {{ form.end_date }}
+              {% if form.end_date.errors %}<p class="mt-1 text-xs text-red-500">{{ form.end_date.errors.0 }}</p>{% endif %}
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Due Day</label>
+              {{ form.due_day }}
+              {% if form.due_day.errors %}<p class="mt-1 text-xs text-red-500">{{ form.due_day.errors.0 }}</p>{% endif %}
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Security Deposit per Stall (&#8369;)</label>
+              {{ form.security_deposit }}
+              {% if form.security_deposit.errors %}<p class="mt-1 text-xs text-red-500">{{ form.security_deposit.errors.0 }}</p>{% endif %}
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Remarks <span class="text-gray-400">(optional)</span></label>
+            {{ form.remarks }}
+            {% if form.remarks.errors %}<p class="mt-1 text-xs text-red-500">{{ form.remarks.errors.0 }}</p>{% endif %}
+          </div>
+        </div>
+
+        <!-- Right Column: Stall Selection -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Select Vacant Stalls <span class="text-red-500">*</span></label>
+          <p class="text-xs text-gray-500 mb-3">{{ form.stalls.help_text }}</p>
+          {% include 'contracts/_stall_picker.html' %}
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <div class="mt-6 flex items-center justify-end gap-3 border-t border-gray-100 pt-4">
+        <a href="{% url 'contract_list' %}" class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Cancel</a>
+        <button type="submit" class="rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" data-stall-submit disabled>
+          <svg class="inline h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          Assign Stalls
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

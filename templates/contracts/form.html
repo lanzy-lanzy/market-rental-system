@@ -24,10 +24,14 @@
           {{ form.tenant }}
           {% if form.tenant.errors %}<p class="mt-1 text-xs text-red-500">{{ form.tenant.errors.0 }}</p>{% endif %}
         </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Stall</label>
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-medium text-gray-700">{% if is_add %}Stalls — select one or more{% else %}Stall{% endif %}</label>
+          {% if is_add %}
+          {% include 'contracts/_stall_picker.html' %}
+          {% else %}
           {{ form.stall }}
           {% if form.stall.errors %}<p class="mt-1 text-xs text-red-500">{{ form.stall.errors.0 }}</p>{% endif %}
+          {% endif %}
           <p id="stall-autofill-hint" class="mt-1 text-xs font-medium"></p>
         </div>
         <div>
@@ -41,7 +45,7 @@
           {% if form.end_date.errors %}<p class="mt-1 text-xs text-red-500">{{ form.end_date.errors.0 }}</p>{% endif %}
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700">Monthly Rent (&#8369;)</label>
+          <label class="block text-sm font-medium text-gray-700">Monthly Rent (&#8369;) {% if is_add %}<span class="text-gray-400">(blank = each stall's rate)</span>{% endif %}</label>
           {{ form.monthly_rent }}
           {% if form.monthly_rent.errors %}<p class="mt-1 text-xs text-red-500">{{ form.monthly_rent.errors.0 }}</p>{% endif %}
         </div>

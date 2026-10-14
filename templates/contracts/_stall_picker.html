@@ -1,0 +1,69 @@
+{% comment %}
+Shared vacant-stall checklist used by templates/contracts/form.html,
+_modal_form.html and bulk_assign.html. Several stalls may be ticked: the
+contract form then creates one contract per stall (RentalContractForm.save),
+and bulk assign does the same for its own page.
+{% endcomment %}
+<div class="relative mb-2">
+  <input type="text" data-stall-filter placeholder="Filter stalls..." autocomplete="off"
+         class="block w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10">
+  <button type="button" data-stall-toggle
+          class="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-emerald-700 hover:text-emerald-900">Select All</button>
+</div>
+<div data-stall-list class="max-h-[280px] overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-1.5">
+  {% for checkbox in form.stalls %}
+  <label class="stall-option flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-white transition-colors cursor-pointer">
+    {{ checkbox.tag }}
+    <span class="text-sm font-medium text-slate-800">{{ checkbox.choice_label }}</span>
+  </label>
+  {% empty %}
+  <p class="text-sm text-gray-400 italic">No vacant stall is available — release a stall first.</p>
+  {% endfor %}
+</div>
+<p class="mt-1 text-xs text-gray-500"><b data-stall-count>0</b> selected &bull; each stall keeps its own monthly rate</p>
+{% if form.stalls.errors %}<p class="mt-1 text-xs text-red-500">{{ form.stalls.errors.0 }}</p>{% endif %}
+
+<script>
+(function () {
+  var list = document.querySelector('[data-stall-list]');
+  if (!list) return;
+  var boxes = Array.prototype.slice.call(list.querySelectorAll('input[type=checkbox]'));
+  var count = document.querySelector('[data-stall-count]');
+  var filter = document.querySelector('[data-stall-filter]');
+  var toggle = document.querySelector('[data-stall-toggle]');
+
+  function refresh() {
+    var chosen = boxes.filter(function (b) { return b.checked; });
+    if (count) count.textContent = chosen.length;
+    // Looked up each time: the gated submit button sits after this script.
+    var gate = document.querySelector('[data-stall-submit]');
+    if (gate) gate.disabled = !chosen.length;
+  }
+  function visibleBoxes() {
+    return boxes.filter(function (b) {
+      return b.closest('.stall-option').style.display !== 'none';
+    });
+  }
+
+  boxes.forEach(function (box) { box.addEventListener('change', refresh); });
+
+  if (filter) filter.addEventListener('input', function () {
+    var q = this.value.trim().toLowerCase();
+    list.querySelectorAll('.stall-option').forEach(function (row) {
+      row.style.display = row.textContent.toLowerCase().indexOf(q) > -1 ? '' : 'none';
+    });
+    if (toggle) toggle.textContent = 'Select All';
+  });
+
+  if (toggle) toggle.addEventListener('click', function () {
+    var shown = visibleBoxes();
+    // Select unless every visible stall is already ticked, then clear them.
+    var select = shown.some(function (b) { return !b.checked; });
+    shown.forEach(function (b) { b.checked = select; });
+    this.textContent = select ? 'Deselect All' : 'Select All';
+    refresh();
+  });
+
+  refresh();
+})();
+</script>

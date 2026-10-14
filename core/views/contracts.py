@@ -1,11 +1,13 @@
+import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.db import IntegrityError, transaction
 from datetime import date
 
 from core.models import RentalContract, Tenant, Stall, Billing, AuditLog
-from core.forms import RentalContractForm
+from core.forms import RentalContractForm, BulkAssignStallsForm
 from core.permissions import staff_required
 from core.helpers import ensure_initial_billing, render_to_pdf_response
 from django.contrib.auth.decorators import login_required
@@ -13,6 +15,31 @@ from django.contrib.auth.decorators import login_required
 
 def is_htmx(request):
     return getattr(request, 'htmx', None) or request.headers.get('HX-Request') == 'true'
+
+
+def activate_new_contracts(contracts):
+    """Occupy every stall a submission covered and open its first billing.
+
+    Returns how many contracts received a freshly generated billing.
+    """
+    billed = 0
+    for contract in contracts:
+        stall = contract.stall
+        if stall.status != 'Occupied':
+            stall.status = 'Occupied'
+            stall.save(update_fields=['status'])
+        try:
+            _, created = ensure_initial_billing(contract)
+            billed += 1 if created else 0
+        except Exception:
+            pass
+    return billed
+
+
+def describe_contracts(contracts):
+    """(tenant name, stall numbers) for audit and flash messages."""
+    first = contracts[0]
+    return first.tenant.full_name, ', '.join(c.stall.stall_number for c in contracts)
 
 
 @staff_required
@@ -63,24 +90,43 @@ def contract_add(request):
     if request.method == 'POST':
         form = RentalContractForm(request.POST)
         if form.is_valid():
-            contract = form.save()
-            contract.stall.status = 'Occupied'
-            contract.stall.save()
-            # Auto-generate billing(s) for this contract so collector sees amount immediately
             try:
-                billing, created = ensure_initial_billing(contract)
-                if created:
-                    messages.info(request, f'Auto-generated billing for {billing.billing_month:02d}/{billing.billing_year} (₱{billing.total_due}) ready for collection.')
-            except Exception:
-                pass
-            AuditLog.objects.create(
-                user=request.user,
-                action='CREATE',
-                module='RentalContract',
-                description=f'Created contract for {contract.tenant.full_name} - {contract.stall.stall_number}',
-                ip_address=request.META.get('REMOTE_ADDR'),
-            )
-            messages.success(request, 'Rental contract created successfully.')
+                with transaction.atomic():
+                    form.save()
+                    contracts = form.saved_contracts
+                    billing_count = activate_new_contracts(contracts)
+            except IntegrityError:
+                # Another user claimed one of these stalls after the form rendered.
+                messages.error(request, 'One of the selected stalls was just taken. '
+                                        'Please re-select and try again.')
+                return render(request, 'contracts/form.html', {'form': form, 'is_add': True})
+            tenant_name, stall_numbers = describe_contracts(contracts)
+            if len(contracts) > 1:
+                AuditLog.objects.create(
+                    user=request.user,
+                    action='BULK_ASSIGN',
+                    module='RentalContract',
+                    description=(
+                        f'Created {len(contracts)} contracts for {tenant_name} '
+                        f'on stalls: {stall_numbers}'
+                    ),
+                    ip_address=request.META.get('REMOTE_ADDR'),
+                )
+                messages.success(
+                    request,
+                    f'Created {len(contracts)} contracts for {tenant_name} '
+                    f'on {stall_numbers}.')
+            else:
+                AuditLog.objects.create(
+                    user=request.user,
+                    action='CREATE',
+                    module='RentalContract',
+                    description=f'Created contract for {tenant_name} - {stall_numbers}',
+                    ip_address=request.META.get('REMOTE_ADDR'),
+                )
+                messages.success(request, 'Rental contract created successfully.')
+            if billing_count:
+                messages.info(request, f'Auto-generated billing for {billing_count} contract(s) ready for collection.')
             return redirect('contract_list')
         else:
             messages.error(request, 'Please correct the errors below.')
@@ -205,28 +251,41 @@ def contract_add_modal(request):
     if request.method == 'POST':
         form = RentalContractForm(request.POST)
         if form.is_valid():
-            contract = form.save()
-            contract.stall.status = 'Occupied'
-            contract.stall.save()
             try:
-                ensure_initial_billing(contract)
-            except Exception:
-                pass
+                with transaction.atomic():
+                    form.save()
+                    contracts = form.saved_contracts
+                    activate_new_contracts(contracts)
+            except IntegrityError:
+                messages.error(request, 'One of the selected stalls was just taken. '
+                                        'Please re-select and try again.')
+                if is_htmx(request):
+                    return render(request, 'contracts/_modal_form.html',
+                                  {'form': form, 'is_add': True})
+                return render(request, 'contracts/form.html', {'form': form, 'is_add': True})
+            tenant_name, stall_numbers = describe_contracts(contracts)
             AuditLog.objects.create(
                 user=request.user,
-                action='CREATE',
+                action='BULK_ASSIGN' if len(contracts) > 1 else 'CREATE',
                 module='RentalContract',
-                description=f'Created contract for {contract.tenant.full_name} - {contract.stall.stall_number} (modal)',
+                description=(
+                    f'Created {len(contracts)} contracts for {tenant_name} '
+                    f'on stalls: {stall_numbers} (modal)' if len(contracts) > 1
+                    else f'Created contract for {tenant_name} - {stall_numbers} (modal)'
+                ),
                 ip_address=request.META.get('REMOTE_ADDR'),
             )
+            toast = ('Contract created.' if len(contracts) == 1 else
+                     f'Created {len(contracts)} contracts for {tenant_name} on {stall_numbers}.')
+            # json.dumps keeps an apostrophe in a tenant name from ending the JS string.
             if is_htmx(request):
                 from django.http import HttpResponse
-                return HttpResponse('''<script>
-                    closeModal();
-                    showToast('Contract created.', 'success');
-                    setTimeout(function() { location.reload(); }, 500);
-                </script>''')
-            messages.success(request, 'Contract created.')
+                return HttpResponse('<script>\n'
+                                    'closeModal();\n'
+                                    f'showToast({json.dumps(toast)}, "success");\n'
+                                    'setTimeout(function() { location.reload(); }, 500);\n'
+                                    '</script>')
+            messages.success(request, toast)
             return redirect('contract_list')
         if is_htmx(request):
             return render(request, 'contracts/_modal_form.html', {'form': form, 'is_add': True})
@@ -367,3 +426,104 @@ def contract_view_export_pdf(request, pk):
     }
     filename = f"contract_{contract.id}_{__import__('datetime').date.today().isoformat()}.pdf"
     return render_to_pdf_response(request, 'contracts/print_view.html', context, filename=filename)
+
+
+@staff_required
+def contract_bulk_assign(request):
+    """Assign one Tenant to multiple Vacant Stalls in a single operation.
+
+    Creates one Active RentalContract per selected stall. Each contract inherits
+    the stall's monthly_rate. Stalls are atomically marked Occupied and initial
+    billing is auto-generated for each.
+    """
+    if request.method == 'POST':
+        form = BulkAssignStallsForm(request.POST)
+        if form.is_valid():
+            tenant = form.cleaned_data['tenant']
+            stalls = form.cleaned_data['stalls']
+            start_date = form.cleaned_data['start_date']
+            end_date = form.cleaned_data.get('end_date')
+            due_day = form.cleaned_data['due_day']
+            security_deposit = form.cleaned_data.get('security_deposit') or 0
+            remarks = form.cleaned_data.get('remarks', '')
+
+            created_contracts = []
+            try:
+                with transaction.atomic():
+                    for stall in stalls:
+                        # Lock the stall row to prevent concurrent assignment
+                        locked_stall = Stall.objects.select_for_update().get(pk=stall.pk)
+                        if locked_stall.status != 'Vacant':
+                            raise ValueError(
+                                f'Stall {locked_stall.stall_number} is no longer vacant.'
+                            )
+                        contract = RentalContract.objects.create(
+                            tenant=tenant,
+                            stall=locked_stall,
+                            start_date=start_date,
+                            end_date=end_date,
+                            monthly_rent=locked_stall.monthly_rate,
+                            due_day=due_day,
+                            security_deposit=security_deposit,
+                            status='Active',
+                            remarks=remarks,
+                        )
+                        locked_stall.status = 'Occupied'
+                        locked_stall.save(update_fields=['status'])
+                        created_contracts.append(contract)
+
+                # Auto-generate billing for each contract (outside the lock to
+                # keep the critical section small)
+                billing_count = 0
+                for contract in created_contracts:
+                    try:
+                        _, created = ensure_initial_billing(contract)
+                        if created:
+                            billing_count += 1
+                    except Exception:
+                        pass
+
+                stall_numbers = ', '.join(c.stall.stall_number for c in created_contracts)
+                AuditLog.objects.create(
+                    user=request.user,
+                    action='BULK_ASSIGN',
+                    module='RentalContract',
+                    description=(
+                        f'Bulk-assigned tenant {tenant.full_name} to '
+                        f'{len(created_contracts)} stall(s): {stall_numbers}'
+                    ),
+                    ip_address=request.META.get('REMOTE_ADDR'),
+                )
+                messages.success(
+                    request,
+                    f'Successfully assigned {tenant.full_name} to '
+                    f'{len(created_contracts)} stall(s): {stall_numbers}. '
+                    f'{"Billing auto-generated." if billing_count else ""}'
+                )
+                return redirect('contract_list')
+
+            except ValueError as e:
+                messages.error(request, str(e))
+                # Keep the bound form so the encoder's stall selection survives
+                # the re-render; only the conflicting choice needs changing.
+            except Exception as e:
+                messages.error(request, f'Assignment failed: {e}')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = BulkAssignStallsForm()
+        # Pre-select tenant if coming from a tenant profile page
+        prefill_tenant_id = request.GET.get('tenant')
+        if prefill_tenant_id:
+            form.initial['tenant'] = prefill_tenant_id
+
+    # Provide the assignable stall count for the info banner, matching the
+    # queryset the form actually offers.
+    vacant_count = (
+        Stall.objects.filter(status='Vacant')
+        .exclude(contracts__status='Active').count()
+    )
+    return render(request, 'contracts/bulk_assign.html', {
+        'form': form,
+        'vacant_count': vacant_count,
+    })

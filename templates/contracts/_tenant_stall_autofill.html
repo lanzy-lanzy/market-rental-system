@@ -1,19 +1,23 @@
 {% comment %}
 Shared by templates/contracts/form.html and _modal_form.html.
-Selecting a tenant pre-selects the stall they are already assigned to and
-applies that stall's monthly rate. Runs only on tenant change so an encoder
-mid-edit is never overwritten on page load.
+Selecting a tenant offers back the stalls they already hold: the new-contract
+form ticks its vacant-stall checklist, the edit form selects its single stall.
+Runs only on tenant change so an encoder mid-edit is never overwritten on load.
 {% endcomment %}
 <script>
 (function () {
   var tenantSel = document.querySelector('select[name=tenant]');
   var stallSel = document.querySelector('select[name=stall]');
-  if (!tenantSel || !stallSel) return;
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('input[name=stalls]'));
+  if (!tenantSel || (!stallSel && !boxes.length)) return;
 
   var rentInput = document.querySelector('input[name=monthly_rent]');
   var hint = document.getElementById('stall-autofill-hint');
   var map = {};
   try { map = JSON.parse(tenantSel.getAttribute('data-assigned-stalls') || '{}'); } catch (e) { map = {}; }
+
+  // Stalls the tenant held, resolved for the currently selected tenant.
+  var assigned = [];
 
   function say(message, tone) {
     if (!hint) return;
@@ -23,24 +27,103 @@ mid-edit is never overwritten on page load.
       tone === 'warn' ? 'text-amber-700' : 'text-slate-500');
   }
 
-  tenantSel.addEventListener('change', function () {
-    var assigned = map[this.value];
-    if (!this.value) { say(''); return; }
-    if (!assigned) {
-      say('No stall on record for this tenant — select a vacant stall below.');
-      return;
-    }
-    var option = stallSel.querySelector('option[value="' + assigned.stall + '"]');
-    if (!option) {
-      say('Assigned stall ' + assigned.number + ' is not vacant. Terminate or transfer its current contract first.', 'warn');
-      return;
-    }
-    stallSel.value = option.value;
-    if (rentInput && (!rentInput.value || rentInput.dataset.autofilled === '1')) {
-      rentInput.value = assigned.rate;
+  function money(value) {
+    var amount = Number(value);
+    return isNaN(amount) ? value : amount.toFixed(2);
+  }
+
+  function boxFor(pk) {
+    return boxes.filter(function (b) { return b.value === String(pk); })[0];
+  }
+
+  function heldEntry(pk) {
+    return assigned.filter(function (e) { return e.stall === String(pk); })[0];
+  }
+
+  // A stall is pickable only while it is still vacant, which is what both the
+  // single-stall select and the checklist are built from.
+  function isPickable(pk) {
+    return !!boxFor(pk) || !!(stallSel && stallSel.querySelector('option[value="' + pk + '"]'));
+  }
+
+  function label(entry) {
+    return entry.number + ' (₱' + money(entry.rate) + ')';
+  }
+
+  // A lone stall may carry its rate into the rent box; several never share one.
+  function fillRent(entry) {
+    if (!rentInput || !entry) return;
+    if (!rentInput.value || rentInput.dataset.autofilled === '1') {
+      rentInput.value = entry.rate;
       rentInput.dataset.autofilled = '1';
     }
-    say('Auto-selected assigned stall ' + assigned.number + ' • rate ₱' + assigned.rate + ' applied.', 'ok');
+  }
+
+  tenantSel.addEventListener('change', function () {
+    assigned = map[this.value] || [];
+    if (!this.value) { say(''); return; }
+    if (!assigned.length) {
+      say('No stall on record for this tenant — tick a vacant stall below to assign one.');
+      return;
+    }
+
+    var pickable = assigned.filter(function (e) { return isPickable(e.stall); });
+    var activeHeld = assigned.filter(function (e) { return e.status === 'Active'; })
+                             .map(function (e) { return e.number; });
+
+    if (boxes.length) {
+      boxes.forEach(function (b) {
+        if (b.dataset.autofilled === '1') { b.checked = false; b.dataset.autofilled = ''; }
+      });
+      if (rentInput && rentInput.dataset.autofilled === '1' && pickable.length !== 1) {
+        rentInput.value = '';
+        rentInput.dataset.autofilled = '';
+      }
+      pickable.forEach(function (entry) {
+        var box = boxFor(entry.stall);
+        if (box.checked) return;
+        box.checked = true;
+        box.dataset.autofilled = '1';
+        // Lets the picker refresh its selected count and submit gate.
+        box.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+
+      var parts = [];
+      if (pickable.length) {
+        parts.push('Auto-ticked ' + pickable.length + ' stall(s) this tenant held: '
+          + pickable.map(label).join(', ') + ' — untick any you do not need.');
+        if (pickable.length === 1) fillRent(pickable[0]);
+      }
+      if (activeHeld.length) {
+        parts.push('Already holds ' + activeHeld.join(', ') + ' under an active contract.');
+      }
+      if (!pickable.length && !activeHeld.length) {
+        parts.push('Their earlier stall(s) are no longer vacant — pick another below.');
+      }
+      say(parts.join(' '), pickable.length ? 'ok' : 'warn');
+      return;
+    }
+
+    if (!pickable.length) {
+      say('Stall(s) on record (' + assigned.map(function (e) { return e.number; }).join(', ')
+          + ') are not vacant. Terminate or transfer their contracts first.', 'warn');
+      return;
+    }
+    stallSel.value = pickable[0].stall;
+    fillRent(pickable[0]);
+    say('Auto-selected ' + pickable[0].number + ' • rate ₱' + money(pickable[0].rate)
+        + ' applied. This tenant holds ' + assigned.length
+        + ' stall(s) — one contract per stall, so save this one then repeat.', 'ok');
+  });
+
+  // Clear a stale single rent the moment the selection grows past one stall.
+  boxes.forEach(function (box) {
+    box.addEventListener('change', function () {
+      var chosen = boxes.filter(function (b) { return b.checked; });
+      if (!rentInput || chosen.length < 2) return;
+      rentInput.value = '';
+      rentInput.dataset.autofilled = '';
+    });
   });
 })();
 </script>
