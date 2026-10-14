@@ -3,6 +3,8 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
 
+from core.models import SystemSetting
+
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -21,7 +23,10 @@ def login_view(request):
             messages.error(request, 'Invalid username or password.')
     else:
         form = AuthenticationForm()
-    return render(request, 'registration/login.html', {'form': form})
+    return render(request, 'registration/login.html', {
+        'form': form,
+        'system_settings': SystemSetting.objects.first(),
+    })
 
 
 def logout_view(request):

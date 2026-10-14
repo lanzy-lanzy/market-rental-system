@@ -1,179 +1,107 @@
 {% load static %}<!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign in — Mercado Market System</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+  <title>Sign In — {{ system_settings.market_name|default:"Dumingag Public Market" }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/output.css' %}?v={{ STATIC_VERSION }}">
 </head>
-<body class="min-h-full bg-[#f8fafc] antialiased" style="font-family:'Inter', ui-sans-serif">
-  <div class="min-h-screen grid lg:grid-cols-[1.15fr_0.85fr]">
-    <!-- Left: form -->
-    <div class="flex flex-col">
-      <!-- Top bar -->
-      <div class="flex items-center justify-between px-6 sm:px-10 py-6">
-        <a href="{% url 'landing' %}" class="flex items-center gap-3">
-          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-          </div>
-          <div>
-            <p class="text-sm font-extrabold tracking-tight text-slate-900" style="font-family:'Plus Jakarta Sans'">MERCADO</p>
-            <p class="text-[11px] font-semibold tracking-[0.14em] text-slate-500">MUNICIPAL MARKET • 2026</p>
-          </div>
-        </a>
-        <a href="{% url 'landing' %}" class="hidden sm:inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
-          ← Back to landing
-        </a>
-      </div>
+<body class="bg-white text-slate-800 antialiased" style="font-family:'Inter',system-ui,sans-serif">
 
-      <div class="flex flex-1 items-center justify-center px-6 sm:px-10 py-8">
-        <div class="w-full max-w-[420px]">
-          <div class="mb-8">
-            <span class="inline-flex items-center gap-2 rounded-full bg-primary-50 border border-primary-200 px-3 py-1 text-xs font-bold tracking-widest text-primary-700">SECURE ACCESS</span>
-            <h1 class="mt-4 text-[28px] font-extrabold tracking-tight text-slate-900" style="font-family:'Plus Jakarta Sans'">Welcome back</h1>
-            <p class="mt-2 text-sm leading-6 text-slate-600">Sign in to manage stalls, tenants, billing and collections — with role-based dashboards.</p>
-          </div>
+<div class="flex min-h-screen">
 
-          {% if messages %}
-            {% for message in messages %}
-              <div class="mb-4 rounded-2xl border px-4 py-3 text-sm font-medium flex gap-3 {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-800{% elif message.tags == 'success' %}border-emerald-200 bg-emerald-50 text-emerald-800{% else %}border-slate-200 bg-slate-50 text-slate-700{% endif %}">
-                <span class="mt-0.5">●</span><span>{{ message }}</span>
-              </div>
-            {% endfor %}
-          {% endif %}
+  <!-- Left: official brand panel -->
+  <div class="relative hidden w-1/2 lg:block">
+    <div class="absolute inset-0 bg-cover bg-center" style="background-image:url('{% static 'images/dumingag_bg.png' %}')"></div>
+    <div class="absolute inset-0 bg-emerald-900/85"></div>
+    <div class="relative flex h-full flex-col items-center justify-center px-12 text-center text-white">
+      <img src="{% static 'images/lgu_dumingag_logo.png' %}" alt="Official Seal of the Municipality of Dumingag" class="h-28 w-28">
+      <p class="mt-6 text-xs font-medium uppercase tracking-widest text-slate-200">Republic of the Philippines</p>
+      <h1 class="mt-2 font-serif text-3xl font-bold uppercase leading-tight">{{ system_settings.municipality_name|default:"Municipality of Dumingag" }}</h1>
+      <div class="mt-5 h-1 w-16 bg-[#FCD116]"></div>
+      <p class="mt-5 text-lg font-semibold">{{ system_settings.market_name|default:"Dumingag Public Market" }}</p>
+      <p class="mt-1 text-sm text-slate-200">{{ system_settings.office_name|default:"Market Office" }} • Rental &amp; Collection Management System</p>
+    </div>
+    <p class="absolute inset-x-0 bottom-6 text-center text-xs text-slate-300">For official use only • All transactions are recorded and audited</p>
+  </div>
 
-          <div class="rounded-[22px] border border-slate-200 bg-white p-6 sm:p-7 shadow-sm">
-            <h2 class="text-sm font-bold text-slate-900">Sign in to your account</h2>
-            <p class="mt-1 text-xs text-slate-500">Use your collector, treasurer or admin credentials.</p>
+  <!-- Right: sign-in form -->
+  <div class="flex w-full flex-col lg:w-1/2">
 
-            <form method="post" action="{% url 'login' %}" class="mt-6 space-y-5">
-              {% csrf_token %}
-              {% if form.errors %}
-              <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 flex gap-3 text-sm text-red-800">
-                <svg class="h-5 w-5 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <span>Invalid username or password. Please try again or contact the administrator.</span>
-              </div>
-              {% endif %}
-              {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
-
-              <div>
-                <label for="id_username" class="block text-xs font-bold tracking-wide text-slate-700">Username</label>
-                <div class="relative mt-2">
-                  <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
-                    <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                  </div>
-                  <input type="text" name="username" id="id_username" autofocus required placeholder="e.g. admin or collector1" class="block w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-primary-400 focus:ring-4 focus:ring-primary-100 outline-none transition">
-                </div>
-              </div>
-
-              <div>
-                <div class="flex items-center justify-between">
-                  <label for="id_password" class="block text-xs font-bold tracking-wide text-slate-700">Password</label>
-                  <a href="#" class="text-xs font-semibold text-primary-600 hover:text-primary-700">Forgot?</a>
-                </div>
-                <div class="relative mt-2">
-                  <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
-                    <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                  </div>
-                  <input type="password" name="password" id="id_password" required placeholder="Enter your password" class="block w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-primary-400 focus:ring-4 focus:ring-primary-100 outline-none transition">
-                </div>
-              </div>
-
-              <label class="flex items-center gap-2 text-xs font-medium text-slate-600">
-                <input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"> Remember me for 30 days
-              </label>
-
-              <button type="submit" class="flex w-full items-center justify-center gap-2 rounded-full bg-slate-900 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-slate-900/20 hover:bg-black hover:shadow-xl hover:-translate-y-0.5 transition-all">
-                Sign In
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-              </button>
-
-              <div class="flex items-center gap-3 py-2">
-                <div class="h-px flex-1 bg-slate-200"></div>
-                <span class="text-xs font-medium text-slate-400">OR</span>
-                <div class="h-px flex-1 bg-slate-200"></div>
-              </div>
-
-              <div class="grid grid-cols-2 gap-3 text-xs">
-                <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
-                  <p class="font-bold text-slate-900">Demo Admin</p>
-                  <p class="font-mono text-slate-600">admin / admin123</p>
-                </div>
-                <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
-                  <p class="font-bold text-slate-900">Collector</p>
-                  <p class="font-mono text-slate-600">collector1 / collector123</p>
-                </div>
-              </div>
-            </form>
-          </div>
-
-          <p class="mt-6 text-center text-xs leading-5 text-slate-500">
-            Protected by audit trail & role permissions. Need access? Contact the <span class="font-semibold text-slate-700">Market Administrator</span>.
-          </p>
-          <p class="mt-2 text-center text-xs text-slate-400">© {% now "Y" %} {{ system_settings.municipality_name|default:"LGU Dumingag" }} • All rights reserved.</p>
-        </div>
+    <!-- Compact brand bar (mobile) -->
+    <div class="flex items-center gap-3 border-b border-slate-200 bg-white px-6 py-4 lg:hidden">
+      <img src="{% static 'images/lgu_dumingag_logo.png' %}" alt="Municipal Seal" class="h-10 w-10 shrink-0">
+      <div>
+        <p class="text-sm font-bold uppercase leading-tight text-emerald-800">{{ system_settings.municipality_name|default:"Municipality of Dumingag" }}</p>
+        <p class="text-xs text-slate-500">{{ system_settings.market_name|default:"Dumingag Public Market" }}</p>
       </div>
     </div>
 
-    <!-- Right: showcase -->
-    <div class="hidden lg:flex relative overflow-hidden bg-slate-900">
-      <div class="absolute inset-0 bg-gradient-to-br from-primary-700 via-teal-600 to-indigo-700 opacity-90"></div>
-      <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.18),transparent_45%),radial-gradient(circle_at_80%_80%,rgba(255,255,255,0.12),transparent_40%)]"></div>
-      <!-- subtle grid -->
-      <div class="absolute inset-0 opacity-[0.07]" style="background-image: linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px); background-size: 32px 32px;"></div>
+    <div class="flex items-center justify-between px-6 py-5 sm:px-10">
+      <a href="{% url 'landing' %}" class="text-xs font-semibold text-emerald-800 hover:underline">← Back to Home</a>
+      <p class="hidden text-xs text-slate-400 sm:block">{% now "l, F d, Y" %}</p>
+    </div>
 
-      <div class="relative flex flex-col justify-between p-10 w-full">
-        <div>
-          <div class="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/15 px-3 py-1.5 text-xs font-bold tracking-widest text-white backdrop-blur">
-            <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span> LIVE COLLECTION MONITORING
+    <div class="flex flex-1 items-center justify-center px-6 pb-10 sm:px-10">
+      <div class="w-full max-w-[420px]">
+        <h2 class="text-2xl font-bold text-slate-900">Sign In</h2>
+        <p class="mt-1 text-sm text-slate-600">Enter your official credentials to access the system.</p>
+
+        {% if messages %}
+          {% for message in messages %}
+            <div class="mt-4 rounded-sm border px-4 py-3 text-sm font-medium {% if message.tags == 'error' %}border-red-300 bg-red-50 text-red-800{% elif message.tags == 'success' %}border-emerald-300 bg-emerald-50 text-emerald-800{% else %}border-slate-300 bg-slate-50 text-slate-700{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        <form method="post" action="{% url 'login' %}" class="mt-6 space-y-5">
+          {% csrf_token %}
+          {% if form.errors %}
+          <div class="rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+            Invalid username or password. Please try again or contact the Market Administrator.
           </div>
-          <h2 class="mt-6 text-[30px] font-extrabold leading-tight text-white" style="font-family:'Plus Jakarta Sans'">
-            Transparent.<br>
-            Accountable.<br>
-            <span class="text-white/70">Municipal-grade.</span>
-          </h2>
-          <p class="mt-4 max-w-md text-sm leading-6 text-white/80">From receipts to ledgers — every peso is tracked, every action is audited. Built for treasurers and collectors who need clarity at a glance.</p>
+          {% endif %}
+          {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
 
-          <div class="mt-8 grid grid-cols-3 gap-3 max-w-md">
-            <div class="rounded-2xl bg-white p-4 shadow-xl">
-              <p class="text-xs font-semibold text-slate-500">Monthly Due</p>
-              <p class="mt-1 text-lg font-extrabold text-slate-900">₱245k</p>
-              <p class="text-xs font-bold text-emerald-600">94% collected</p>
-            </div>
-            <div class="rounded-2xl bg-white/10 border border-white/15 p-4 backdrop-blur text-white">
-              <p class="text-xs font-semibold text-white/70">Overdue</p>
-              <p class="mt-1 text-lg font-extrabold">12</p>
-              <p class="text-xs text-amber-300">Needs notice</p>
-            </div>
-            <div class="rounded-2xl bg-white/10 border border-white/15 p-4 backdrop-blur text-white">
-              <p class="text-xs font-semibold text-white/70">Stalls</p>
-              <p class="mt-1 text-lg font-extrabold">128</p>
-              <p class="text-xs text-white/70">73% occupied</p>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <div class="rounded-[20px] bg-white p-4 shadow-2xl max-w-md">
-            <div class="flex items-center gap-3">
-              <img src="https://i.pravatar.cc/100?img=33" class="h-10 w-10 rounded-full object-cover">
-              <div>
-                <p class="text-sm font-bold text-slate-900">“Collection monitoring is now effortless.”</p>
-                <p class="text-xs text-slate-500">— Municipal Treasurer, Zamboanga del Sur</p>
+          <div>
+            <label for="id_username" class="block text-xs font-bold uppercase tracking-wide text-slate-700">Username</label>
+            <div class="relative mt-2">
+              <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+                <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
               </div>
+              <input type="text" name="username" id="id_username" autofocus required placeholder="Enter your username"
+                class="block w-full rounded-sm border border-slate-300 bg-white py-3 pl-11 pr-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100">
             </div>
-            <div class="mt-4 flex gap-1 text-amber-400">★★★★★ <span class="text-xs font-medium text-slate-500 ml-2">4.9/5 • 2,000+ transactions/month</span></div>
           </div>
-          <div class="mt-6 flex items-center gap-3 text-xs font-medium text-white/60">
-            <span class="h-2 w-2 rounded-full bg-emerald-400"></span> Offline-ready • No CDN • HTMX + Alpine
-            <span class="ml-auto hidden xl:inline">Press <kbd class="rounded bg-white/15 border border-white/20 px-1.5 py-0.5">?</kbd> for help</span>
+
+          <div>
+            <label for="id_password" class="block text-xs font-bold uppercase tracking-wide text-slate-700">Password</label>
+            <div class="relative mt-2">
+              <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+                <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+              </div>
+              <input type="password" name="password" id="id_password" required placeholder="Enter your password"
+                class="block w-full rounded-sm border border-slate-300 bg-white py-3 pl-11 pr-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100">
+            </div>
           </div>
+
+          <button type="submit" class="w-full rounded-sm bg-emerald-800 px-6 py-3 text-sm font-bold uppercase tracking-wide text-white hover:bg-emerald-900">
+            Sign In
+          </button>
+        </form>
+
+        <div class="mt-8 border-t border-slate-200 pt-4 text-xs leading-5 text-slate-500">
+          <p>Access is limited to authorized personnel: Market Administrator, Collectors, Treasurer, and registered tenants.</p>
+          <p class="mt-2">For account concerns or password reset, contact the <span class="font-semibold text-slate-700">Market Administrator</span>.</p>
         </div>
+
+        <p class="mt-6 text-center text-xs text-slate-400">© {% now "Y" %} {{ system_settings.municipality_name|default:"Municipality of Dumingag" }}. All Rights Reserved.</p>
       </div>
     </div>
   </div>
+</div>
+
 </body>
 </html>

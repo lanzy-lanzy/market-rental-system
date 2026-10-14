@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.db.models import Sum, Count
-from core.models import Stall, Tenant, RentalContract, Billing, SystemSetting
+from core.models import Stall, Tenant, RentalContract, Billing, SystemSetting, MarketSection
 
 
 def landing_view(request):
@@ -30,5 +30,6 @@ def landing_view(request):
         'occupied': occupied,
         'vacant': vacant,
         'occupancy_rate': occupancy_rate,
+        'sections': MarketSection.objects.all(),
     }
     return render(request, 'landing.html', context)
