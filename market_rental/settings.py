@@ -2,8 +2,13 @@ import os
 from pathlib import Path
 
 import dj_database_url
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load local development variables (DB_ENGINE, MySQL credentials, secrets)
+# from a .env file. Real environment variables always take precedence.
+load_dotenv(BASE_DIR / ".env")
 
 # Local development remains zero-config, while every production secret and
 # connection setting is supplied by the hosting environment.
@@ -65,7 +70,45 @@ TEMPLATES = [
 WSGI_APPLICATION = "market_rental.wsgi.application"
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
+# DB_ENGINE lets you flip between the zero-config SQLite file and XAMPP's
+# MySQL/MariaDB server without touching code (set it in .env).
+DB_ENGINE = os.environ.get("DB_ENGINE", "sqlite").lower()
+
+
+def _ensure_mysql_database(db_name, host, port, user, password):
+    """Create the local MySQL database if it does not already exist.
+
+    Django's migrate command cannot create the schema itself, so connect
+    to the server without selecting a database and issue an idempotent
+    CREATE. Failures are swallowed here; the real connection error will
+    surface when Django next tries to reach the server.
+    """
+    try:
+        import pymysql
+
+        connection = pymysql.connect(
+            host=host,
+            port=int(port),
+            user=user,
+            password=password,
+            autocommit=True,
+        )
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"CREATE DATABASE IF NOT EXISTS `{db_name}` "
+                    "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+                )
+        finally:
+            connection.close()
+    except Exception:  # pragma: no cover - best-effort local bootstrap
+        pass
+
+
 if DATABASE_URL:
+    # Production / hosted databases are still driven entirely by the
+    # environment (e.g. a managed MySQL service). This takes precedence
+    # over DB_ENGINE.
     DATABASES = {
         "default": dj_database_url.config(
             default=DATABASE_URL,
@@ -74,7 +117,32 @@ if DATABASE_URL:
             ssl_require=not DEBUG,
         )
     }
+elif DB_ENGINE == "mysql":
+    # Local development against the MySQL/MariaDB server bundled with XAMPP.
+    # The defaults match a stock XAMPP install (root user, empty password);
+    # override any value through the .env file.
+    MYSQL_DB = os.environ.get("MYSQL_DB", "market_rental")
+    MYSQL_HOST = os.environ.get("MYSQL_HOST", "127.0.0.1")
+    MYSQL_PORT = os.environ.get("MYSQL_PORT", "3306")
+    MYSQL_USER = os.environ.get("MYSQL_USER", "root")
+    MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD", "")
+
+    _ensure_mysql_database(MYSQL_DB, MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD)
+
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": MYSQL_DB,
+            "USER": MYSQL_USER,
+            "PASSWORD": MYSQL_PASSWORD,
+            "HOST": MYSQL_HOST,
+            "PORT": MYSQL_PORT,
+            "CONN_MAX_AGE": 600,
+            "OPTIONS": {"charset": "utf8mb4"},
+        }
+    }
 else:
+    # Fallback: zero-config SQLite file.
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
