@@ -9,11 +9,12 @@ from django.test import TestCase
 
 from core.models import (
     MarketSection, Stall, Tenant, RentalContract, Billing, Payment, TenantLedger, SystemSetting,
+    UserProfile,
 )
 from core.helpers import record_payment, generate_receipt_number
 
 
-class RecordPaymentServiceTests(TestCase):
+class BillingFixtureMixin:
     def setUp(self):
         SystemSetting.objects.create(
             municipality_name='Dumingag', market_name='Dumingag Public Market',
@@ -43,6 +44,8 @@ class RecordPaymentServiceTests(TestCase):
         )
         self.collector = User.objects.create_user(username='coll', password='x')
 
+
+class RecordPaymentServiceTests(BillingFixtureMixin, TestCase):
     def _pay(self, amount, **kw):
         with transaction.atomic():
             return record_payment(
@@ -96,3 +99,55 @@ class RecordPaymentServiceTests(TestCase):
         self._pay(Decimal('30.00'))
         second = generate_receipt_number()
         self.assertTrue(second.endswith('-000002'))
+
+
+class CollectViewDetectionTests(BillingFixtureMixin, TestCase):
+    """The amount entered in Collect Payment alone decides Paid vs Partial."""
+
+    def setUp(self):
+        super().setUp()
+        UserProfile.objects.create(user=self.collector, role='collector')
+        self.client.force_login(self.collector)
+
+    def _collect(self, amount):
+        return self.client.post(
+            f'/billing/{self.billing.id}/collect/',
+            {
+                'amount_paid': str(amount),
+                'payment_method': 'Cash',
+                'payment_date': date(2026, 1, 10).isoformat(),
+                'remarks': '',
+            },
+            headers={'hx-request': 'true'},
+        )
+
+    def test_underpaid_amount_is_auto_detected_as_partial(self):
+        resp = self._collect('40.00')
+        self.billing.refresh_from_db()
+        payment = Payment.objects.get(billing=self.billing)
+        self.assertEqual(payment.status, 'Partial')
+        self.assertEqual(self.billing.status, 'Partial')
+        self.assertEqual(self.billing.balance, Decimal('60.00'))
+        self.assertIn('Partial payment', resp.content.decode())
+        self.assertIn('60.00 remaining', resp.content.decode())
+
+    def test_balance_amount_is_auto_detected_as_paid(self):
+        resp = self._collect('100.00')
+        self.billing.refresh_from_db()
+        self.assertEqual(Payment.objects.get(billing=self.billing).status, 'Paid')
+        self.assertEqual(self.billing.status, 'Paid')
+        self.assertEqual(self.billing.balance, Decimal('0.00'))
+        self.assertIn('Paid in full', resp.content.decode())
+
+    def test_partial_then_remainder_settles_the_billing(self):
+        self._collect('40.00')
+        self.billing.refresh_from_db()
+        self._collect(self.billing.balance)
+        self.billing.refresh_from_db()
+        self.assertEqual(self.billing.status, 'Paid')
+        self.assertEqual(Payment.objects.filter(billing=self.billing).count(), 2)
+
+    def test_collect_modal_has_no_manual_status_override(self):
+        content = self.client.get(f'/billing/{self.billing.id}/collect/').content.decode()
+        self.assertNotIn('is_paid', content)
+        self.assertIn('id="collect-outcome"', content)

@@ -49,8 +49,13 @@
       {% if form.amount_paid.errors %}<p class="mt-1 text-xs text-red-600">{{ form.amount_paid.errors.0 }}</p>{% endif %}
       <p class="mt-1.5 flex items-center justify-between text-xs">
         <span class="text-slate-500">Balance: ₱{{ billing.balance|floatformat:2|intcomma }}</span>
-        <button type="button" onclick="document.getElementById('{{ form.amount_paid.id_for_label }}').value='{{ billing.balance|floatformat:2 }}'" class="font-bold text-emerald-700 hover:underline">Fill full amount</button>
+        <button type="button" id="fill-full" class="font-bold text-emerald-700 hover:underline">Fill full amount</button>
       </p>
+      <!-- Auto-detected settlement state, driven purely by the entered amount -->
+      <div id="collect-outcome"
+           data-balance="{{ billing.balance|floatformat:2 }}"
+           data-amount-input="{{ form.amount_paid.id_for_label }}"
+           class="mt-2 rounded-xl border px-3 py-2 text-xs font-bold"></div>
     </div>
 
     <div class="grid grid-cols-2 gap-4">
@@ -65,15 +70,6 @@
         {% if form.payment_date.errors %}<p class="mt-1 text-xs text-red-600">{{ form.payment_date.errors.0 }}</p>{% endif %}
       </div>
     </div>
-
-    <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3 flex items-center gap-3">
-      <label class="flex items-center gap-2 cursor-pointer">
-        {{ form.is_paid }}
-        <span class="text-sm font-bold text-emerald-800">Mark as Paid (full settlement)</span>
-      </label>
-      <span class="ml-auto text-xs text-emerald-700">Uncheck for partial</span>
-    </div>
-    {% if form.is_paid.errors %}<p class="mt-1 text-xs text-red-600">{{ form.is_paid.errors.0 }}</p>{% endif %}
 
     <div>
       <label class="block text-sm font-medium text-slate-700">Remarks <span class="text-slate-400 font-normal">(optional)</span></label>
@@ -90,4 +86,42 @@
     </div>
     <p class="text-center text-xs text-slate-400">Receipt will be auto-generated • Collector: {{ request.user.get_full_name|default:request.user.username }}</p>
   </form>
+
+  <script>
+  (function () {
+    const box = document.getElementById('collect-outcome');
+    if (!box) return;
+    const input = document.getElementById(box.dataset.amountInput);
+    const balance = parseFloat(box.dataset.balance) || 0;
+    const peso = n => '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    function refresh() {
+      const value = parseFloat(input.value) || 0;
+      let cls, label, note;
+      if (value <= 0) {
+        cls = 'border-slate-200 bg-slate-50 text-slate-500';
+        label = 'Awaiting amount';
+        note = 'Status is detected from the amount entered.';
+      } else if (value >= balance) {
+        cls = 'border-emerald-200 bg-emerald-50 text-emerald-800';
+        label = 'Full payment';
+        note = 'Billing will be marked <span class="font-extrabold">Paid</span>.';
+      } else {
+        cls = 'border-amber-200 bg-amber-50 text-amber-800';
+        label = 'Partial payment';
+        note = peso(balance - value) + ' will remain as balance (<span class="font-extrabold">Partial</span>).';
+      }
+      box.className = 'mt-2 rounded-xl border px-3 py-2 text-xs font-bold ' + cls;
+      box.innerHTML = '<span class="uppercase tracking-wider">' + label + '</span> — ' + note;
+    }
+
+    input.addEventListener('input', refresh);
+    document.getElementById('fill-full').addEventListener('click', function () {
+      input.value = balance.toFixed(2);
+      refresh();
+      input.focus();
+    });
+    refresh();
+  })();
+  </script>
 </div>

@@ -13,17 +13,23 @@ class TenantCredentialsFlowTests(TestCase):
         UserProfile.objects.create(user=self.admin, role='admin')
         self.client.force_login(self.admin)
 
-    def _tenant_payload(self, tid='T-900'):
+    def _tenant_payload(self, email='juan@example.com'):
+        # Tenant ID is auto-generated and the name/address are collected in
+        # parts, then composed onto full_name/address by TenantForm.save().
         return {
-            'tenant_id': tid,
-            'full_name': 'Juan Dela Cruz',
-            'address': '123 Market St',
+            'first_name': 'Juan',
+            'middle_name': 'Dela Cruz',
+            'last_name': 'Pedro',
+            'street': '123 Market St',
+            'barangay': 'Poblacion 1',
+            'municipality': 'Dumingag',
+            'province': 'Zamboanga del Sur',
             'contact_number': '09123456789',
-            'email': 'juan@example.com',
+            'email': email,
             'valid_id_type': 'Others',
             'valid_id_number': 'ID123',
             'business_name': 'Juan Sari-Sari',
-            'business_type': 'Grocery',
+            'business_type': 'Grocery / Sari-sari Store',
             'emergency_contact_name': 'Maria',
             'emergency_contact_number': '09999999999',
             'status': 'Active',
@@ -42,8 +48,12 @@ class TenantCredentialsFlowTests(TestCase):
         resp = self.client.post('/tenants/add/', self._tenant_payload())
         self.assertEqual(resp.status_code, 200)
         self.assertTemplateUsed(resp, 'tenants/credentials.html')
-        tenant = Tenant.objects.get(tenant_id='T-900')
+        tenant = Tenant.objects.get(email='juan@example.com')
+        self.assertRegex(tenant.tenant_id, r'^TEN-\d{3}$')
+        self.assertEqual(tenant.full_name, 'Juan Dela Cruz Pedro')
+        self.assertEqual(tenant.address, '123 Market St, Poblacion 1, Dumingag, Zamboanga del Sur')
         self.assertIsNotNone(tenant.user)
+        self.assertEqual(tenant.user.username, tenant.tenant_id)
         self.assertTrue(tenant.user.profile.must_change_password)
         content = resp.content.decode()
         self.assertIn(tenant.user.username, content)
@@ -51,17 +61,21 @@ class TenantCredentialsFlowTests(TestCase):
 
     def test_modal_add_creates_login(self):
         resp = self.client.post(
-            '/tenants/add-modal/', self._tenant_payload('T-901'),
+            '/tenants/add-modal/', self._tenant_payload('juan2@example.com'),
             headers={'hx-request': 'true'},
         )
         self.assertEqual(resp.status_code, 200)
         self.assertTemplateUsed(resp, 'tenants/_credentials_fragment.html')
-        tenant = Tenant.objects.get(tenant_id='T-901')
+        tenant = Tenant.objects.get(email='juan2@example.com')
         self.assertTrue(tenant.user.profile.must_change_password)
 
     def test_force_password_change_and_self_service_update(self):
-        tenant = Tenant.objects.create(**{k: v for k, v in self._tenant_payload('T-902').items()})
+        tenant = Tenant.objects.create(
+            tenant_id='TEN-902', first_name='Juan', last_name='Pedro',
+            full_name='Juan Pedro', municipality='Dumingag',
+        )
         user, temp_password = create_tenant_login(tenant)
+        self.assertEqual(user.username, 'TEN-902')
 
         # Tenant logs in and is forced to the password page from the dashboard.
         self.client.force_login(user)
@@ -85,7 +99,7 @@ class TenantCredentialsFlowTests(TestCase):
         self.assertEqual(resp.status_code, 200)
 
     def test_password_change_rejects_weak_new_password(self):
-        tenant = Tenant.objects.create(**{k: v for k, v in self._tenant_payload('T-903').items()})
+        tenant = Tenant.objects.create(tenant_id='TEN-903', full_name='Juan Pedro', first_name='Juan', last_name='Pedro')
         user, temp_password = create_tenant_login(tenant)
         self.client.force_login(user)
         resp = self.client.post('/portal/password/', {

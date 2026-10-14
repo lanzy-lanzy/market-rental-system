@@ -382,10 +382,8 @@ def billing_collect(request, pk):
         form = QuickCollectForm(request.POST, billing=billing)
         if form.is_valid():
             amount = form.cleaned_data['amount_paid']
-            # If "Mark as Paid" checked, force full balance
-            if form.cleaned_data.get('is_paid'):
-                amount = billing.balance
-            # Safety: cap to balance
+            # The amount alone decides the outcome: less than the balance is a
+            # partial payment, the balance (or the 0.01 tolerance) settles it.
             if amount > billing.balance:
                 amount = billing.balance
 
@@ -403,11 +401,16 @@ def billing_collect(request, pk):
             amount = payment.amount_paid
             receipt_number = payment.receipt_number
 
+            if billing.balance > 0:
+                outcome = f'Partial payment — ₱{billing.balance:.2f} remaining'
+            else:
+                outcome = 'Paid in full'
+
             AuditLog.objects.create(
                 user=request.user,
                 action='COLLECT',
                 module='Billing',
-                description=f'Collected ₱{amount} for {billing.tenant.full_name} - {billing.stall.stall_number} {billing.billing_month:02d}/{billing.billing_year} (Receipt {receipt_number})',
+                description=f'Collected ₱{amount} ({outcome}) for {billing.tenant.full_name} - {billing.stall.stall_number} {billing.billing_month:02d}/{billing.billing_year} (Receipt {receipt_number})',
                 ip_address=request.META.get('REMOTE_ADDR'),
             )
 
@@ -415,10 +418,10 @@ def billing_collect(request, pk):
                 from django.http import HttpResponse
                 return HttpResponse(f'''<script>
                     closeModal();
-                    showToast('Collected ₱{amount:.2f} — {billing.tenant.full_name} {billing.billing_month:02d}/{billing.billing_year} marked as {billing.status}.', 'success');
+                    showToast('Collected ₱{amount:.2f} — {billing.tenant.full_name} {billing.billing_month:02d}/{billing.billing_year}: {outcome}.', 'success');
                     setTimeout(function() {{ location.reload(); }}, 700);
                 </script>''')
-            messages.success(request, f'Collected ₱{amount:.2f} for {billing.tenant.full_name}. Billing now {billing.status}. Receipt: {receipt_number}')
+            messages.success(request, f'Collected ₱{amount:.2f} for {billing.tenant.full_name}. {outcome}. Receipt: {receipt_number}')
             return redirect('billing_list')
         else:
             if is_htmx(request):

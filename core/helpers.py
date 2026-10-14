@@ -381,6 +381,9 @@ def record_payment(*, tenant, billing, amount, payment_date, payment_method='Cas
 
     # Recompute the billing authoritatively from all valid payments.
     locked = recalc_billing_from_payments(locked)
+    # Keep the payment's cached FK pointing at the recomputed row, so callers
+    # reading ``payment.billing.balance`` see settled values, not pre-payment ones.
+    payment.billing = locked
 
     # Ledger credit reflects what was actually applied to this bill.
     applied = amount if amount <= pre_balance else (pre_balance if pre_balance > 0 else amount)
