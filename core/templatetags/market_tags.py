@@ -61,6 +61,12 @@ def split(value, delimiter=','):
 
 
 @register.filter
+def textlines(value):
+    """Split stored multi-line text (e.g. contract terms) into non-empty lines."""
+    return [line.strip() for line in (value or '').splitlines() if line.strip()]
+
+
+@register.filter
 def badge(status):
     palette = {
         'paid': 'bg-green-100 text-green-800',

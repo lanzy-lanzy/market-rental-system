@@ -23,6 +23,22 @@ class UserProfile(models.Model):
         return f"{self.user.get_full_name() or self.user.username} ({self.get_role_display()})"
 
 
+# Standard house rules printed on every rental contract. Stored on SystemSetting
+# so the Market Administrator can revise them without a code change.
+DEFAULT_CONTRACT_TERMS = """1. Rental fees shall be paid on or before the agreed due day of every month, either at the Market Administrator's Office or to the authorized city/municipal collector. An official receipt shall be issued for every payment.
+2. A surcharge shall be automatically imposed on payments made beyond the grace period, in accordance with the penalty rate adopted by the Local Government Unit.
+3. The stall or lot shall be used exclusively for the business line declared in this contract. Any change of use, merchandise line, or business name requires prior written approval of the Market Administrator.
+4. Sub-letting, assignment, transfer, or sharing of the stall with another person without written consent is prohibited and is a ground for cancellation of this contract and forfeiture of the security deposit.
+5. The tenant shall keep the stall clean, orderly, and sanitary, both inside and in front of it, and shall comply with all sanitary, fire safety, and solid waste rules of the municipality.
+6. Operating hours, stall layout, signage, and the movement of goods and persons within the market shall follow the directives of the Market Administrator. No structural alteration or permanent installation shall be made without written approval.
+7. The sale of illegal, substandard, expired, unweighed, or unlicensed goods — including dangerous drugs, contraband, and smuggled articles — is strictly prohibited within the market premises.
+8. The tenant shall be liable for damage to market properties caused by the negligence of the tenant, his or her employees, or occupants.
+9. The security deposit posted is not an offset against unpaid rentals. It shall be refunded only after full settlement of all monetary obligations and restoration of the stall to its original condition.
+10. This contract may be cancelled or terminated for violation of any of its provisions, for non-payment, or for public need and market development projects of the Local Government Unit, without prejudice to existing monetary obligations.
+11. Any act of corruption, imposition of unauthorized fees, or collection without an official receipt may be reported to the Market Administrator or the Local Chief Executive.
+12. Disputes arising from this contract shall first be settled amicably; otherwise they shall be governed by the Market Code or Ordinance of the municipality and existing national laws."""
+
+
 class SystemSetting(models.Model):
     PENALTY_TYPE_CHOICES = [
         ('fixed', 'Fixed'),
@@ -38,6 +54,11 @@ class SystemSetting(models.Model):
     grace_period = models.PositiveIntegerField(default=5)
     logo = models.ImageField(upload_to='logos/', blank=True, null=True)
     theme_color = models.CharField(max_length=7, default='#003366')
+    terms_and_conditions = models.TextField(
+        default=DEFAULT_CONTRACT_TERMS,
+        blank=True,
+        help_text='One clause per line. Printed on every rental contract.',
+    )
 
     class Meta:
         verbose_name = 'System Setting'

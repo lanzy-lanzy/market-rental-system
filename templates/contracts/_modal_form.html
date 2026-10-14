@@ -32,6 +32,7 @@
         <label class="block text-sm font-medium text-gray-700">Stall</label>
         {{ form.stall }}
         {% if form.stall.errors %}<p class="mt-1 text-xs text-red-500">{{ form.stall.errors.0 }}</p>{% endif %}
+        <p id="stall-autofill-hint" class="mt-1 text-xs font-medium"></p>
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700">Start Date</label>
@@ -74,4 +75,5 @@
       <button type="submit" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors">{% if is_add %}Create Contract{% else %}Update Contract{% endif %}</button>
     </div>
   </form>
+  {% include 'contracts/_tenant_stall_autofill.html' %}
 </div>

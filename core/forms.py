@@ -1,4 +1,5 @@
 from decimal import Decimal
+import json
 
 from django import forms
 from django.contrib.auth.forms import UserCreationForm as BaseUserCreationForm
@@ -205,6 +206,36 @@ class RentalContractForm(forms.ModelForm):
         else:
             self.fields['stall'].queryset = Stall.objects.filter(status='Vacant').order_by('stall_number')
 
+        # Lets the form pre-select the stall a tenant is already assigned to.
+        self.fields['tenant'].widget.attrs['data-assigned-stalls'] = json.dumps(
+            self._assigned_stall_map()
+        )
+
+    @staticmethod
+    def _assigned_stall_map():
+        """tenant pk -> assigned stall, for the auto-select in the contract form.
+
+        Prefers the tenant's current Active contract and falls back to their most
+        recent one, so renewals jump straight back to the stall they vacated.
+        """
+        latest = {}
+        for contract in RentalContract.objects.select_related('stall').order_by('tenant_id', 'start_date'):
+            latest[contract.tenant_id] = contract
+        active = {}
+        for contract in RentalContract.objects.select_related('stall').filter(
+                status='Active').order_by('-start_date'):
+            active.setdefault(contract.tenant_id, contract)
+
+        mapping = {}
+        for tenant_id, contract in latest.items():
+            chosen = active.get(tenant_id) or contract
+            mapping[str(tenant_id)] = {
+                'stall': str(chosen.stall_id),
+                'number': chosen.stall.stall_number,
+                'rate': str(chosen.stall.monthly_rate),
+            }
+        return mapping
+
     def clean(self):
         cleaned = super().clean()
         stall = cleaned.get('stall')
@@ -362,7 +393,7 @@ class SystemSettingForm(forms.ModelForm):
         fields = [
             'municipality_name', 'market_name', 'office_name', 'receipt_prefix',
             'default_due_day', 'penalty_type', 'penalty_value', 'grace_period',
-            'logo', 'theme_color',
+            'terms_and_conditions', 'logo', 'theme_color',
         ]
         widgets = {
             'municipality_name': forms.TextInput(attrs={'class': TW_INPUT, 'placeholder': 'Municipality/City name'}),
@@ -373,6 +404,7 @@ class SystemSettingForm(forms.ModelForm):
             'penalty_type': forms.Select(attrs={'class': TW_SELECT}),
             'penalty_value': forms.NumberInput(attrs={'class': TW_INPUT, 'step': '0.01'}),
             'grace_period': forms.NumberInput(attrs={'class': TW_INPUT, 'placeholder': 'Days'}),
+            'terms_and_conditions': forms.Textarea(attrs={'class': TW_TEXTAREA, 'rows': 16, 'placeholder': 'One clause per line'}),
             'logo': forms.FileInput(attrs={'class': TW_INPUT}),
             'theme_color': forms.TextInput(attrs={'class': TW_INPUT, 'type': 'color'}),
         }

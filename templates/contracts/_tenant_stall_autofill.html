@@ -1,0 +1,46 @@
+{% comment %}
+Shared by templates/contracts/form.html and _modal_form.html.
+Selecting a tenant pre-selects the stall they are already assigned to and
+applies that stall's monthly rate. Runs only on tenant change so an encoder
+mid-edit is never overwritten on page load.
+{% endcomment %}
+<script>
+(function () {
+  var tenantSel = document.querySelector('select[name=tenant]');
+  var stallSel = document.querySelector('select[name=stall]');
+  if (!tenantSel || !stallSel) return;
+
+  var rentInput = document.querySelector('input[name=monthly_rent]');
+  var hint = document.getElementById('stall-autofill-hint');
+  var map = {};
+  try { map = JSON.parse(tenantSel.getAttribute('data-assigned-stalls') || '{}'); } catch (e) { map = {}; }
+
+  function say(message, tone) {
+    if (!hint) return;
+    hint.textContent = message;
+    hint.className = 'mt-1 text-xs font-medium ' + (
+      tone === 'ok' ? 'text-emerald-700' :
+      tone === 'warn' ? 'text-amber-700' : 'text-slate-500');
+  }
+
+  tenantSel.addEventListener('change', function () {
+    var assigned = map[this.value];
+    if (!this.value) { say(''); return; }
+    if (!assigned) {
+      say('No stall on record for this tenant — select a vacant stall below.');
+      return;
+    }
+    var option = stallSel.querySelector('option[value="' + assigned.stall + '"]');
+    if (!option) {
+      say('Assigned stall ' + assigned.number + ' is not vacant. Terminate or transfer its current contract first.', 'warn');
+      return;
+    }
+    stallSel.value = option.value;
+    if (rentInput && (!rentInput.value || rentInput.dataset.autofilled === '1')) {
+      rentInput.value = assigned.rate;
+      rentInput.dataset.autofilled = '1';
+    }
+    say('Auto-selected assigned stall ' + assigned.number + ' • rate ₱' + assigned.rate + ' applied.', 'ok');
+  });
+})();
+</script>
