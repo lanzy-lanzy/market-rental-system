@@ -46,7 +46,7 @@ def describe_contracts(contracts):
 def contract_list(request):
     contracts = RentalContract.objects.select_related(
         'tenant', 'stall', 'stall__section'
-    ).all().order_by('-created_at', '-id')
+    ).all().order_by('-start_date', '-created_at', '-id')
 
     status_filter = request.GET.get('status')
     tenant_filter = request.GET.get('tenant')
@@ -214,7 +214,7 @@ def contract_view(request, pk):
         RentalContract.objects.select_related('tenant', 'stall', 'stall__section'),
         pk=pk
     )
-    billings = Billing.objects.filter(contract=contract).order_by('-billing_year', '-billing_month')
+    billings = Billing.objects.filter(contract=contract).order_by('-billing_year', '-billing_month', '-created_at', '-id')
     context = {
         'contract': contract,
         'billings': billings,
@@ -346,7 +346,7 @@ def contract_edit_modal(request, pk):
 
 @staff_required
 def contract_list_print(request):
-    contracts = RentalContract.objects.select_related('tenant', 'stall', 'stall__section').all().order_by('-created_at', '-id')
+    contracts = RentalContract.objects.select_related('tenant', 'stall', 'stall__section').all().order_by('-start_date', '-created_at', '-id')
     status_filter = request.GET.get('status')
     search_query = (request.GET.get('search') or '').strip()
     if status_filter:
@@ -372,7 +372,7 @@ def contract_list_print(request):
 
 @staff_required
 def contract_list_export_pdf(request):
-    contracts = RentalContract.objects.select_related('tenant', 'stall', 'stall__section').all().order_by('-created_at', '-id')
+    contracts = RentalContract.objects.select_related('tenant', 'stall', 'stall__section').all().order_by('-start_date', '-created_at', '-id')
     status_filter = request.GET.get('status')
     search_query = (request.GET.get('search') or '').strip()
     if status_filter:
@@ -400,7 +400,7 @@ def contract_list_export_pdf(request):
 @staff_required
 def contract_view_print(request, pk):
     contract = get_object_or_404(RentalContract.objects.select_related('tenant', 'stall', 'stall__section'), pk=pk)
-    billings = Billing.objects.filter(contract=contract).order_by('-billing_year', '-billing_month')
+    billings = Billing.objects.filter(contract=contract).order_by('-billing_year', '-billing_month', '-created_at', '-id')
     from core.models import SystemSetting
     context = {
         'contract': contract,
@@ -415,7 +415,7 @@ def contract_view_print(request, pk):
 @staff_required
 def contract_view_export_pdf(request, pk):
     contract = get_object_or_404(RentalContract.objects.select_related('tenant', 'stall', 'stall__section'), pk=pk)
-    billings = Billing.objects.filter(contract=contract).order_by('-billing_year', '-billing_month')
+    billings = Billing.objects.filter(contract=contract).order_by('-billing_year', '-billing_month', '-created_at', '-id')
     from core.models import SystemSetting
     context = {
         'contract': contract,

@@ -117,7 +117,7 @@ def stall_delete(request, pk):
 @login_required
 def stall_view(request, pk):
     stall = get_object_or_404(Stall.objects.select_related('section', 'stall_type'), pk=pk)
-    contracts = RentalContract.objects.filter(stall=stall).select_related('tenant').order_by('-start_date')
+    contracts = RentalContract.objects.filter(stall=stall).select_related('tenant').order_by('-start_date', '-created_at', '-id')
     context = {
         'stall': stall,
         'contracts': contracts,
@@ -246,7 +246,7 @@ def stall_list_export_pdf(request):
 @login_required
 def stall_view_print(request, pk):
     stall = get_object_or_404(Stall.objects.select_related('section', 'stall_type'), pk=pk)
-    contracts = RentalContract.objects.filter(stall=stall).select_related('tenant').order_by('-start_date')
+    contracts = RentalContract.objects.filter(stall=stall).select_related('tenant').order_by('-start_date', '-created_at', '-id')
     from core.models import SystemSetting
     context = {
         'stall': stall,
@@ -261,7 +261,7 @@ def stall_view_print(request, pk):
 @login_required
 def stall_view_export_pdf(request, pk):
     stall = get_object_or_404(Stall.objects.select_related('section', 'stall_type'), pk=pk)
-    contracts = RentalContract.objects.filter(stall=stall).select_related('tenant').order_by('-start_date')
+    contracts = RentalContract.objects.filter(stall=stall).select_related('tenant').order_by('-start_date', '-created_at', '-id')
     from core.models import SystemSetting
     context = {
         'stall': stall,

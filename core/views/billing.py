@@ -273,7 +273,7 @@ def billing_view(request, pk):
     if get_user_role(request.user) == 'tenant' and billing.tenant.user != request.user:
         messages.error(request, 'You can only view your own billing.')
         return redirect('dashboard')
-    payments = Payment.objects.filter(billing=billing).order_by('-payment_date')
+    payments = Payment.objects.filter(billing=billing).order_by('-payment_date', '-created_at', '-id')
     context = {
         'billing': billing,
         'payments': payments,
@@ -543,7 +543,7 @@ def billing_view_print(request, pk):
     if get_user_role(request.user) == 'tenant' and billing.tenant.user != request.user:
         messages.error(request, 'You can only view your own billing.')
         return redirect('dashboard')
-    payments = Payment.objects.filter(billing=billing).order_by('-payment_date')
+    payments = Payment.objects.filter(billing=billing).order_by('-payment_date', '-created_at', '-id')
     from core.models import SystemSetting
     context = {
         'billing': billing,
@@ -561,7 +561,7 @@ def billing_view_export_pdf(request, pk):
     if get_user_role(request.user) == 'tenant' and billing.tenant.user != request.user:
         messages.error(request, 'You can only view your own billing.')
         return redirect('dashboard')
-    payments = Payment.objects.filter(billing=billing).order_by('-payment_date')
+    payments = Payment.objects.filter(billing=billing).order_by('-payment_date', '-created_at', '-id')
     from core.models import SystemSetting
     context = {
         'billing': billing,

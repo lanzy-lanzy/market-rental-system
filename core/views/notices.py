@@ -17,7 +17,7 @@ def is_htmx(request):
 
 @login_required
 def notice_list(request):
-    notices = Notice.objects.select_related('tenant').all().order_by('-date_issued', '-created_at')
+    notices = Notice.objects.select_related('tenant').all().order_by('-date_issued', '-created_at', '-id')
     # Tenant isolation: only own notices
     if get_user_role(request.user) == 'tenant':
         notices = notices.filter(tenant__user=request.user)
@@ -117,7 +117,7 @@ def notice_mark_served(request, pk):
 
 @login_required
 def notice_list_print(request):
-    notices = Notice.objects.select_related('tenant').all().order_by('-date_issued', '-created_at')
+    notices = Notice.objects.select_related('tenant').all().order_by('-date_issued', '-created_at', '-id')
     if get_user_role(request.user) == 'tenant':
         notices = notices.filter(tenant__user=request.user)
     type_filter = request.GET.get('type')
@@ -152,7 +152,7 @@ def notice_list_print(request):
 
 @login_required
 def notice_list_export_pdf(request):
-    notices = Notice.objects.select_related('tenant').all().order_by('-date_issued', '-created_at')
+    notices = Notice.objects.select_related('tenant').all().order_by('-date_issued', '-created_at', '-id')
     if get_user_role(request.user) == 'tenant':
         notices = notices.filter(tenant__user=request.user)
     type_filter = request.GET.get('type')

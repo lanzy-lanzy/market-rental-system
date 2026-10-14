@@ -84,7 +84,7 @@ def report_daily(request):
         status__in=['Paid', 'Partial'],
         payment_date__gte=date_from,
         payment_date__lte=date_to,
-    ).select_related('tenant', 'stall', 'collected_by').order_by('payment_date')
+    ).select_related('tenant', 'stall', 'collected_by').order_by('-payment_date', '-created_at', '-id')
 
     paginator = Paginator(payments, 50)
     page_obj = paginator.get_page(request.GET.get('page'))
@@ -117,7 +117,7 @@ def report_weekly(request):
         status__in=['Paid', 'Partial'],
         payment_date__gte=date_from,
         payment_date__lte=date_to,
-    ).select_related('tenant', 'stall', 'collected_by').order_by('payment_date')
+    ).select_related('tenant', 'stall', 'collected_by').order_by('-payment_date', '-created_at', '-id')
 
     paginator = Paginator(payments, 50)
     page_obj = paginator.get_page(request.GET.get('page'))
@@ -147,7 +147,7 @@ def report_monthly(request):
         status__in=['Paid', 'Partial'],
         payment_date__gte=start_date,
         payment_date__lte=end_date,
-    ).select_related('tenant', 'stall', 'collected_by').order_by('payment_date')
+    ).select_related('tenant', 'stall', 'collected_by').order_by('-payment_date', '-created_at', '-id')
 
     paginator = Paginator(payments, 50)
     page_obj = paginator.get_page(request.GET.get('page'))
@@ -368,7 +368,7 @@ def report_ledger(request):
     tenant_id = request.GET.get('tenant')
     date_from, date_to = get_date_range(request)
 
-    entries = TenantLedger.objects.select_related('tenant', 'billing', 'payment').order_by('transaction_date')
+    entries = TenantLedger.objects.select_related('tenant', 'billing', 'payment').order_by('-transaction_date', '-created_at', '-id')
     if tenant_id:
         entries = entries.filter(tenant_id=tenant_id)
     if date_from:
@@ -535,7 +535,7 @@ def report_export_pdf(request):
         context = {'stalls': qs, 'total': qs.count(), 'report_type': 'Vacant Stall Report' if report_type == 'vacant' else 'Stall Occupancy Report'}
     elif report_type == 'ledger':
         tenant_id = request.GET.get('tenant')
-        entries = TenantLedger.objects.select_related('tenant', 'billing', 'payment').order_by('transaction_date')
+        entries = TenantLedger.objects.select_related('tenant', 'billing', 'payment').order_by('-transaction_date', '-created_at', '-id')
         if tenant_id:
             entries = entries.filter(tenant_id=tenant_id)
         if date_from:
@@ -730,7 +730,7 @@ def report_export_excel(request):
             ws.cell(row=row, column=7, value=tenant_name)
     elif report_type == 'ledger':
         tenant_id = request.GET.get('tenant')
-        entries = TenantLedger.objects.select_related('tenant', 'billing', 'payment').order_by('transaction_date')
+        entries = TenantLedger.objects.select_related('tenant', 'billing', 'payment').order_by('-transaction_date', '-created_at', '-id')
         if tenant_id:
             entries = entries.filter(tenant_id=tenant_id)
         if date_from:

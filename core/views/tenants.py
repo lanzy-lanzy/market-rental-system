@@ -126,9 +126,9 @@ def tenant_view(request, pk):
     if role == 'tenant' and tenant.user != request.user:
         messages.error(request, 'You can only view your own tenant profile.')
         return redirect('dashboard')
-    contracts = RentalContract.objects.filter(tenant=tenant).select_related('stall', 'stall__section')
-    billings = Billing.objects.filter(tenant=tenant).order_by('-billing_year', '-billing_month')
-    payments = Payment.objects.filter(tenant=tenant).order_by('-payment_date')[:10]
+    contracts = RentalContract.objects.filter(tenant=tenant).select_related('stall', 'stall__section').order_by('-start_date', '-created_at', '-id')
+    billings = Billing.objects.filter(tenant=tenant).order_by('-billing_year', '-billing_month', '-created_at', '-id')
+    payments = Payment.objects.filter(tenant=tenant).order_by('-payment_date', '-created_at', '-id')[:10]
 
     total_balance = billings.aggregate(total=Sum('balance'))['total'] or 0
 
@@ -278,9 +278,9 @@ def tenant_view_print(request, pk):
     if role == 'tenant' and tenant.user != request.user:
         messages.error(request, 'You can only view your own tenant profile.')
         return redirect('dashboard')
-    contracts = RentalContract.objects.filter(tenant=tenant).select_related('stall', 'stall__section')
-    billings = Billing.objects.filter(tenant=tenant).order_by('-billing_year', '-billing_month')
-    payments = Payment.objects.filter(tenant=tenant).order_by('-payment_date')[:10]
+    contracts = RentalContract.objects.filter(tenant=tenant).select_related('stall', 'stall__section').order_by('-start_date', '-created_at', '-id')
+    billings = Billing.objects.filter(tenant=tenant).order_by('-billing_year', '-billing_month', '-created_at', '-id')
+    payments = Payment.objects.filter(tenant=tenant).order_by('-payment_date', '-created_at', '-id')[:10]
     total_balance = billings.aggregate(total=Sum('balance'))['total'] or 0
     from core.models import SystemSetting
     context = {
@@ -303,9 +303,9 @@ def tenant_view_export_pdf(request, pk):
     if role == 'tenant' and tenant.user != request.user:
         messages.error(request, 'You can only view your own tenant profile.')
         return redirect('dashboard')
-    contracts = RentalContract.objects.filter(tenant=tenant).select_related('stall', 'stall__section')
-    billings = Billing.objects.filter(tenant=tenant).order_by('-billing_year', '-billing_month')
-    payments = Payment.objects.filter(tenant=tenant).order_by('-payment_date')[:10]
+    contracts = RentalContract.objects.filter(tenant=tenant).select_related('stall', 'stall__section').order_by('-start_date', '-created_at', '-id')
+    billings = Billing.objects.filter(tenant=tenant).order_by('-billing_year', '-billing_month', '-created_at', '-id')
+    payments = Payment.objects.filter(tenant=tenant).order_by('-payment_date', '-created_at', '-id')[:10]
     total_balance = billings.aggregate(total=Sum('balance'))['total'] or 0
     from core.models import SystemSetting
     context = {

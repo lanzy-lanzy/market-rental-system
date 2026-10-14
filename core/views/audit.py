@@ -12,7 +12,7 @@ def is_htmx(request):
 
 @admin_required
 def audit_log_list(request):
-    logs = AuditLog.objects.select_related('user').all().order_by('-created_at')
+    logs = AuditLog.objects.select_related('user').all().order_by('-created_at', '-id')
 
     user_filter = request.GET.get('user')
     action_filter = request.GET.get('action')

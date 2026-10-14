@@ -91,7 +91,7 @@ def ledger_print(request, pk):
         return redirect('ledger_list')
     entries = TenantLedger.objects.filter(tenant=tenant).select_related(
         'billing', 'payment'
-    ).order_by('transaction_date', 'created_at')
+    ).order_by('-transaction_date', '-created_at', '-id')
 
     total_debits = entries.aggregate(total=Sum('debit'))['total'] or 0
     total_credits = entries.aggregate(total=Sum('credit'))['total'] or 0
@@ -116,7 +116,7 @@ def ledger_view_export_pdf(request, pk):
     if role == 'tenant' and tenant.user != request.user:
         messages.error(request, 'You can only print your own ledger.')
         return redirect('ledger_list')
-    entries = TenantLedger.objects.filter(tenant=tenant).select_related('billing', 'payment').order_by('transaction_date', 'created_at')
+    entries = TenantLedger.objects.filter(tenant=tenant).select_related('billing', 'payment').order_by('-transaction_date', '-created_at', '-id')
     total_debits = entries.aggregate(total=Sum('debit'))['total'] or 0
     total_credits = entries.aggregate(total=Sum('credit'))['total'] or 0
     running_balance = total_debits - total_credits

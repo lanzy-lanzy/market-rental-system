@@ -26,7 +26,7 @@ def is_htmx(request):
 def payment_list(request):
     payments = Payment.objects.select_related(
         'tenant', 'stall', 'collected_by'
-    ).all().order_by('-payment_date', '-created_at')
+    ).all().order_by('-payment_date', '-created_at', '-id')
 
     # Tenant isolation: tenants see only own payments
     if get_user_role(request.user) == 'tenant':
@@ -146,7 +146,7 @@ def payment_view(request, pk):
     if get_user_role(request.user) == 'tenant' and payment.tenant.user != request.user:
         messages.error(request, 'You can only view your own payments.')
         return redirect('dashboard')
-    ledger_entries = TenantLedger.objects.filter(payment=payment).order_by('transaction_date')
+    ledger_entries = TenantLedger.objects.filter(payment=payment).order_by('-transaction_date', '-created_at', '-id')
     context = {
         'payment': payment,
         'ledger_entries': ledger_entries,
@@ -349,7 +349,7 @@ def payment_void(request, pk):
 
 @login_required
 def payment_list_print(request):
-    payments = Payment.objects.select_related('tenant', 'stall', 'collected_by').all().order_by('-payment_date', '-created_at')
+    payments = Payment.objects.select_related('tenant', 'stall', 'collected_by').all().order_by('-payment_date', '-created_at', '-id')
     if get_user_role(request.user) == 'tenant':
         payments = payments.filter(tenant__user=request.user)
     date_from = request.GET.get('date_from')
@@ -403,7 +403,7 @@ def payment_list_print(request):
 
 @login_required
 def payment_list_export_pdf(request):
-    payments = Payment.objects.select_related('tenant', 'stall', 'collected_by').all().order_by('-payment_date', '-created_at')
+    payments = Payment.objects.select_related('tenant', 'stall', 'collected_by').all().order_by('-payment_date', '-created_at', '-id')
     if get_user_role(request.user) == 'tenant':
         payments = payments.filter(tenant__user=request.user)
     date_from = request.GET.get('date_from')
