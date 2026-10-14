@@ -1,18 +1,18 @@
 @import "tailwindcss";
 
 @theme {
-  /* Primary — Municipal Slate-Teal (trust, government, market freshness) */
-  --color-primary-50: #f0f7f8;
-  --color-primary-100: #d9e8e9;
-  --color-primary-200: #b3d1d3;
-  --color-primary-300: #8dbabb;
-  --color-primary-400: #5a9a9e;
-  --color-primary-500: #2f6366;
-  --color-primary-600: #264f52;
-  --color-primary-700: #1d3c3e;
-  --color-primary-800: #14302f;
-  --color-primary-900: #0f2423;
-  --color-primary-950: #0a1a19;
+  /* Primary — Municipal Emerald (official LGU green) */
+  --color-primary-50: #ecfdf5;
+  --color-primary-100: #d1fae5;
+  --color-primary-200: #a7f3d0;
+  --color-primary-300: #6ee7b7;
+  --color-primary-400: #34d399;
+  --color-primary-500: #10b981;
+  --color-primary-600: #059669;
+  --color-primary-700: #047857;
+  --color-primary-800: #065f46;
+  --color-primary-900: #064e3b;
+  --color-primary-950: #022c22;
 
   /* Secondary — Warm Stone (neutral, professional) */
   --color-secondary-50: #fafaf9;
@@ -88,6 +88,6 @@
 
 /* Focus rings — accessible, municipal */
 *:focus-visible {
-  outline: 2px solid #2f6366;
+  outline: 2px solid #059669;
   outline-offset: 2px;
 }

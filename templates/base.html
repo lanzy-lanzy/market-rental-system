@@ -23,153 +23,155 @@
   <aside x-show="sidebarOpen" x-cloak
          x-transition:enter="transition duration-200" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0"
          x-transition:leave="transition duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full"
-         class="fixed inset-y-0 left-0 z-40 flex w-[260px] flex-col bg-white border-r border-slate-200 lg:static lg:translate-x-0 shrink-0">
-    <div class="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 px-5">
-      <a href="{% url 'landing' %}" class="flex items-center gap-3">
-        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-600 text-white">
-          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-        </div>
-        <div class="leading-tight">
-          <span class="block text-sm font-semibold text-slate-900">Public Market</span>
-          <span class="block text-xs font-medium text-slate-500">{{ system_settings.municipality_name|default:"Municipal Office" }}</span>
-        </div>
-      </a>
-      <button @click="sidebarOpen=false" class="lg:hidden inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50">
-        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
+         class="fixed inset-y-0 left-0 z-40 flex w-[260px] flex-col bg-emerald-900 lg:static lg:translate-x-0 shrink-0">
+    <div class="shrink-0 border-b border-white/10 px-5 py-4">
+      <div class="flex items-start justify-between gap-2">
+        <a href="{% url 'landing' %}" class="flex items-center gap-3">
+          <img src="{% static 'images/lgu_dumingag_logo.png' %}" alt="Municipal Seal" class="h-10 w-10 shrink-0">
+          <div class="leading-tight">
+            <span class="block text-[10px] font-medium uppercase tracking-wide text-emerald-200/70">Republic of the Philippines</span>
+            <span class="block text-sm font-bold uppercase text-white">{{ system_settings.municipality_name|default:"LGU Dumingag" }}</span>
+            <span class="block text-xs font-medium text-emerald-200/80">{{ system_settings.market_name|default:"Public Market" }}</span>
+          </div>
+        </a>
+        <button @click="sidebarOpen=false" class="lg:hidden inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-white/20 text-emerald-100 hover:bg-white/10">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="mt-3 h-0.5 w-12 bg-[#FCD116]"></div>
     </div>
 
     <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
       {% with url_name=request.resolver_match.url_name %}
       {% if user.profile.role == 'tenant' and not user.is_superuser %}
-      <a href="{% url 'tenant_portal' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {% if url_name == 'tenant_portal' %}bg-slate-900 text-white{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+      <a href="{% url 'tenant_portal' %}" class="flex items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors {% if url_name == 'tenant_portal' %}bg-white text-emerald-900 font-semibold{% else %}text-emerald-100/80 hover:bg-white/10 hover:text-white{% endif %}">
         <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
         <span>My Portal</span>
       </a>
-      <div class="pt-4 pb-2"><p class="px-3 text-xs font-semibold tracking-wider text-slate-400 uppercase">My Account</p></div>
-      <a href="{% url 'tenant_portal_history' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {% if url_name == 'tenant_portal_history' %}bg-slate-900 text-white{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+      <div class="pt-4 pb-2"><p class="px-3 text-xs font-semibold tracking-wider text-emerald-200/50 uppercase">My Account</p></div>
+      <a href="{% url 'tenant_portal_history' %}" class="flex items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors {% if url_name == 'tenant_portal_history' %}bg-white text-emerald-900 font-semibold{% else %}text-emerald-100/80 hover:bg-white/10 hover:text-white{% endif %}">
         <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         <span>Transaction History</span>
       </a>
-      <a href="{% url 'billing_list' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {% if 'billing' in url_name %}bg-slate-100 text-slate-900{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+      <a href="{% url 'billing_list' %}" class="flex items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors {% if 'billing' in url_name %}bg-white/15 text-white{% else %}text-emerald-100/80 hover:bg-white/10 hover:text-white{% endif %}">
         <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
         <span>My Billing</span>
       </a>
-      <a href="{% url 'payment_list' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {% if 'payment' in url_name %}bg-slate-100 text-slate-900{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+      <a href="{% url 'payment_list' %}" class="flex items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors {% if 'payment' in url_name %}bg-white/15 text-white{% else %}text-emerald-100/80 hover:bg-white/10 hover:text-white{% endif %}">
         <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
         <span>My Payments</span>
       </a>
-      <a href="{% url 'tenant_portal_password' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {% if url_name == 'tenant_portal_password' %}bg-slate-900 text-white{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+      <a href="{% url 'tenant_portal_password' %}" class="flex items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors {% if url_name == 'tenant_portal_password' %}bg-white text-emerald-900 font-semibold{% else %}text-emerald-100/80 hover:bg-white/10 hover:text-white{% endif %}">
         <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
         <span>Change Password</span>
       </a>
       {% endif %}
 
       {% if user.profile.role != 'tenant' or user.is_superuser %}
-      <a href="{% url 'dashboard' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {% if url_name == 'dashboard' %}bg-slate-900 text-white{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+      <a href="{% url 'dashboard' %}" class="flex items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors {% if url_name == 'dashboard' %}bg-white text-emerald-900 font-semibold{% else %}text-emerald-100/80 hover:bg-white/10 hover:text-white{% endif %}">
         <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
         <span>Dashboard</span>
       </a>
 
-      <div class="pt-4 pb-2"><p class="px-3 text-xs font-semibold tracking-wider text-slate-400 uppercase">Operations</p></div>
+      <div class="pt-4 pb-2"><p class="px-3 text-xs font-semibold tracking-wider text-emerald-200/50 uppercase">Operations</p></div>
 
       <div x-data="{ open: {% if 'tenant' in url_name %}true{% else %}false{% endif %} }">
-        <button @click="open=!open" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {% if 'tenant' in url_name %}bg-slate-100 text-slate-900{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+        <button @click="open=!open" class="flex w-full items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors {% if 'tenant' in url_name %}bg-white/15 text-white{% else %}text-emerald-100/80 hover:bg-white/10 hover:text-white{% endif %}">
           <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           <span class="flex-1 text-left">Tenants</span>
           <svg class="h-3.5 w-3.5 transition" :class="open?'rotate-180':''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
         </button>
-        <div x-show="open" class="ml-4 mt-1 space-y-1 border-l border-slate-200 pl-3">
-          <a href="{% url 'tenant_list' %}" class="block rounded-md px-3 py-1.5 text-sm transition-colors {% if 'tenant' in url_name and url_name != 'tenant_add' %}bg-slate-100 text-slate-900 font-medium{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">List</a>
-          <a href="{% url 'tenant_add' %}" class="block rounded-md px-3 py-1.5 text-sm transition-colors {% if url_name == 'tenant_add' %}bg-slate-100 text-slate-900 font-medium{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">Add Tenant</a>
+        <div x-show="open" class="ml-4 mt-1 space-y-1 border-l border-white/20 pl-3">
+          <a href="{% url 'tenant_list' %}" class="block rounded-sm px-3 py-1.5 text-sm transition-colors {% if 'tenant' in url_name and url_name != 'tenant_add' %}bg-white/15 text-white font-medium{% else %}text-emerald-100/70 hover:bg-white/10 hover:text-white{% endif %}">List</a>
+          <a href="{% url 'tenant_add' %}" class="block rounded-sm px-3 py-1.5 text-sm transition-colors {% if url_name == 'tenant_add' %}bg-white/15 text-white font-medium{% else %}text-emerald-100/70 hover:bg-white/10 hover:text-white{% endif %}">Add Tenant</a>
         </div>
       </div>
 
       <div x-data="{ open: {% if 'stall' in url_name %}true{% else %}false{% endif %} }">
-        <button @click="open=!open" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {% if 'stall' in url_name %}bg-slate-100 text-slate-900{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+        <button @click="open=!open" class="flex w-full items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors {% if 'stall' in url_name %}bg-white/15 text-white{% else %}text-emerald-100/80 hover:bg-white/10 hover:text-white{% endif %}">
           <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
           <span class="flex-1 text-left">Stalls</span>
           <svg class="h-3.5 w-3.5 transition" :class="open?'rotate-180':''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
         </button>
-        <div x-show="open" class="ml-4 mt-1 space-y-1 border-l border-slate-200 pl-3">
-          <a href="{% url 'stall_list' %}" class="block rounded-md px-3 py-1.5 text-sm transition-colors {% if 'stall' in url_name and url_name != 'stall_add' %}bg-slate-100 text-slate-900 font-medium{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">List</a>
-          <a href="{% url 'stall_add' %}" class="block rounded-md px-3 py-1.5 text-sm transition-colors {% if url_name == 'stall_add' %}bg-slate-100 text-slate-900 font-medium{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">Add Stall</a>
+        <div x-show="open" class="ml-4 mt-1 space-y-1 border-l border-white/20 pl-3">
+          <a href="{% url 'stall_list' %}" class="block rounded-sm px-3 py-1.5 text-sm transition-colors {% if 'stall' in url_name and url_name != 'stall_add' %}bg-white/15 text-white font-medium{% else %}text-emerald-100/70 hover:bg-white/10 hover:text-white{% endif %}">List</a>
+          <a href="{% url 'stall_add' %}" class="block rounded-sm px-3 py-1.5 text-sm transition-colors {% if url_name == 'stall_add' %}bg-white/15 text-white font-medium{% else %}text-emerald-100/70 hover:bg-white/10 hover:text-white{% endif %}">Add Stall</a>
         </div>
       </div>
 
       <div x-data="{ open: {% if 'contract' in url_name %}true{% else %}false{% endif %} }">
-        <button @click="open=!open" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {% if 'contract' in url_name %}bg-slate-100 text-slate-900{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+        <button @click="open=!open" class="flex w-full items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors {% if 'contract' in url_name %}bg-white/15 text-white{% else %}text-emerald-100/80 hover:bg-white/10 hover:text-white{% endif %}">
           <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
           <span class="flex-1 text-left">Contracts</span>
           <svg class="h-3.5 w-3.5 transition" :class="open?'rotate-180':''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
         </button>
-        <div x-show="open" class="ml-4 mt-1 space-y-1 border-l border-slate-200 pl-3">
-          <a href="{% url 'contract_list' %}" class="block rounded-md px-3 py-1.5 text-sm transition-colors {% if 'contract' in url_name and url_name != 'contract_add' %}bg-slate-100 text-slate-900 font-medium{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">List</a>
-          <a href="{% url 'contract_add' %}" class="block rounded-md px-3 py-1.5 text-sm transition-colors {% if url_name == 'contract_add' %}bg-slate-100 text-slate-900 font-medium{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">New Contract</a>
+        <div x-show="open" class="ml-4 mt-1 space-y-1 border-l border-white/20 pl-3">
+          <a href="{% url 'contract_list' %}" class="block rounded-sm px-3 py-1.5 text-sm transition-colors {% if 'contract' in url_name and url_name != 'contract_add' %}bg-white/15 text-white font-medium{% else %}text-emerald-100/70 hover:bg-white/10 hover:text-white{% endif %}">List</a>
+          <a href="{% url 'contract_add' %}" class="block rounded-sm px-3 py-1.5 text-sm transition-colors {% if url_name == 'contract_add' %}bg-white/15 text-white font-medium{% else %}text-emerald-100/70 hover:bg-white/10 hover:text-white{% endif %}">New Contract</a>
         </div>
       </div>
 
       <div x-data="{ open: {% if 'billing' in url_name %}true{% else %}false{% endif %} }">
-        <button @click="open=!open" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {% if 'billing' in url_name %}bg-slate-100 text-slate-900{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+        <button @click="open=!open" class="flex w-full items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors {% if 'billing' in url_name %}bg-white/15 text-white{% else %}text-emerald-100/80 hover:bg-white/10 hover:text-white{% endif %}">
           <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
           <span class="flex-1 text-left">Billing</span>
           <svg class="h-3.5 w-3.5 transition" :class="open?'rotate-180':''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
         </button>
-        <div x-show="open" class="ml-4 mt-1 space-y-1 border-l border-slate-200 pl-3">
-          <a href="{% url 'billing_list' %}" class="block rounded-md px-3 py-1.5 text-sm transition-colors {% if 'billing' in url_name and url_name != 'billing_generate' and url_name != 'billing_generate_all' %}bg-slate-100 text-slate-900 font-medium{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">Records</a>
-          <a href="{% url 'billing_generate' %}" class="block rounded-md px-3 py-1.5 text-sm transition-colors {% if url_name == 'billing_generate' or url_name == 'billing_generate_all' %}bg-slate-100 text-slate-900 font-medium{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">Generate</a>
+        <div x-show="open" class="ml-4 mt-1 space-y-1 border-l border-white/20 pl-3">
+          <a href="{% url 'billing_list' %}" class="block rounded-sm px-3 py-1.5 text-sm transition-colors {% if 'billing' in url_name and url_name != 'billing_generate' and url_name != 'billing_generate_all' %}bg-white/15 text-white font-medium{% else %}text-emerald-100/70 hover:bg-white/10 hover:text-white{% endif %}">Records</a>
+          <a href="{% url 'billing_generate' %}" class="block rounded-sm px-3 py-1.5 text-sm transition-colors {% if url_name == 'billing_generate' or url_name == 'billing_generate_all' %}bg-white/15 text-white font-medium{% else %}text-emerald-100/70 hover:bg-white/10 hover:text-white{% endif %}">Generate</a>
         </div>
       </div>
 
       {# Payments hidden — redundant: collection now via Billing → Collect (auto-creates Payment receipt). Payments remain as read-only history via Billing → View or direct /payments/ for audit. #}
 
-      <div class="pt-4 pb-2"><p class="px-3 text-xs font-semibold tracking-wider text-slate-400 uppercase">Reports</p></div>
+      <div class="pt-4 pb-2"><p class="px-3 text-xs font-semibold tracking-wider text-emerald-200/50 uppercase">Reports</p></div>
       <div x-data="{ open: {% if 'report' in url_name %}true{% else %}false{% endif %} }">
-        <button @click="open=!open" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {% if 'report' in url_name %}bg-slate-100 text-slate-900{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+        <button @click="open=!open" class="flex w-full items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors {% if 'report' in url_name %}bg-white/15 text-white{% else %}text-emerald-100/80 hover:bg-white/10 hover:text-white{% endif %}">
           <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
           <span class="flex-1 text-left">Reports</span>
           <svg class="h-3.5 w-3.5 transition" :class="open?'rotate-180':''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
         </button>
-        <div x-show="open" class="ml-4 mt-1 space-y-1 border-l border-slate-200 pl-3">
-          <a href="{% url 'report_dashboard' %}" class="block rounded-md px-3 py-1.5 text-sm transition-colors {% if url_name == 'report_dashboard' %}bg-slate-100 text-slate-900 font-medium{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">Dashboard</a>
-          <a href="{% url 'report_daily' %}" class="block rounded-md px-3 py-1.5 text-sm transition-colors {% if url_name == 'report_daily' %}bg-slate-100 text-slate-900 font-medium{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">Daily</a>
-          <a href="{% url 'report_monthly' %}" class="block rounded-md px-3 py-1.5 text-sm transition-colors {% if url_name == 'report_monthly' %}bg-slate-100 text-slate-900 font-medium{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">Monthly</a>
-          <a href="{% url 'report_annual' %}" class="block rounded-md px-3 py-1.5 text-sm transition-colors {% if url_name == 'report_annual' %}bg-slate-100 text-slate-900 font-medium{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">Annual</a>
-          <a href="{% url 'report_occupancy' %}" class="block rounded-md px-3 py-1.5 text-sm transition-colors {% if url_name == 'report_occupancy' %}bg-slate-100 text-slate-900 font-medium{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">Occupancy</a>
+        <div x-show="open" class="ml-4 mt-1 space-y-1 border-l border-white/20 pl-3">
+          <a href="{% url 'report_dashboard' %}" class="block rounded-sm px-3 py-1.5 text-sm transition-colors {% if url_name == 'report_dashboard' %}bg-white/15 text-white font-medium{% else %}text-emerald-100/70 hover:bg-white/10 hover:text-white{% endif %}">Dashboard</a>
+          <a href="{% url 'report_daily' %}" class="block rounded-sm px-3 py-1.5 text-sm transition-colors {% if url_name == 'report_daily' %}bg-white/15 text-white font-medium{% else %}text-emerald-100/70 hover:bg-white/10 hover:text-white{% endif %}">Daily</a>
+          <a href="{% url 'report_monthly' %}" class="block rounded-sm px-3 py-1.5 text-sm transition-colors {% if url_name == 'report_monthly' %}bg-white/15 text-white font-medium{% else %}text-emerald-100/70 hover:bg-white/10 hover:text-white{% endif %}">Monthly</a>
+          <a href="{% url 'report_annual' %}" class="block rounded-sm px-3 py-1.5 text-sm transition-colors {% if url_name == 'report_annual' %}bg-white/15 text-white font-medium{% else %}text-emerald-100/70 hover:bg-white/10 hover:text-white{% endif %}">Annual</a>
+          <a href="{% url 'report_occupancy' %}" class="block rounded-sm px-3 py-1.5 text-sm transition-colors {% if url_name == 'report_occupancy' %}bg-white/15 text-white font-medium{% else %}text-emerald-100/70 hover:bg-white/10 hover:text-white{% endif %}">Occupancy</a>
         </div>
       </div>
 
-      <a href="{% url 'ledger_list' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {% if url_name == 'ledger_list' or url_name == 'ledger_view' or url_name == 'ledger_print' %}bg-slate-100 text-slate-900{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+      <a href="{% url 'ledger_list' %}" class="flex items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors {% if url_name == 'ledger_list' or url_name == 'ledger_view' or url_name == 'ledger_print' %}bg-white/15 text-white{% else %}text-emerald-100/80 hover:bg-white/10 hover:text-white{% endif %}">
         <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
         <span>Ledger</span>
       </a>
-      <a href="{% url 'notice_list' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {% if 'notice' in url_name %}bg-slate-100 text-slate-900{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+      <a href="{% url 'notice_list' %}" class="flex items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors {% if 'notice' in url_name %}bg-white/15 text-white{% else %}text-emerald-100/80 hover:bg-white/10 hover:text-white{% endif %}">
         <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
         <span>Notices</span>
       </a>
       {% endif %}
 
       {% if user.profile.role == 'admin' or user.is_superuser %}
-      <div class="pt-4 mt-4 border-t border-slate-200">
-        <p class="px-3 pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">Administration</p>
-        <a href="{% url 'user_list' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {% if 'user' in url_name %}bg-slate-100 text-slate-900{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}"><svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg> Users</a>
-        <a href="{% url 'audit_log_list' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {% if 'audit' in url_name %}bg-slate-100 text-slate-900{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}"><svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Audit Logs</a>
-        <a href="{% url 'settings_view' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {% if 'settings' in url_name %}bg-slate-100 text-slate-900{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}"><svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg> Settings</a>
+      <div class="pt-4 mt-4 border-t border-white/10">
+        <p class="px-3 pb-2 text-xs font-semibold tracking-wider text-emerald-200/50 uppercase">Administration</p>
+        <a href="{% url 'user_list' %}" class="flex items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors {% if 'user' in url_name %}bg-white/15 text-white{% else %}text-emerald-100/80 hover:bg-white/10 hover:text-white{% endif %}"><svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg> Users</a>
+        <a href="{% url 'audit_log_list' %}" class="flex items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors {% if 'audit' in url_name %}bg-white/15 text-white{% else %}text-emerald-100/80 hover:bg-white/10 hover:text-white{% endif %}"><svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Audit Logs</a>
+        <a href="{% url 'settings_view' %}" class="flex items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors {% if 'settings' in url_name %}bg-white/15 text-white{% else %}text-emerald-100/80 hover:bg-white/10 hover:text-white{% endif %}"><svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066 2.573c.94 1.543-.826 3.31 2.37 2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg> Settings</a>
       </div>
       {% endif %}
       {% endwith %}
     </nav>
 
-    <div class="border-t border-slate-200 p-4">
+    <div class="border-t border-white/10 p-4">
       <div class="flex items-center gap-3">
-        <div class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
+        <div class="flex h-9 w-9 items-center justify-center rounded-full bg-[#FCD116] text-sm font-bold text-emerald-900">
           {{ user.first_name|first|default:user.username|first|upper }}{{ user.last_name|first|upper }}
         </div>
         <div class="flex-1 min-w-0">
-          <p class="truncate text-sm font-medium text-slate-900">{{ user.get_full_name|default:user.username }}</p>
-          <p class="truncate text-xs text-slate-500">{{ user.profile.get_role_display|default:"Staff" }} • {{ system_settings.municipality_name|default:"LGU" }}</p>
+          <p class="truncate text-sm font-semibold text-white">{{ user.get_full_name|default:user.username }}</p>
+          <p class="truncate text-xs text-emerald-200/70">{{ user.profile.get_role_display|default:"Staff" }} • {{ system_settings.municipality_name|default:"LGU" }}</p>
         </div>
-        <a href="{% url 'logout' %}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700" title="Logout">
+        <a href="{% url 'logout' %}" class="inline-flex h-8 w-8 items-center justify-center rounded-sm border border-white/20 text-emerald-100 hover:bg-white/10 hover:text-white" title="Logout">
           <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
         </a>
       </div>
@@ -180,7 +182,7 @@
     <header class="flex h-16 shrink-0 items-center border-b border-slate-200 bg-white">
       <div class="flex flex-1 items-center justify-between px-4 lg:px-6">
         <div class="flex items-center gap-3 min-w-0">
-          <button @click="sidebarOpen=!sidebarOpen" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50">
+          <button @click="sidebarOpen=!sidebarOpen" class="inline-flex h-8 w-8 items-center justify-center rounded-sm border border-slate-200 bg-white text-slate-600 hover:bg-slate-50">
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
           </button>
           <div class="hidden sm:block h-6 w-px bg-slate-200"></div>
@@ -190,21 +192,21 @@
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <a href="{% url 'landing' %}" class="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">Landing</a>
+          <a href="{% url 'landing' %}" class="hidden sm:inline-flex items-center gap-1.5 rounded-sm border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">Landing</a>
           <div x-data="{ open:false }" class="relative">
             <button @click="open=!open" class="flex items-center gap-2 rounded-full border border-slate-200 bg-white pl-1 pr-3 py-1 hover:bg-slate-50">
-              <span class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">{{ user.first_name|first|default:user.username|first|upper }}</span>
+              <span class="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-800 text-xs font-semibold text-white">{{ user.first_name|first|default:user.username|first|upper }}</span>
               <span class="hidden sm:block text-sm font-medium text-slate-700">{{ user.get_short_name|default:user.username }}</span>
               <svg class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
             </button>
-            <div x-show="open" @click.outside="open=false" x-transition x-cloak class="absolute right-0 mt-2 w-56 origin-top-right rounded-xl border border-slate-200 bg-white shadow-lg">
+            <div x-show="open" @click.outside="open=false" x-transition x-cloak class="absolute right-0 mt-2 w-56 origin-top-right rounded-md border border-slate-200 bg-white shadow-lg">
               <div class="p-3 border-b border-slate-100">
                 <p class="text-sm font-semibold text-slate-900">{{ user.get_full_name|default:user.username }}</p>
                 <p class="text-xs text-slate-500">{{ user.email|default:user.username }} • {{ user.profile.get_role_display|default:"Staff" }}</p>
               </div>
               <div class="p-2 space-y-1">
-                <a href="{% url 'settings_view' %}" class="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">Settings</a>
-                <a href="{% url 'logout' %}" class="block rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-black text-center">Logout</a>
+                <a href="{% url 'settings_view' %}" class="block rounded-sm px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">Settings</a>
+                <a href="{% url 'logout' %}" class="block rounded-sm bg-emerald-800 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-900 text-center">Logout</a>
               </div>
             </div>
           </div>
