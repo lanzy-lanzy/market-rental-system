@@ -11,7 +11,7 @@ from core.models import Billing, Tenant, Stall, RentalContract, Payment, TenantL
 from core.forms import BillingForm, QuickCollectForm
 from core.helpers import (
     ensure_current_month_billings, render_to_pdf_response, record_payment,
-    maybe_apply_overdue_penalties,
+    maybe_apply_overdue_penalties, receipt_print_url,
 )
 
 
@@ -414,15 +414,20 @@ def billing_collect(request, pk):
                 ip_address=request.META.get('REMOTE_ADDR'),
             )
 
+            # A collection is not finished until the receipt can be printed, so
+            # both entry points end on the auto-printing receipt page.
             if is_htmx(request):
                 from django.http import HttpResponse
                 return HttpResponse(f'''<script>
                     closeModal();
-                    showToast('Collected ₱{amount:.2f} — {billing.tenant.full_name} {billing.billing_month:02d}/{billing.billing_year}: {outcome}.', 'success');
-                    setTimeout(function() {{ location.reload(); }}, 700);
+                    location.href = '{receipt_print_url(payment, back="billing")}';
                 </script>''')
-            messages.success(request, f'Collected ₱{amount:.2f} for {billing.tenant.full_name}. {outcome}. Receipt: {receipt_number}')
-            return redirect('billing_list')
+            messages.success(
+                request,
+                f'Collected ₱{amount:.2f} for {billing.tenant.full_name}. {outcome}. '
+                f'Receipt: {receipt_number}'
+            )
+            return redirect(receipt_print_url(payment, back='billing'))
         else:
             if is_htmx(request):
                 return render(request, 'billing/_collect_modal.html', {'form': form, 'billing': billing})

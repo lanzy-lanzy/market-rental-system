@@ -14,6 +14,7 @@ from core.models import (
 from core.forms import PaymentForm
 from core.helpers import (
     render_to_pdf_response, record_payment, recalc_billing_from_payments,
+    receipt_back_url, receipt_print_url,
 )
 
 
@@ -120,7 +121,8 @@ def payment_add(request):
                 request,
                 f'Payment recorded. Receipt: {payment.receipt_number}, Amount: {payment.amount_paid}'
             )
-            return redirect('payment_list')
+            # The collection is only done once the receipt is in hand.
+            return redirect(receipt_print_url(payment, back='payments'))
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
@@ -181,9 +183,12 @@ def payment_print_receipt(request, pk):
         messages.error(request, 'You can only view your own payment receipt.')
         return redirect('dashboard')
     settings = SystemSetting.objects.first()
+    is_tenant = get_user_role(request.user) == 'tenant'
     context = {
         'payment': payment,
         'settings': settings,
+        'auto_print': request.GET.get('auto') == '1',
+        'back_url': None if is_tenant else receipt_back_url(request),
     }
     return render(request, 'payments/print_receipt.html', context)
 
@@ -236,13 +241,12 @@ def payment_add_modal(request):
 
             if is_htmx(request):
                 from django.http import HttpResponse
-                return HttpResponse('''<script>
+                return HttpResponse(f'''<script>
                     closeModal();
-                    showToast('Payment recorded.', 'success');
-                    setTimeout(function() { location.reload(); }, 500);
+                    location.href = '{receipt_print_url(payment, back="payments")}';
                 </script>''')
-            messages.success(request, 'Payment recorded.')
-            return redirect('payment_list')
+            messages.success(request, f'Payment recorded. Receipt: {payment.receipt_number}')
+            return redirect(receipt_print_url(payment, back='payments'))
         if is_htmx(request):
             return render(request, 'payments/_modal_form.html', {'form': form, 'is_add': True})
     else:

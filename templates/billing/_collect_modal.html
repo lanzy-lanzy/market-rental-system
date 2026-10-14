@@ -84,7 +84,7 @@
         Confirm Collect
       </button>
     </div>
-    <p class="text-center text-xs text-slate-400">Receipt will be auto-generated • Collector: {{ request.user.get_full_name|default:request.user.username }}</p>
+    <p class="text-center text-xs text-slate-400">The printable receipt opens automatically after you confirm • Collector: {{ request.user.get_full_name|default:request.user.username }}</p>
   </form>
 
   <script>

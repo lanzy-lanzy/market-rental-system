@@ -1,5 +1,6 @@
 # core/test_payment_service.py
 # Tests for the shared record_payment()/recalc service that backs collection.
+import re
 from datetime import date
 from decimal import Decimal
 
@@ -121,6 +122,11 @@ class CollectViewDetectionTests(BillingFixtureMixin, TestCase):
             headers={'hx-request': 'true'},
         )
 
+    def _receipt_body(self, resp):
+        """The collect response hands the collector to the printable receipt."""
+        url = re.search(r"location\.href = '([^']+)'", resp.content.decode()).group(1)
+        return self.client.get(url).content.decode()
+
     def test_underpaid_amount_is_auto_detected_as_partial(self):
         resp = self._collect('40.00')
         self.billing.refresh_from_db()
@@ -128,8 +134,9 @@ class CollectViewDetectionTests(BillingFixtureMixin, TestCase):
         self.assertEqual(payment.status, 'Partial')
         self.assertEqual(self.billing.status, 'Partial')
         self.assertEqual(self.billing.balance, Decimal('60.00'))
-        self.assertIn('Partial payment', resp.content.decode())
-        self.assertIn('60.00 remaining', resp.content.decode())
+        body = self._receipt_body(resp)
+        self.assertIn('Partial', body)
+        self.assertIn('&#8369;60.00', body)
 
     def test_balance_amount_is_auto_detected_as_paid(self):
         resp = self._collect('100.00')
@@ -137,7 +144,9 @@ class CollectViewDetectionTests(BillingFixtureMixin, TestCase):
         self.assertEqual(Payment.objects.get(billing=self.billing).status, 'Paid')
         self.assertEqual(self.billing.status, 'Paid')
         self.assertEqual(self.billing.balance, Decimal('0.00'))
-        self.assertIn('Paid in full', resp.content.decode())
+        body = self._receipt_body(resp)
+        self.assertIn('Paid', body)
+        self.assertIn('&#8369;0.00', body)
 
     def test_partial_then_remainder_settles_the_billing(self):
         self._collect('40.00')

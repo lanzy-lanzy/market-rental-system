@@ -10,6 +10,7 @@ from django.db import transaction, IntegrityError
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.template.loader import render_to_string
+from django.urls import reverse
 
 from core.models import TenantLedger, Billing, SystemSetting
 
@@ -297,6 +298,24 @@ def generate_receipt_number():
         except (ValueError, IndexError):
             seq = Payment.objects.filter(receipt_number__startswith=pattern).count() + 1
     return f'{pattern}{seq:06d}'
+
+
+# Whitelist for the receipt's "Back" target: only these keys are ever reversed,
+# so a hand-edited ?back= cannot point the collector at an arbitrary URL.
+RECEIPT_BACK_URLS = {'billing': 'billing_list', 'payments': 'payment_list'}
+
+
+def receipt_print_url(payment, back=None):
+    """The printable official receipt for ``payment``, opened with the print
+    dialog ready to go. Every completed collection ends here."""
+    query = ['auto=1'] + ([f'back={back}'] if back in RECEIPT_BACK_URLS else [])
+    return f"{reverse('payment_print_receipt', args=[payment.pk])}?{'&'.join(query)}"
+
+
+def receipt_back_url(request):
+    """The list page a collector came from, or ``None`` for an unknown key."""
+    name = RECEIPT_BACK_URLS.get(request.GET.get('back'))
+    return reverse(name) if name else None
 
 
 def recalc_billing_from_payments(billing):
