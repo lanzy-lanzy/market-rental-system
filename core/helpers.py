@@ -15,9 +15,14 @@ from core.models import TenantLedger, Billing, SystemSetting
 
 
 def _username_from_tenant_id(tenant_id):
-    """Derive a clean base username from a tenant ID (kept as the TENANT<prefix>
-    convention used across the system) so it is a valid Django username."""
-    base = f"TENANT{tenant_id}"
+    """Derive a clean base username from a tenant ID so it is a valid Django
+    username. IDs that already carry the ``TEN`` prefix are used as-is (matching
+    existing logins like ``TEN-001``); legacy IDs fall back to ``TENANT<prefix>``."""
+    tid = str(tenant_id or '').strip()
+    if tid.upper().startswith('TEN'):
+        base = tid
+    else:
+        base = f"TENANT{tid}"
     # Django usernames allow letters, digits and @ . + - _ only.
     base = re.sub(r'[^A-Za-z0-9._+-]', '-', base).strip('-')
     return base[:140] or 'TENANT'
@@ -61,6 +66,28 @@ def generate_strong_password(length=14, user=None):
     return ''.join(secrets.choice(all_chars) for _ in range(max(length, 16)))
 
 
+def generate_tenant_id():
+    """Next sequential tenant ID in the ``TEN-###`` convention.
+
+    Derived from the highest numeric suffix in use (not row count), so
+    deleted tenants never cause a reused ID.
+    """
+    from core.models import Tenant
+    last = (
+        Tenant.objects.filter(tenant_id__regex=r'^TEN-\d+$')
+        .order_by('-tenant_id')
+        .values_list('tenant_id', flat=True)
+        .first()
+    )
+    seq = 1
+    if last:
+        try:
+            seq = int(last.split('-')[1]) + 1
+        except (ValueError, IndexError):
+            seq = Tenant.objects.count() + 1
+    return f'TEN-{seq:03d}'
+
+
 def create_tenant_login(tenant):
     """Create (or reuse) a tenant login linked to ``tenant``.
 
@@ -73,7 +100,8 @@ def create_tenant_login(tenant):
 
     base_username = _username_from_tenant_id(tenant.tenant_id)
     username = _unique_username(base_username)
-    first, _, rest = tenant.full_name.partition(' ')
+    first = tenant.first_name or tenant.full_name.split(' ')[0]
+    last = tenant.last_name or ' '.join(tenant.full_name.split(' ')[1:])
     password = generate_strong_password(user=None)
 
     user = User.objects.create_user(
@@ -81,7 +109,7 @@ def create_tenant_login(tenant):
         email=tenant.email,
         password=password,
         first_name=first.strip(),
-        last_name=rest.strip(),
+        last_name=last.strip(),
     )
     profile, _ = UserProfile.objects.get_or_create(user=user, defaults={'role': 'tenant'})
     profile.role = 'tenant'

@@ -73,6 +73,9 @@
         <div>
           <p class="text-xs font-medium uppercase tracking-wider text-gray-400">Valid ID</p>
           <p class="mt-1 text-sm text-gray-800">{{ tenant.valid_id_type|default:"--" }} {% if tenant.valid_id_number %}({{ tenant.valid_id_number }}){% endif %}</p>
+          {% if tenant.valid_id_image %}
+          <a href="{{ tenant.valid_id_image.url }}" target="_blank" class="mt-1 inline-block text-xs font-medium text-emerald-700 hover:underline">View uploaded ID →</a>
+          {% endif %}
         </div>
       </div>
     </div>

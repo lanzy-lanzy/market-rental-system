@@ -10,7 +10,7 @@
       <h3 class="text-lg font-semibold text-gray-900">{% if is_add %}Add New Tenant{% else %}Edit Tenant: {{ tenant.full_name }}{% endif %}</h3>
       <p class="mt-1 text-sm text-gray-500">{% if is_add %}Fill in the details below to register a new tenant.{% else %}Update the tenant information below.{% endif %}</p>
     </div>
-    <form method="post" action="{% if is_add %}{% url 'tenant_add' %}{% else %}{% url 'tenant_edit' tenant.id %}{% endif %}" class="p-6">
+    <form method="post" action="{% if is_add %}{% url 'tenant_add' %}{% else %}{% url 'tenant_edit' tenant.id %}{% endif %}" enctype="multipart/form-data" class="p-6">
       {% csrf_token %}
       {% if is_add %}
       <div class="mb-5 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
@@ -19,20 +19,49 @@
       </div>
       {% endif %}
       <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <div>
+        <div class="sm:col-span-2">
           <label class="block text-sm font-medium text-gray-700">Tenant ID</label>
-          {{ form.tenant_id }}
-          {% if form.tenant_id.errors %}<p class="mt-1 text-xs text-red-500">{{ form.tenant_id.errors.0 }}</p>{% endif %}
+          {% if is_add %}
+          <p class="mt-1 rounded-xl border border-slate-200 bg-slate-100 px-3.5 py-2.5 text-sm font-medium text-slate-500">Auto-generated on save (next available TEN-### number)</p>
+          {% else %}
+          <p class="mt-1 rounded-xl border border-slate-200 bg-slate-100 px-3.5 py-2.5 text-sm font-semibold text-slate-900">{{ tenant.tenant_id }}</p>
+          {% endif %}
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700">Full Name</label>
-          {{ form.full_name }}
-          {% if form.full_name.errors %}<p class="mt-1 text-xs text-red-500">{{ form.full_name.errors.0 }}</p>{% endif %}
+          <label class="block text-sm font-medium text-gray-700">First Name <span class="text-red-500">*</span></label>
+          {{ form.first_name }}
+          {% if form.first_name.errors %}<p class="mt-1 text-xs text-red-500">{{ form.first_name.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Last Name <span class="text-red-500">*</span></label>
+          {{ form.last_name }}
+          {% if form.last_name.errors %}<p class="mt-1 text-xs text-red-500">{{ form.last_name.errors.0 }}</p>{% endif %}
         </div>
         <div class="sm:col-span-2">
-          <label class="block text-sm font-medium text-gray-700">Address</label>
-          {{ form.address }}
-          {% if form.address.errors %}<p class="mt-1 text-xs text-red-500">{{ form.address.errors.0 }}</p>{% endif %}
+          <label class="block text-sm font-medium text-gray-700">Middle Name</label>
+          {{ form.middle_name }}
+          {% if form.middle_name.errors %}<p class="mt-1 text-xs text-red-500">{{ form.middle_name.errors.0 }}</p>{% endif %}
+        </div>
+        <div class="sm:col-span-2"><p class="border-t border-gray-100 pt-4 text-xs font-semibold uppercase tracking-wider text-gray-500">Address</p></div>
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-medium text-gray-700">Street / Purok <span class="text-red-500">*</span></label>
+          {{ form.street }}
+          {% if form.street.errors %}<p class="mt-1 text-xs text-red-500">{{ form.street.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Barangay <span class="text-red-500">*</span></label>
+          {{ form.barangay }}
+          {% if form.barangay.errors %}<p class="mt-1 text-xs text-red-500">{{ form.barangay.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Municipality / City <span class="text-red-500">*</span></label>
+          {{ form.municipality }}
+          {% if form.municipality.errors %}<p class="mt-1 text-xs text-red-500">{{ form.municipality.errors.0 }}</p>{% endif %}
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-medium text-gray-700">Province <span class="text-red-500">*</span></label>
+          {{ form.province }}
+          {% if form.province.errors %}<p class="mt-1 text-xs text-red-500">{{ form.province.errors.0 }}</p>{% endif %}
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Contact Number</label>
@@ -53,6 +82,12 @@
           <label class="block text-sm font-medium text-gray-700">Valid ID Number</label>
           {{ form.valid_id_number }}
           {% if form.valid_id_number.errors %}<p class="mt-1 text-xs text-red-500">{{ form.valid_id_number.errors.0 }}</p>{% endif %}
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-medium text-gray-700">Upload Valid ID</label>
+          {{ form.valid_id_image }}
+          {% if form.valid_id_image.errors %}<p class="mt-1 text-xs text-red-500">{{ form.valid_id_image.errors.0 }}</p>{% endif %}
+          <p class="mt-1 text-xs text-gray-500">JPG or PNG scan/photo of the presented valid ID.{% if not is_add and tenant.valid_id_image %} Currently on file: <a href="{{ tenant.valid_id_image.url }}" target="_blank" class="font-medium text-emerald-700 hover:underline">view uploaded ID</a>{% endif %}</p>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Business Name</label>

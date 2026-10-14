@@ -34,17 +34,41 @@ class UserProfileForm(forms.ModelForm):
 
 
 class TenantForm(forms.ModelForm):
+    BUSINESS_TYPE_CHOICES = [
+        ('', 'Select Business Type'),
+        ('Dry Goods', 'Dry Goods'),
+        ('Fish and Seafood', 'Fish and Seafood'),
+        ('Meat and Poultry', 'Meat and Poultry'),
+        ('Vegetables', 'Vegetables'),
+        ('Fruits', 'Fruits'),
+        ('Eatery / Carenderia', 'Eatery / Carenderia'),
+        ('Grocery / Sari-sari Store', 'Grocery / Sari-sari Store'),
+        ('Rice and Grains', 'Rice and Grains'),
+        ('Clothing / Apparel', 'Clothing / Apparel'),
+        ('Electronics / Appliances', 'Electronics / Appliances'),
+        ('Services (Barber, Salon, Repair)', 'Services (Barber, Salon, Repair)'),
+        ('Others', 'Others'),
+    ]
+
+    first_name = forms.CharField(max_length=100, widget=forms.TextInput(attrs={'class': TW_INPUT, 'placeholder': 'First name'}))
+    middle_name = forms.CharField(max_length=100, required=False, widget=forms.TextInput(attrs={'class': TW_INPUT, 'placeholder': 'Middle name (optional)'}))
+    last_name = forms.CharField(max_length=100, widget=forms.TextInput(attrs={'class': TW_INPUT, 'placeholder': 'Last name'}))
+    street = forms.CharField(max_length=200, widget=forms.TextInput(attrs={'class': TW_INPUT, 'placeholder': 'House no., street / purok'}))
+    barangay = forms.CharField(max_length=100, widget=forms.TextInput(attrs={'class': TW_INPUT, 'placeholder': 'Barangay'}))
+    municipality = forms.CharField(max_length=100, widget=forms.TextInput(attrs={'class': TW_INPUT, 'placeholder': 'Municipality / City'}))
+    province = forms.CharField(max_length=100, widget=forms.TextInput(attrs={'class': TW_INPUT, 'placeholder': 'Province'}))
+
     class Meta:
         model = Tenant
         fields = [
-            'tenant_id', 'full_name', 'address', 'contact_number', 'email',
-            'valid_id_type', 'valid_id_number', 'business_name', 'business_type',
+            'first_name', 'middle_name', 'last_name',
+            'street', 'barangay', 'municipality', 'province',
+            'contact_number', 'email',
+            'valid_id_type', 'valid_id_number', 'valid_id_image',
+            'business_name', 'business_type',
             'emergency_contact_name', 'emergency_contact_number', 'status', 'notes',
         ]
         widgets = {
-            'tenant_id': forms.TextInput(attrs={'class': TW_INPUT, 'placeholder': 'e.g., T-001'}),
-            'full_name': forms.TextInput(attrs={'class': TW_INPUT, 'placeholder': 'Enter full name'}),
-            'address': forms.Textarea(attrs={'class': TW_TEXTAREA, 'rows': 3, 'placeholder': 'Enter complete address'}),
             'contact_number': forms.TextInput(attrs={'class': TW_INPUT, 'placeholder': 'e.g., 09123456789'}),
             'email': forms.EmailInput(attrs={'class': TW_INPUT, 'placeholder': 'Enter email address'}),
             'valid_id_type': forms.Select(attrs={'class': TW_SELECT}, choices=[
@@ -52,6 +76,7 @@ class TenantForm(forms.ModelForm):
                 ('Driver License', 'Driver License'),
                 ('Passport', 'Passport'),
                 ('UMID', 'UMID'),
+                ('National ID', 'National ID'),
                 ('SSS ID', 'SSS ID'),
                 ('GSIS ID', 'GSIS ID'),
                 ('PRC ID', 'PRC ID'),
@@ -61,13 +86,59 @@ class TenantForm(forms.ModelForm):
                 ('Others', 'Others'),
             ]),
             'valid_id_number': forms.TextInput(attrs={'class': TW_INPUT, 'placeholder': 'Enter ID number'}),
+            'valid_id_image': forms.ClearableFileInput(attrs={'class': TW_INPUT}),
             'business_name': forms.TextInput(attrs={'class': TW_INPUT, 'placeholder': 'Enter business name'}),
-            'business_type': forms.TextInput(attrs={'class': TW_INPUT, 'placeholder': 'e.g., Grocery, Clothing'}),
+            'business_type': forms.Select(attrs={'class': TW_SELECT}),
             'emergency_contact_name': forms.TextInput(attrs={'class': TW_INPUT, 'placeholder': 'Enter emergency contact name'}),
             'emergency_contact_number': forms.TextInput(attrs={'class': TW_INPUT, 'placeholder': 'e.g., 09123456789'}),
             'status': forms.Select(attrs={'class': TW_SELECT}),
             'notes': forms.Textarea(attrs={'class': TW_TEXTAREA, 'rows': 3, 'placeholder': 'Additional notes'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        field = self.fields['business_type']
+        field.choices = self.BUSINESS_TYPE_CHOICES
+        # Select renders from widget.choices, which starts empty for a CharField.
+        field.widget.choices = self.BUSINESS_TYPE_CHOICES
+        instance = self.instance
+        if instance and instance.pk:
+            # Legacy rows only stored full_name/address — pre-fill the split fields
+            # so editing never silently blanks the composed values.
+            if not instance.first_name and instance.full_name:
+                parts = instance.full_name.split()
+                if len(parts) >= 2:
+                    self.fields['first_name'].initial = parts[0]
+                    self.fields['last_name'].initial = parts[-1]
+                    self.fields['middle_name'].initial = ' '.join(parts[1:-1])
+                else:
+                    self.fields['first_name'].initial = instance.full_name
+            if not instance.street and instance.address:
+                segs = [s.strip() for s in instance.address.split(',') if s.strip()]
+                for seg_field, seg in zip(('street', 'barangay', 'municipality', 'province'), segs):
+                    self.fields[seg_field].initial = seg
+            if instance.business_type and instance.business_type not in dict(self.BUSINESS_TYPE_CHOICES):
+                choices = self.BUSINESS_TYPE_CHOICES + [(instance.business_type, instance.business_type)]
+                field.choices = choices
+                field.widget.choices = choices
+        else:
+            self.fields['municipality'].initial = 'Dumingag'
+            self.fields['province'].initial = 'Zamboanga del Sur'
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.full_name = ' '.join(
+            p.strip() for p in (instance.first_name, instance.middle_name, instance.last_name) if p and p.strip()
+        )
+        instance.address = ', '.join(
+            p.strip() for p in (instance.street, instance.barangay, instance.municipality, instance.province) if p and p.strip()
+        )
+        if not instance.tenant_id:
+            from core.helpers import generate_tenant_id
+            instance.tenant_id = generate_tenant_id()
+        if commit:
+            instance.save()
+        return instance
 
 
 class StallForm(forms.ModelForm):

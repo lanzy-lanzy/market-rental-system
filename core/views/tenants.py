@@ -48,7 +48,7 @@ def tenant_list(request):
 @staff_required
 def tenant_add(request):
     if request.method == 'POST':
-        form = TenantForm(request.POST)
+        form = TenantForm(request.POST, request.FILES)
         if form.is_valid():
             tenant = form.save()
             # Auto-provision the tenant login with a secure username + temp password.
@@ -79,7 +79,7 @@ def tenant_add(request):
 def tenant_edit(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
     if request.method == 'POST':
-        form = TenantForm(request.POST, instance=tenant)
+        form = TenantForm(request.POST, request.FILES, instance=tenant)
         if form.is_valid():
             form.save()
             AuditLog.objects.create(
@@ -160,7 +160,7 @@ def tenant_search(request):
 @staff_required
 def tenant_add_modal(request):
     if request.method == 'POST':
-        form = TenantForm(request.POST)
+        form = TenantForm(request.POST, request.FILES)
         if form.is_valid():
             tenant = form.save()
             # Auto-provision the tenant login (fixes prior gap where no user was made).
@@ -192,7 +192,7 @@ def tenant_add_modal(request):
 def tenant_edit_modal(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
     if request.method == 'POST':
-        form = TenantForm(request.POST, instance=tenant)
+        form = TenantForm(request.POST, request.FILES, instance=tenant)
         if form.is_valid():
             form.save()
             AuditLog.objects.create(
