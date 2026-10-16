@@ -3,10 +3,12 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum
 from django.http import JsonResponse
+from django.db import transaction, connections, router
+from django.contrib.auth.models import User as AuthUser
 
 from core.models import Tenant, Stall, RentalContract, Billing, Payment, AuditLog
 from core.forms import TenantForm
-from core.permissions import staff_required, admin_required, get_user_role
+from core.permissions import staff_required, admin_required, get_user_role, is_admin
 from django.contrib.auth.decorators import login_required
 from core.helpers import render_to_pdf_response, create_tenant_login
 
@@ -39,6 +41,7 @@ def tenant_list(request):
         'status_filter': status_filter,
         'search_query': search_query,
         'pagination_target': 'tenant-table-wrapper',
+        'can_bulk_delete': is_admin(request.user),
     }
     if is_htmx(request):
         return render(request, 'tenants/_table.html', context)
@@ -115,6 +118,145 @@ def tenant_delete(request, pk):
             ip_address=request.META.get('REMOTE_ADDR'),
         )
         messages.success(request, f'Tenant {tenant.full_name} has been terminated.')
+    return redirect('tenant_list')
+
+
+@admin_required
+@transaction.atomic
+def tenant_bulk_delete(request):
+    """Hard-delete multiple tenants in a single action.
+
+    Design notes
+    ------------
+    * Row-level ``select_for_update()`` is only issued when the active
+      backend advertises ``features.has_select_for_update``. SQLite (the
+      default dev DB here, and Django's feature flag is ``False``) raises
+      ``NotSupportedError`` on that call, which previously made every bulk
+      POST return a 500 while leaving tenants untouched. SQLite already
+      serialises writes at the DB level inside a transaction, so no extra
+      lock is required there.
+    * Tenants are genuinely removed via ``Model.delete()`` — their linked
+      contracts, billings, ledger entries and notices cascade away through
+      the ``on_delete=CASCADE`` foreign keys defined on the models. The
+      portal ``User`` account (and therefore the ``UserProfile``) is
+      deleted as well so the login disappears.
+    * Any tenant with real financial history — at least one ``Payment``
+      row, OR any ``Billing`` with ``amount_paid > 0`` — is refused with a
+      per-tenant warning rather than being silently wiped, because those
+      records feed the collection ledger, receipts and reports.
+    * Only POST is honoured; success, block and error outcomes all land
+      back on ``tenant_list`` with a ``messages`` summary.
+    """
+    if request.method != 'POST':
+        return redirect('tenant_list')
+
+    raw_ids = request.POST.getlist('selected_tenants')
+    pk_list = []
+    for raw in raw_ids:
+        try:
+            pk_list.append(int(raw))
+        except (TypeError, ValueError):
+            continue
+    # De-duplicate while preserving the collector's selection order so the
+    # confirmation messages list names in the sequence the admin ticked.
+    seen = set()
+    ordered_pk_list = []
+    for pk in pk_list:
+        if pk in seen:
+            continue
+        seen.add(pk)
+        ordered_pk_list.append(pk)
+    pk_list = ordered_pk_list
+
+    if not pk_list:
+        messages.warning(request, 'No tenants were selected for deletion.')
+        return redirect('tenant_list')
+
+    alias = router.db_for_write(Tenant)
+    supports_lock = connections[alias].features.has_select_for_update
+    base_qs = Tenant.objects.using(alias)
+    tenants = list(
+        base_qs.select_for_update().filter(pk__in=pk_list)
+        if supports_lock else base_qs.filter(pk__in=pk_list)
+    )
+    if not tenants:
+        messages.error(
+            request,
+            'The selected tenants could not be found. Please refresh and try again.',
+        )
+        return redirect('tenant_list')
+
+    # Preload history flags so a bulk action runs in a fixed number of
+    # queries rather than N round-trips per tenant.
+    tenant_ids = [t.pk for t in tenants]
+    ids_with_payments = set(
+        Payment.objects.filter(tenant_id__in=tenant_ids)
+        .values_list('tenant_id', flat=True)
+    )
+    ids_with_paid_billings = set(
+        Billing.objects.filter(tenant_id__in=tenant_ids, amount_paid__gt=0)
+        .values_list('tenant_id', flat=True)
+    )
+
+    deleted_names = []
+    blocked_names = []
+    missing_ids = set(pk_list) - {t.pk for t in tenants}
+
+    for tenant in tenants:
+        if (
+            tenant.pk in ids_with_payments
+            or tenant.pk in ids_with_paid_billings
+        ):
+            blocked_names.append(f'{tenant.full_name} ({tenant.tenant_id})')
+            continue
+        user_pk = tenant.user_id
+        # ``delete()`` cascades to contracts/billings/payments/ledger/notices
+        # via on_delete=CASCADE. Only the Tenant row itself is emitted here.
+        tenant.delete(using=alias)
+        if user_pk:
+            # Drop the linked portal login. This also cascades the UserProfile
+            # (OneToOne with on_delete=CASCADE), so nothing is orphaned.
+            AuthUser.objects.using(alias).filter(pk=user_pk).delete()
+        deleted_names.append(f'{tenant.full_name} ({tenant.tenant_id})')
+
+    # Single audit row summarising the whole batch keeps the log readable.
+    summary_parts = []
+    if deleted_names:
+        summary_parts.append(f'deleted {len(deleted_names)}: ' + ', '.join(deleted_names))
+    if blocked_names:
+        summary_parts.append(f'blocked {len(blocked_names)}: ' + ', '.join(blocked_names))
+    if summary_parts:
+        AuditLog.objects.using(alias).create(
+            user=request.user,
+            action='DELETE',
+            module='Tenant',
+            description='Bulk delete — ' + '; '.join(summary_parts),
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+
+    # User-facing feedback — mirror the three possible outcomes so the admin
+    # always sees what actually changed.
+    if deleted_names:
+        messages.success(
+            request,
+            f'Deleted {len(deleted_names)} tenant(s): ' + ', '.join(deleted_names) + '.',
+        )
+    if blocked_names:
+        messages.warning(
+            request,
+            f'{len(blocked_names)} tenant(s) were NOT deleted because they have '
+            'payment history (recorded receipts or partially paid billings): '
+            + ', '.join(blocked_names)
+            + '. Use Terminate instead, or void the payments first.',
+        )
+    if missing_ids:
+        messages.warning(
+            request,
+            f'{len(missing_ids)} selected record(s) no longer exist and were skipped.',
+        )
+    if not deleted_names and not blocked_names and not missing_ids:
+        messages.error(request, 'Bulk delete failed — nothing was removed.')
+
     return redirect('tenant_list')
 
 

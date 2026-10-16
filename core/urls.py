@@ -7,6 +7,7 @@ from core.views.tenants import (
     tenant_list, tenant_add, tenant_edit, tenant_delete,
     tenant_view, tenant_search, tenant_add_modal, tenant_edit_modal,
     tenant_list_print, tenant_list_export_pdf, tenant_view_print, tenant_view_export_pdf,
+    tenant_bulk_delete,
 )
 from core.views.stalls import (
     stall_list, stall_add, stall_edit, stall_delete,
@@ -62,6 +63,7 @@ urlpatterns = [
     path('tenants/add/', tenant_add, name='tenant_add'),
     path('tenants/<int:pk>/edit/', tenant_edit, name='tenant_edit'),
     path('tenants/<int:pk>/delete/', tenant_delete, name='tenant_delete'),
+    path('tenants/bulk-delete/', tenant_bulk_delete, name='tenant_bulk_delete'),
     path('tenants/<int:pk>/', tenant_view, name='tenant_view'),
     path('tenants/<int:pk>/print/', tenant_view_print, name='tenant_view_print'),
     path('tenants/<int:pk>/export/pdf/', tenant_view_export_pdf, name='tenant_view_export_pdf'),

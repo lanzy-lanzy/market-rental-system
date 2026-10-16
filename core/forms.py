@@ -142,6 +142,50 @@ class TenantForm(forms.ModelForm):
             instance.save()
         return instance
 
+    def clean(self):
+        """Block duplicate tenant records.
+
+        A tenant is considered duplicated when the composed ``full_name``
+        matches an existing one ignoring case and extra whitespace — the most
+        common source of redundant entries in the field. On edit the record's
+        own row is excluded so existing data still saves cleanly.
+        """
+        cleaned = super().clean()
+        first = (cleaned.get('first_name') or '').strip()
+        middle = (cleaned.get('middle_name') or '').strip()
+        last = (cleaned.get('last_name') or '').strip()
+        composed = ' '.join(p for p in (first, middle, last) if p)
+        cleaned['full_name'] = composed
+        if not composed:
+            return cleaned
+
+        import re
+        normalized = re.sub(r'\s+', ' ', composed).strip().lower()
+
+        # Fast path: exact (case-insensitive) match on stored full_name.
+        candidates = Tenant.objects.filter(full_name__iexact=composed)
+        # Fallback pass: tolerate the "JUAN   P.  DELA CRUZ" style typos where
+        # iexact would miss because of duplicated spaces or trailing punctuation.
+        if not candidates:
+            candidates = Tenant.objects.all()
+
+        exclude_pk = self.instance.pk if (self.instance and self.instance.pk) else None
+        for existing in candidates:
+            if exclude_pk and existing.pk == exclude_pk:
+                continue
+            existing_norm = re.sub(r'\s+', ' ', existing.full_name or '').strip().lower()
+            if existing_norm == normalized:
+                self.add_error(
+                    None,
+                    forms.ValidationError(
+                        f'A tenant named "{existing.full_name}" already exists '
+                        f'(Tenant ID: {existing.tenant_id}, Status: {existing.status}). '
+                        'Please edit the existing record instead of creating a duplicate.'
+                    ),
+                )
+                break
+        return cleaned
+
 
 class StallForm(forms.ModelForm):
     class Meta:

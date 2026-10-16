@@ -1,8 +1,34 @@
+{% load static %}
 <div id="tenant-table-wrapper" class="space-y-4">
+{% if can_bulk_delete %}
+<div id="tenant-bulk-bar"
+     class="hidden items-center justify-between gap-3 rounded-[18px] border border-red-200 bg-red-50 px-4 py-3 shadow-sm transition"
+     data-role="bulk-bar">
+  <div class="flex items-center gap-3">
+    <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-red-100 text-red-700">
+      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    </span>
+    <div>
+      <p class="text-sm font-bold text-red-800">
+        <span data-bulk-count>0</span> tenant(s) selected
+      </p>
+      <p class="text-xs text-red-600">Bulk delete permanently removes the selected tenants along with their contracts, unpaid billings, ledger entries and portal logins. Tenants with recorded payments are skipped to protect the audit trail.</p>
+    </div>
+  </div>
+  <div class="flex items-center gap-2">
+    <button type="button" data-bulk-clear class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">Clear</button>
+    <button type="submit" form="tenant-bulk-form" data-bulk-submit class="rounded-full bg-red-600 px-4 py-2 text-xs font-bold text-white shadow hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50" disabled>Delete Selected</button>
+  </div>
+</div>
+<form id="tenant-bulk-form" method="post" action="{% url 'tenant_bulk_delete' %}">
+  {% csrf_token %}
+</form>
+{% endif %}
 <div id="tenant-table" class="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm">
   <div class="overflow-x-auto">
     <table class="w-full min-w-[1180px] table-fixed divide-y divide-slate-100">
       <colgroup>
+        {% if can_bulk_delete %}<col class="w-[48px]">{% endif %}
         <col class="w-[110px]">
         <col class="w-[210px]">
         <col class="w-[280px]">
@@ -13,6 +39,14 @@
       </colgroup>
       <thead>
         <tr class="bg-slate-50">
+          {% if can_bulk_delete %}
+          <th class="px-3 py-3.5 text-left">
+            <input type="checkbox"
+                   data-bulk-select-all
+                   aria-label="Select all tenants on this page"
+                   class="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500/30">
+          </th>
+          {% endif %}
           <th class="px-4 lg:px-5 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500 whitespace-nowrap">TENANT ID</th>
           <th class="px-4 lg:px-5 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">FULL NAME</th>
           <th class="px-4 lg:px-5 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">BUSINESS</th>
@@ -25,6 +59,17 @@
       <tbody class="divide-y divide-slate-50">
         {% for tenant in page_obj %}
         <tr class="group hover:bg-slate-50/70 transition">
+          {% if can_bulk_delete %}
+          <td class="px-3 py-4 text-left align-middle">
+            <input type="checkbox"
+                   name="selected_tenants"
+                   value="{{ tenant.id }}"
+                   form="tenant-bulk-form"
+                   data-bulk-row
+                   aria-label="Select {{ tenant.full_name }}"
+                   class="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500/30">
+          </td>
+          {% endif %}
           <td class="whitespace-nowrap px-4 lg:px-5 py-4"><span class="inline-flex rounded-full bg-slate-900 px-2.5 py-1 text-xs font-mono font-bold text-white tracking-wide">{{ tenant.tenant_id }}</span></td>
           <td class="px-4 lg:px-5 py-4">
             <a href="{% url 'tenant_view' tenant.id %}" class="flex items-center gap-3 group/link min-w-0">
@@ -66,7 +111,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="7" class="px-6 py-14 text-center">
+          <td {% if can_bulk_delete %}colspan="8"{% else %}colspan="7"{% endif %} class="px-6 py-14 text-center">
             <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400"><svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
             <p class="mt-4 text-sm font-bold text-slate-700">No tenants found</p>
             <p class="mt-1 text-xs text-slate-500">Try adjusting search or filter, or add a new tenant.</p>
@@ -80,3 +125,105 @@
 </div>
 {% include 'includes/pagination.html' with pagination_target='tenant-table-wrapper' %}
 </div>
+
+{% if can_bulk_delete %}
+<script>
+(function () {
+  // Wires the floating bulk-action bar. Runs on initial load and again after
+  // every HTMX swap so pagination / filter changes keep the checkboxes wired.
+  function wireBulkBar() {
+    var wrapper = document.getElementById('tenant-table-wrapper');
+    if (!wrapper) return;
+    var form = document.getElementById('tenant-bulk-form');
+    var bar = document.getElementById('tenant-bulk-bar');
+    if (!form || !bar) return;
+    if (bar.dataset.bulkWired === '1') {
+      // Table body was swapped: re-scan row boxes and refresh state without
+      // re-binding the bar controls themselves.
+    } else {
+      bar.dataset.bulkWired = '1';
+    }
+
+    var countEl = bar.querySelector('[data-bulk-count]');
+    var submitBtn = bar.querySelector('[data-bulk-submit]');
+    var clearBtn = bar.querySelector('[data-bulk-clear]');
+    var selectAll = wrapper.querySelector('[data-bulk-select-all]');
+
+    function rowBoxes() {
+      return Array.prototype.slice.call(wrapper.querySelectorAll('[data-bulk-row]'));
+    }
+
+    function refresh() {
+      var boxes = rowBoxes();
+      var checked = boxes.filter(function (b) { return b.checked; });
+      var n = checked.length;
+      if (n > 0) {
+        bar.classList.remove('hidden');
+        bar.classList.add('flex');
+      } else {
+        bar.classList.add('hidden');
+        bar.classList.remove('flex');
+      }
+      if (countEl) countEl.textContent = String(n);
+      if (submitBtn) submitBtn.disabled = (n === 0);
+      if (selectAll) {
+        selectAll.checked = n > 0 && n === boxes.length;
+        selectAll.indeterminate = n > 0 && n < boxes.length;
+      }
+    }
+
+    // Row boxes get fresh listeners on every swap because the DOM was replaced.
+    rowBoxes().forEach(function (box) {
+      box.addEventListener('change', refresh);
+    });
+
+    if (selectAll && !selectAll.dataset.bulkBound) {
+      selectAll.dataset.bulkBound = '1';
+      selectAll.addEventListener('change', function () {
+        rowBoxes().forEach(function (box) { box.checked = selectAll.checked; });
+        refresh();
+      });
+    }
+    if (clearBtn && !clearBtn.dataset.bulkBound) {
+      clearBtn.dataset.bulkBound = '1';
+      clearBtn.addEventListener('click', function () {
+        rowBoxes().forEach(function (box) { box.checked = false; });
+        if (selectAll) selectAll.checked = false;
+        refresh();
+      });
+    }
+    if (form && !form.dataset.bulkBound) {
+      form.dataset.bulkBound = '1';
+      form.addEventListener('submit', function (ev) {
+        var n = rowBoxes().filter(function (b) { return b.checked; }).length;
+        if (n === 0) { ev.preventDefault(); return; }
+        // Let the confirmed resubmit through unimpeded.
+        if (form.dataset.bulkConfirmed === '1') {
+          form.dataset.bulkConfirmed = '0';
+          return;
+        }
+        ev.preventDefault();
+        var msg = 'You are about to PERMANENTLY delete ' + n + ' tenant(s). Their contracts, billings, ledger entries and portal logins will be removed. Tenants with recorded payments will be skipped. Continue?';
+        function go() {
+          form.dataset.bulkConfirmed = '1';
+          form.submit();
+        }
+        if (window.showConfirm) {
+          window.showConfirm('Bulk Delete Tenants', msg, go);
+        } else if (confirm(msg)) {
+          go();
+        }
+      });
+    }
+    refresh();
+  }
+
+  document.addEventListener('DOMContentLoaded', wireBulkBar);
+  document.body.addEventListener('htmx:afterSwap', wireBulkBar);
+  // In case the script tag itself is executed after DOMContentLoaded fired.
+  if (document.readyState === 'interactive' || document.readyState === 'complete') {
+    wireBulkBar();
+  }
+})();
+</script>
+{% endif %}
