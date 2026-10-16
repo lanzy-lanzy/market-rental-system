@@ -22,7 +22,7 @@ from core.views.contracts import (
 from core.views.billing import (
     billing_list, billing_generate, billing_view,
     billing_generate_all, billing_add_modal, billing_edit_modal,
-    billing_collect, billing_quick_pay,
+    billing_collect, billing_quick_pay, billing_tenant_collect,
     billing_list_print, billing_list_export_pdf, billing_view_print, billing_view_export_pdf,
 )
 from core.views.payments import (
@@ -30,6 +30,7 @@ from core.views.payments import (
     payment_receipt, payment_print_receipt,
     payment_add_modal, payment_edit_modal, payment_void,
     payment_list_print, payment_list_export_pdf, payment_receipt_export_pdf,
+    payment_batch_receipt, payment_batch_export_pdf,
 )
 from core.views.reports import (
     report_dashboard, report_daily, report_weekly, report_monthly,
@@ -107,6 +108,7 @@ urlpatterns = [
     path('billing/<int:pk>/export/pdf/', billing_view_export_pdf, name='billing_view_export_pdf'),
     path('billing/<int:pk>/collect/', billing_collect, name='billing_collect'),
     path('billing/<int:pk>/quick-pay/', billing_quick_pay, name='billing_quick_pay'),
+    path('billing/collect/tenant/<int:tenant_pk>/', billing_tenant_collect, name='billing_tenant_collect'),
     path('billing/add-modal/', billing_add_modal, name='billing_add_modal'),
     path('billing/<int:pk>/edit-modal/', billing_edit_modal, name='billing_edit_modal'),
 
@@ -119,6 +121,8 @@ urlpatterns = [
     path('payments/<int:pk>/receipt/', payment_receipt, name='payment_receipt'),
     path('payments/<int:pk>/print/', payment_print_receipt, name='payment_print_receipt'),
     path('payments/<int:pk>/export/pdf/', payment_receipt_export_pdf, name='payment_receipt_export_pdf'),
+    path('payments/batch-receipt/', payment_batch_receipt, name='payment_batch_receipt'),
+    path('payments/batch-receipt/export/pdf/', payment_batch_export_pdf, name='payment_batch_export_pdf'),
     path('payments/add-modal/', payment_add_modal, name='payment_add_modal'),
     path('payments/<int:pk>/edit-modal/', payment_edit_modal, name='payment_edit_modal'),
     path('payments/<int:pk>/void/', payment_void, name='payment_void'),

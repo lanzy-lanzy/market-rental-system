@@ -17,6 +17,138 @@ from core.helpers import (
     receipt_back_url, receipt_print_url,
 )
 
+# Session key holding the payment PKs from the most recent batch collection,
+# in issue order. The batch receipt page reads this to render every OR that
+# was created — not just the last one.
+BATCH_RECEIPT_SESSION_KEY = 'last_batch_payment_ids'
+
+
+def _batch_payments_from_session(request):
+    """Return the ordered ``Payment`` rows saved by the last batch collection."""
+    ids = request.session.get(BATCH_RECEIPT_SESSION_KEY) or []
+    if not ids:
+        return []
+    payments_by_pk = {
+        p.pk: p
+        for p in Payment.objects.select_related(
+            'tenant', 'stall', 'stall__section', 'billing', 'collected_by'
+        ).filter(pk__in=ids)
+    }
+    return [payments_by_pk[i] for i in ids if i in payments_by_pk]
+
+
+def _batch_context(request, payments):
+    """Shared context so the HTML page and PDF export stay identical.
+
+    Builds a SINGLE consolidated receipt (one OR, one document) whose line
+    items are the collected months. ``payments`` are all bound to the same
+    ``official_receipt_no`` set at batch time.
+    """
+    from decimal import Decimal
+    import calendar
+    first = payments[0]
+    total_paid = sum((p.amount_paid for p in payments), Decimal('0.00'))
+    total_due = sum((p.total_amount_due for p in payments), Decimal('0.00'))
+    rental_total = sum((p.rental_amount for p in payments), Decimal('0.00'))
+    penalty_total = sum((p.penalty_amount for p in payments), Decimal('0.00'))
+    discount_total = sum((p.discount for p in payments), Decimal('0.00'))
+    remaining = sum((Decimal(str(p.billing.balance or 0)) for p in payments), Decimal('0.00'))
+
+    # Unique stalls covered by this batch (a tenant may hold several).
+    stall_list = []
+    for p in payments:
+        s = p.stall.stall_number
+        if s not in stall_list:
+            stall_list.append(s)
+
+    periods = sorted({(p.billing_year, p.billing_month) for p in payments})
+    def fmt(period):
+        y, m = period
+        return f"{calendar.month_abbr[m]} {y}"
+    if len(periods) == 1:
+        period_range = fmt(periods[0])
+    else:
+        period_range = f"{fmt(periods[0])} – {fmt(periods[-1])}"
+
+    is_tenant = get_user_role(request.user) == 'tenant'
+    return {
+        'payments': payments,
+        'tenant': first.tenant,
+        'official_receipt_no': first.official_receipt_no or first.receipt_number,
+        'payment_date': first.payment_date,
+        'issued_at': first.created_at,
+        'payment_method': first.payment_method,
+        'collected_by': first.collected_by,
+        'remarks': first.remarks,
+        'month_count': len(payments),
+        'period_range': period_range,
+        'stall_list': stall_list,
+        'rental_total': rental_total,
+        'penalty_total': penalty_total,
+        'discount_total': discount_total,
+        'total_due': total_due,
+        'total_paid': total_paid,
+        'remaining_balance': remaining,
+        'amount_in_words': _amount_in_words(total_paid) + ' PESO ONLY',
+        'settings': SystemSetting.objects.first(),
+        'system_settings': SystemSetting.objects.first(),
+        'user': request.user,
+        'auto_print': request.GET.get('auto') == '1',
+        'back_url': None if is_tenant else (receipt_back_url(request) or '/billing/'),
+        'now': __import__('django.utils.timezone', fromlist=['now']).now(),
+    }
+
+
+def _amount_in_words(value):
+    """Render a peso amount as English words, e.g. ``1550.00`` →
+    ``ONE THOUSAND FIVE HUNDRED FIFTY AND 00/100``. Used on the consolidated
+    receipt's "Say:" line so the total cannot be re-written by hand."""
+    from decimal import Decimal as D
+    try:
+        d = D(str(value)).quantize(D('0.00'))
+    except Exception:
+        return ''
+    n = int(d)
+    cents = int((d * 100) - D(n) * 100)
+
+    ones = ['', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT',
+            'NINE', 'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN',
+            'SIXTEEN', 'SEVENTEEN', 'EIGHTEEN', 'NINETEEN']
+    tens = ['', '', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY', 'SIXTY', 'SEVENTY',
+            'EIGHTY', 'NINETY']
+
+    def under_hundred(x):
+        if x < 20:
+            return ones[x]
+        t, o = divmod(x, 10)
+        return tens[t] + (' ' + ones[o] if o else '')
+
+    def under_thousand(x):
+        h, r = divmod(x, 100)
+        parts = []
+        if h:
+            parts.append(ones[h] + ' HUNDRED')
+        if r:
+            parts.append(under_hundred(r))
+        return ' '.join(parts)
+
+    if n == 0:
+        words = 'ZERO'
+    else:
+        scales = [('BILLION', 1_000_000_000), ('MILLION', 1_000_000),
+                  ('THOUSAND', 1_000)]
+        chunks = []
+        remaining = n
+        for label, size in scales:
+            q, remaining = divmod(remaining, size)
+            if q:
+                chunks.append(under_thousand(q) + ' ' + label)
+        if remaining:
+            chunks.append(under_thousand(remaining))
+        words = ' '.join(chunks)
+
+    return f'{words} AND {cents:02d}/100'
+
 
 def is_htmx(request):
     return getattr(request, 'htmx', None) or request.headers.get('HX-Request') == 'true'
@@ -191,6 +323,47 @@ def payment_print_receipt(request, pk):
         'back_url': None if is_tenant else receipt_back_url(request),
     }
     return render(request, 'payments/print_receipt.html', context)
+
+
+@login_required
+def payment_batch_receipt(request):
+    """Show every receipt created by the most recent batch collection.
+
+    A collector who ticks 3 overdue months needs all 3 official receipts on
+    one printable page (each on its own physical page via CSS page break),
+    not just the last one. The list of Payment PKs is stashed in the session
+    by :func:`core.views.billing.billing_tenant_collect`.
+    """
+    payments = _batch_payments_from_session(request)
+    if not payments:
+        messages.info(request, 'No batch receipts available. Perform a batch collection first.')
+        return redirect('billing_list')
+    # Tenants may only view receipts for their own record.
+    if get_user_role(request.user) == 'tenant':
+        owner = payments[0].tenant
+        if owner.user != request.user:
+            messages.error(request, 'You can only view your own receipts.')
+            return redirect('dashboard')
+    return render(request, 'payments/print_batch.html', _batch_context(request, payments))
+
+
+@login_required
+def payment_batch_export_pdf(request):
+    payments = _batch_payments_from_session(request)
+    if not payments:
+        messages.info(request, 'No batch receipts available.')
+        return redirect('billing_list')
+    if get_user_role(request.user) == 'tenant' and payments[0].tenant.user != request.user:
+        messages.error(request, 'You can only export your own receipts.')
+        return redirect('dashboard')
+    context = _batch_context(request, payments)
+    context['auto_print'] = False
+    filename = (
+        f"OR_{context['official_receipt_no']}_{payments[0].tenant.tenant_id}.pdf"
+    )
+    return render_to_pdf_response(
+        request, 'payments/print_batch.html', context, filename=filename
+    )
 
 
 @login_required

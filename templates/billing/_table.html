@@ -15,62 +15,126 @@
   </div>
 </div>
 
-<div id="billing-table" class="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm">
-  <div class="overflow-x-auto">
-    <table class="w-full min-w-[1080px] table-fixed divide-y divide-slate-100">
-      <colgroup>
-        <col class="w-[190px]">
-        <col class="w-[105px]">
-        <col class="w-[105px]">
-        <col class="w-[125px]">
-        <col class="w-[125px]">
-        <col class="w-[125px]">
-        <col class="w-[130px]">
-        <col class="w-[115px]">
-        <col class="w-[160px]">
-      </colgroup>
-      <thead><tr class="bg-slate-50">
-        <th class="px-4 lg:px-5 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">TENANT</th>
-        <th class="px-4 lg:px-5 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">STALL</th>
-        <th class="px-4 lg:px-5 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">PERIOD</th>
-        <th class="px-4 lg:px-5 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">DUE</th>
-        <th class="px-4 lg:px-5 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">PAID</th>
-        <th class="px-4 lg:px-5 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">BALANCE</th>
-        <th class="px-4 lg:px-5 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">DUE DATE</th>
-        <th class="px-4 lg:px-5 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">STATUS</th>
-        <th class="px-4 lg:px-5 py-3.5 text-right text-xs font-bold tracking-widest text-slate-500">COLLECT</th>
-      </tr></thead>
-      <tbody class="divide-y divide-slate-50">
-        {% for billing in page_obj %}
-        <tr class="hover:bg-slate-50/70 transition">
-          <td class="px-4 lg:px-5 py-4"><a href="{% url 'tenant_view' billing.tenant.id %}" class="truncate text-sm font-semibold text-slate-900 hover:text-primary-700 block" title="{{ billing.tenant.full_name }}">{{ billing.tenant.full_name }}</a></td>
-          <td class="whitespace-nowrap px-4 lg:px-5 py-4"><span class="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-mono font-bold text-white tracking-wide">{{ billing.stall.stall_number }}</span></td>
-          <td class="whitespace-nowrap px-4 lg:px-5 py-4 text-sm font-medium text-slate-700"><span class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold tabular-nums">{{ billing.billing_month|stringformat:"02d" }}/{{ billing.billing_year }}</span></td>
-          <td class="whitespace-nowrap px-4 lg:px-5 py-4 text-sm font-bold text-slate-900 tabular-nums">₱{{ billing.total_due|floatformat:2|intcomma }}</td>
-          <td class="whitespace-nowrap px-4 lg:px-5 py-4 text-sm font-semibold text-emerald-600 tabular-nums">₱{{ billing.amount_paid|floatformat:2|intcomma }}</td>
-          <td class="whitespace-nowrap px-4 lg:px-5 py-4 text-sm font-extrabold tabular-nums {% if billing.balance > 0 %}text-red-600{% else %}text-emerald-600{% endif %}">₱{{ billing.balance|floatformat:2|intcomma }}</td>
-          <td class="whitespace-nowrap px-4 lg:px-5 py-4 text-sm text-slate-600 tabular-nums">{{ billing.due_date|date:"M d, Y" }}</td>
-          <td class="whitespace-nowrap px-4 lg:px-5 py-4">{% include 'includes/status_badge.html' with status=billing.status %}</td>
-          <td class="whitespace-nowrap px-4 lg:px-5 py-4 text-right">
-            <div class="flex items-center justify-end gap-1.5">
-              {% if billing.status != 'Paid' %}
-              <button type="button" hx-get="{% url 'billing_collect' billing.id %}" hx-target="#modal-content" onclick="openModal('{% url 'billing_collect' billing.id %}')" class="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition">
-                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                Collect
-              </button>
-              {% else %}
-              <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-bold text-emerald-700"><svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Paid</span>
-              {% endif %}
-              <a href="{% url 'billing_view' billing.id %}" class="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-900 hover:text-white transition" title="View"><svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></a>
-            </div>
-          </td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="9" class="px-6 py-14 text-center"><div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400"><svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div><p class="mt-3 text-sm font-bold text-slate-700">No billings yet</p><p class="mt-1 text-xs text-slate-500">Billings appear automatically when a contract is created — no manual generation needed. For backfill, use Generate.</p><a href="{% url 'contract_add' %}" class="mt-3 inline-flex rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white">Create Contract</a></td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+<p class="text-xs font-semibold text-slate-500">
+  <span class="inline-flex h-5 items-center rounded-full bg-slate-900 px-2 text-[10px] font-bold tracking-wider text-white">{{ tenant_count|default:0 }}</span>
+  tenant{{ tenant_count|default:0|pluralize }} grouped • months listed oldest → newest under each name
+</p>
+
+<div id="billing-table" class="space-y-4">
+  {% for group in page_obj %}
+  {% with unpaid=group.unpaid_count %}
+  <section class="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm">
+    <!-- Tenant group header: appears once, no matter how many months are open -->
+    <header class="flex flex-col gap-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:px-5">
+      <div class="flex items-start gap-3 min-w-0">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {% if unpaid %}bg-red-600{% else %}bg-emerald-600{% endif %} text-white">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        </div>
+        <div class="min-w-0">
+          <a href="{% url 'tenant_view' group.tenant.id %}" class="block truncate text-base font-extrabold text-slate-900 hover:text-primary-700" title="{{ group.tenant.full_name }}">{{ group.tenant.full_name }}</a>
+          <p class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+            <span class="font-mono font-bold text-slate-700">{{ group.tenant.tenant_id }}</span>
+            <span aria-hidden="true">•</span>
+            <span>Stall{{ group.stalls|length|pluralize }}:
+              {% for s in group.stalls %}<span class="ml-1 inline-flex rounded-full bg-slate-900 px-2 py-0.5 font-mono text-[10px] font-bold tracking-wide text-white">{{ s }}</span>{% endfor %}
+            </span>
+            {% if group.oldest_period and group.newest_period %}
+            <span aria-hidden="true">•</span>
+            <span class="tabular-nums">Period {{ group.oldest_period.1|stringformat:"02d" }}/{{ group.oldest_period.0 }} → {{ group.newest_period.1|stringformat:"02d" }}/{{ group.newest_period.0 }}</span>
+            {% endif %}
+          </p>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+        <div class="text-right">
+          <p class="text-[10px] font-bold tracking-widest text-slate-400">OUTSTANDING</p>
+          <p class="text-lg font-extrabold tabular-nums {% if unpaid %}text-red-600{% else %}text-emerald-600{% endif %}">₱{{ group.total_balance|floatformat:2|intcomma }}</p>
+          <p class="text-[10px] font-semibold text-slate-500">{{ unpaid }} unpaid / {{ group.billings|length }} month{{ group.billings|length|pluralize }}</p>
+        </div>
+        <a href="{% url 'billing_tenant_collect' group.tenant.id %}"
+           class="inline-flex items-center gap-2 rounded-full {% if unpaid %}bg-emerald-600 text-white hover:bg-emerald-700 shadow{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %} px-4 py-2 text-xs font-bold transition">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+          View Details &amp; Collect
+        </a>
+      </div>
+    </header>
+    <!-- Chronological month strip: each row is one billing under this tenant -->
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[900px] table-fixed divide-y divide-slate-100">
+        <colgroup>
+          <col class="w-[110px]">
+          <col class="w-[110px]">
+          <col class="w-[135px]">
+          <col class="w-[135px]">
+          <col class="w-[135px]">
+          <col class="w-[130px]">
+          <col class="w-[120px]">
+          <col class="w-[160px]">
+        </colgroup>
+        <thead>
+          <tr class="bg-slate-50/70 text-[10px] font-bold tracking-widest text-slate-500">
+            <th class="px-4 py-2 text-left lg:px-5">MONTH</th>
+            <th class="px-4 py-2 text-left">STALL</th>
+            <th class="px-4 py-2 text-left">DUE</th>
+            <th class="px-4 py-2 text-left">PAID</th>
+            <th class="px-4 py-2 text-left">BALANCE</th>
+            <th class="px-4 py-2 text-left">DUE DATE</th>
+            <th class="px-4 py-2 text-left">STATUS</th>
+            <th class="px-4 py-2 text-right">QUICK ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50">
+          {% for billing in group.billings %}
+          <tr class="text-sm transition {% if billing.balance > 0 %}hover:bg-amber-50/40{% else %}hover:bg-emerald-50/30{% endif %}">
+            <td class="whitespace-nowrap px-4 py-2.5 font-bold tabular-nums text-slate-900 lg:px-5">
+              <span class="inline-flex rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-xs font-bold tabular-nums">{{ billing.billing_month|stringformat:"02d" }}/{{ billing.billing_year }}</span>
+            </td>
+            <td class="whitespace-nowrap px-4 py-2.5"><span class="rounded-full bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-bold text-slate-700">{{ billing.stall.stall_number }}</span></td>
+            <td class="whitespace-nowrap px-4 py-2.5 font-semibold tabular-nums text-slate-800">₱{{ billing.total_due|floatformat:2|intcomma }}</td>
+            <td class="whitespace-nowrap px-4 py-2.5 font-semibold tabular-nums text-emerald-600">₱{{ billing.amount_paid|floatformat:2|intcomma }}</td>
+            <td class="whitespace-nowrap px-4 py-2.5 font-extrabold tabular-nums {% if billing.balance > 0 %}text-red-600{% else %}text-emerald-600{% endif %}">₱{{ billing.balance|floatformat:2|intcomma }}</td>
+            <td class="whitespace-nowrap px-4 py-2.5 text-xs tabular-nums text-slate-600">{{ billing.due_date|date:"M d, Y" }}</td>
+            <td class="whitespace-nowrap px-4 py-2.5">{% include 'includes/status_badge.html' with status=billing.status %}</td>
+            <td class="whitespace-nowrap px-4 py-2.5 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                {% if billing.balance > 0 %}
+                <button type="button" hx-get="{% url 'billing_collect' billing.id %}" hx-target="#modal-content" onclick="openModal('{% url 'billing_collect' billing.id %}')" class="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white shadow hover:bg-emerald-700 transition" title="Collect this month only">
+                  <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  Collect
+                </button>
+                {% else %}
+                <span class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">Settled</span>
+                {% endif %}
+                <a href="{% url 'billing_view' billing.id %}" class="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-900 hover:text-white transition" title="Month detail"><svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="bg-slate-50/70 text-[11px] font-bold text-slate-600">
+          <tr>
+            <td colspan="2" class="px-4 py-2 lg:px-5">Subtotal • {{ group.tenant.full_name }}</td>
+            <td class="px-4 py-2 tabular-nums">₱{{ group.total_due|floatformat:2|intcomma }}</td>
+            <td class="px-4 py-2 tabular-nums text-emerald-700">₱{{ group.total_paid|floatformat:2|intcomma }}</td>
+            <td class="px-4 py-2 tabular-nums {% if group.total_balance > 0 %}text-red-700{% else %}text-emerald-700{% endif %}">₱{{ group.total_balance|floatformat:2|intcomma }}</td>
+            <td colspan="3" class="px-4 py-2 text-right text-[10px] font-semibold text-slate-500">Use <a href="{% url 'billing_tenant_collect' group.tenant.id %}" class="font-bold text-slate-900 underline">View Details &amp; Collect</a> to batch settle months.</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+  {% endwith %}
+  {% empty %}
+  <div class="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm">
+    <div class="px-6 py-14 text-center">
+      <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400"><svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
+      <p class="mt-3 text-sm font-bold text-slate-700">No billings match this filter</p>
+      <p class="mt-1 text-xs text-slate-500">Billings appear automatically when a contract is created — no manual generation needed.</p>
+      <a href="{% url 'contract_add' %}" class="mt-3 inline-flex rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white">Create Contract</a>
+    </div>
   </div>
+  {% endfor %}
 </div>
+
 {% include 'includes/pagination.html' with pagination_target='billing-table-wrapper' %}
 </div>

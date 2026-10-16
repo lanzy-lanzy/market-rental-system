@@ -1,3 +1,6 @@
+from collections import OrderedDict
+from decimal import Decimal
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from core.permissions import staff_required, admin_required, get_user_role, collector_required
@@ -10,8 +13,9 @@ from datetime import date, datetime
 from core.models import Billing, Tenant, Stall, RentalContract, Payment, TenantLedger, AuditLog, SystemSetting
 from core.forms import BillingForm, QuickCollectForm
 from core.helpers import (
-    ensure_current_month_billings, render_to_pdf_response, record_payment,
-    maybe_apply_overdue_penalties, receipt_print_url,
+    ensure_current_month_billings, ensure_initial_billing, render_to_pdf_response,
+    record_payment, maybe_apply_overdue_penalties, receipt_print_url,
+    generate_receipt_number,
 )
 
 
@@ -64,7 +68,7 @@ def billing_list(request):
 
     billings = Billing.objects.select_related(
         'tenant', 'stall', 'contract'
-    ).all().order_by('-billing_year', '-billing_month', '-created_at', '-id')
+    ).all()
 
     # Tenant isolation: show only own billings
     if get_user_role(request.user) == 'tenant':
@@ -95,13 +99,56 @@ def billing_list(request):
             Q(contract__id__icontains=search_query)
         )
 
-    paginator = Paginator(billings, 10)
+    # Order so grouping is stable and each tenant's months read oldest→newest.
+    billings = billings.order_by(
+        'tenant__full_name', 'billing_year', 'billing_month', 'created_at', 'id'
+    )
+
+    totals = billings.aggregate(
+        due=Sum('total_due'),
+        paid=Sum('amount_paid'),
+        balance=Sum('balance'),
+    )
+    total_due = totals['due'] or 0
+    total_paid = totals['paid'] or 0
+    total_balance = totals['balance'] or 0
+
+    # Collapse to one visual group per tenant so a tenant with N outstanding
+    # months appears as a single card in the list instead of N rows.
+    groups: "OrderedDict[int, dict]" = OrderedDict()
+    for b in billings:
+        key = b.tenant_id
+        g = groups.get(key)
+        if g is None:
+            g = {
+                'tenant': b.tenant,
+                'stalls': [],
+                'billings': [],
+                'total_due': Decimal('0.00'),
+                'total_paid': Decimal('0.00'),
+                'total_balance': Decimal('0.00'),
+                'unpaid_count': 0,
+                'oldest_period': None,
+                'newest_period': None,
+            }
+            groups[key] = g
+        g['billings'].append(b)
+        g['total_due'] += Decimal(str(b.total_due))
+        g['total_paid'] += Decimal(str(b.amount_paid))
+        g['total_balance'] += Decimal(str(b.balance))
+        if b.balance and b.balance > 0:
+            g['unpaid_count'] += 1
+        if b.stall.stall_number not in g['stalls']:
+            g['stalls'].append(b.stall.stall_number)
+        period = (b.billing_year, b.billing_month)
+        if g['oldest_period'] is None or period < g['oldest_period']:
+            g['oldest_period'] = period
+        if g['newest_period'] is None or period > g['newest_period']:
+            g['newest_period'] = period
+
+    paginator = Paginator(list(groups.values()), 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-
-    total_due = billings.aggregate(total=Sum('total_due'))['total'] or 0
-    total_paid = billings.aggregate(total=Sum('amount_paid'))['total'] or 0
-    total_balance = billings.aggregate(total=Sum('balance'))['total'] or 0
 
     context = {
         'page_obj': page_obj,
@@ -113,6 +160,7 @@ def billing_list(request):
         'total_due': total_due,
         'total_paid': total_paid,
         'total_balance': total_balance,
+        'tenant_count': len(groups),
         'pagination_target': 'billing-table-wrapper',
     }
     if is_htmx(request):
@@ -442,6 +490,145 @@ def billing_collect(request, pk):
 def billing_quick_pay(request, pk):
     """Alias for billing_collect to support legacy links."""
     return billing_collect(request, pk)
+
+
+def _tenant_outstanding_qs(tenant):
+    """Every billing for ``tenant`` that still carries a balance, oldest first.
+
+    Includes Paid months so the collector sees the full contract history; the
+    template marks which rows are open.
+    """
+    return (
+        Billing.objects.filter(tenant=tenant)
+        .select_related('stall', 'stall__section', 'contract')
+        .order_by('billing_year', 'billing_month', 'stall__stall_number')
+    )
+
+
+@collector_required
+@transaction.atomic
+def billing_tenant_collect(request, tenant_pk):
+    """Grouped collection workspace for one tenant.
+
+    Lists every billing month (past and current) tied to the tenant's
+    contracts, oldest first, so the collector can review the complete picture
+    before tapping Collect. The batch form below lets them tick specific
+    months (or all outstanding ones) and settle them in a single action —
+    each ticked month produces its own official receipt via the shared
+    ``record_payment`` service so ledger, billing status and audit trail stay
+    identical to the one-month modal flow.
+    """
+    tenant = get_object_or_404(Tenant, pk=tenant_pk)
+
+    # Backfill months that were never generated for this tenant's contracts —
+    # idempotent, safe to call on every page load. Covers ending months inside
+    # a contract window so nothing is silently skipped.
+    try:
+        for contract in tenant.contracts.select_related('tenant', 'stall'):
+            ensure_initial_billing(contract)
+    except Exception:
+        pass
+
+    billings = list(_tenant_outstanding_qs(tenant))
+    outstanding = [b for b in billings if b.balance and b.balance > 0 and b.status != 'Paid']
+    total_outstanding = sum((Decimal(str(b.balance)) for b in outstanding), Decimal('0.00'))
+
+    if request.method == 'POST':
+        selected_ids = {int(x) for x in request.POST.getlist('billing_ids') if x.isdigit()}
+        if not selected_ids:
+            messages.error(request, 'Select at least one billing month to collect.')
+            return redirect('billing_tenant_collect', tenant_pk=tenant.pk)
+
+        raw_date = (request.POST.get('payment_date') or '').strip()
+        try:
+            pay_date = datetime.strptime(raw_date, '%Y-%m-%d').date() if raw_date else date.today()
+        except ValueError:
+            messages.error(request, 'Invalid payment date.')
+            return redirect('billing_tenant_collect', tenant_pk=tenant.pk)
+
+        payment_method = request.POST.get('payment_method') or 'Cash'
+        if payment_method not in dict(Payment.PAYMENT_METHOD_CHOICES):
+            payment_method = 'Cash'
+        remarks = (request.POST.get('remarks') or '').strip()
+
+        # Re-query with select_for_update inside the transaction so concurrent
+        # collectors cannot settle the same month twice while this page loads.
+        billings_map = {
+            b.pk: b
+            for b in Billing.objects.select_for_update().filter(
+                pk__in=selected_ids, tenant=tenant
+            )
+        }
+        # Always settle oldest first so partials line up with the contract.
+        ordered = sorted(billings_map.values(), key=lambda b: (b.billing_year, b.billing_month, b.stall_id))
+
+        # Pre-generate ONE official receipt number for the whole batch. Every
+        # Payment row shares this OR so the printed document is a single
+        # consolidated receipt — not three separate ones. Internal
+        # ``receipt_number`` stays unique per row to satisfy the DB constraint,
+        # but only the shared OR is surfaced to the collector and tenant.
+        shared_or = generate_receipt_number()
+
+        created_payments = []
+        for billing in ordered:
+            if billing.status == 'Paid' or Decimal(str(billing.balance)) <= 0:
+                continue
+            amount = Decimal(str(billing.balance))
+            payment = record_payment(
+                tenant=tenant,
+                billing=billing,
+                amount=amount,
+                payment_date=pay_date,
+                payment_method=payment_method,
+                collected_by=request.user,
+                remarks=remarks,
+                official_receipt_no=shared_or,
+            )
+            created_payments.append(payment)
+
+        if not created_payments:
+            messages.info(request, 'Nothing to collect — the selected months are already settled.')
+            return redirect('billing_tenant_collect', tenant_pk=tenant.pk)
+
+        total_collected = sum((p.amount_paid for p in created_payments), Decimal('0.00'))
+        periods = ', '.join(
+            f'{p.billing_month:02d}/{p.billing_year}' for p in created_payments
+        )
+        AuditLog.objects.create(
+            user=request.user,
+            action='COLLECT_BATCH',
+            module='Billing',
+            description=(
+                f'Batch collected {len(created_payments)} month(s) [{periods}] '
+                f'for {tenant.full_name} — ₱{total_collected} '
+                f'under consolidated OR {shared_or}'
+            ),
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        messages.success(
+            request,
+            f'Collected {len(created_payments)} month(s) totalling ₱{total_collected:.2f} '
+            f'under OR {shared_or}.',
+        )
+        # Stash the batch so the printable page renders every month as one
+        # line item on a single consolidated receipt.
+        from core.views.payments import BATCH_RECEIPT_SESSION_KEY
+        request.session[BATCH_RECEIPT_SESSION_KEY] = [p.pk for p in created_payments]
+        if len(created_payments) == 1:
+            # Single-month batch: keep the classic one-receipt flow.
+            return redirect(receipt_print_url(created_payments[0], back='billing'))
+        from django.urls import reverse
+        return redirect(f"{reverse('payment_batch_receipt')}?auto=1&back=billing")
+
+    context = {
+        'tenant': tenant,
+        'billings': billings,
+        'outstanding': outstanding,
+        'total_outstanding': total_outstanding,
+        'today': date.today(),
+        'payment_methods': Payment.PAYMENT_METHOD_CHOICES,
+    }
+    return render(request, 'billing/collect_grouped.html', context)
 
 
 @login_required
