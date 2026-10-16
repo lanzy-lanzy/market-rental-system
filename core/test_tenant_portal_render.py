@@ -215,7 +215,7 @@ class TenantPortalAccessControlTests(TenantPortalRenderBase):
         self.assertEqual(response.status_code, 200)
         body = response.content.decode('utf-8')
         self.assertIn('<!DOCTYPE html>', body)
-        self.assertIn('No tenant record linked', body)
+        self.assertIn('No tenant record is linked', body)
         # Not raw source.
         self.assertNotIn('{% extends', body)
 
@@ -252,3 +252,101 @@ class TenantPortalEdgeCaseTests(TenantPortalRenderBase):
         response = self.client.get(reverse('tenant_portal'))
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response['Location'], reverse('tenant_portal_password'))
+
+
+class TenantPortalAutoLinkTests(TenantPortalRenderBase):
+    """A tenant-role login created outside /tenants/add/ still gets in.
+
+    Historically an admin could add a User with role='tenant' from
+    /users/add/, which never produced a Tenant row and dropped the person
+    on no_tenant.html. The portal now tries to auto-link by username
+    (matching an unassigned Tenant.tenant_id) or by email before giving
+    up, and /users/add/ refuses to make role='tenant' orphans in the
+    first place.
+    """
+
+    def _make_orphan_user(self, username, email=''):
+        u = User.objects.create_user(username=username, password='Orphan!Pass123', email=email)
+        UserProfile.objects.create(user=u, role='tenant')
+        return u
+
+    def test_autolinks_when_username_matches_unassigned_tenant_id(self):
+        # An unassigned Tenant row (no user FK) whose tenant_id equals the
+        # login username should be picked up on first portal visit.
+        orphan_tenant = Tenant.objects.create(
+            tenant_id='DMPM-ORPH', full_name='Orphan Soul',
+            first_name='Orphan', last_name='Soul',
+            barangay='Poblacion', contact_number='09000000099',
+        )
+        login = self._make_orphan_user('DMPM-ORPH')
+        self.client.force_login(login)
+        response = self.client.get(reverse('tenant_portal'))
+        self.assertEqual(response.status_code, 200)
+        orphan_tenant.refresh_from_db()
+        self.assertEqual(orphan_tenant.user_id, login.pk,
+                         msg='Expected Tenant.user to be re-pointed to the login')
+        body = response.content.decode('utf-8')
+        self.assertIn('Orphan Soul', body)
+        self.assertNotIn('No tenant record is linked', body)
+
+    def test_autolinks_by_email_when_username_does_not_match(self):
+        orphan_tenant = Tenant.objects.create(
+            tenant_id='DMPM-MAIL', first_name='Mail', last_name='Match',
+            barangay='Poblacion', contact_number='09000000098',
+            email='mail@example.com',
+        )
+        login = self._make_orphan_user('weird-handle', email='mail@example.com')
+        self.client.force_login(login)
+        self.client.get(reverse('tenant_portal'))
+        orphan_tenant.refresh_from_db()
+        self.assertEqual(orphan_tenant.user_id, login.pk)
+
+    def test_does_not_link_when_tenant_id_is_ambiguous(self):
+        # Two unassigned tenants both matching by username -> leave alone.
+        Tenant.objects.create(
+            tenant_id='SAME', first_name='One', last_name='A',
+            barangay='Poblacion', contact_number='09000000001',
+        )
+        Tenant.objects.create(
+            tenant_id='same', first_name='Two', last_name='B',
+            barangay='Poblacion', contact_number='09000000002',
+        )
+        login = self._make_orphan_user('SAME')
+        self.client.force_login(login)
+        response = self.client.get(reverse('tenant_portal'))
+        self.assertEqual(response.status_code, 200)
+        body = response.content.decode('utf-8')
+        self.assertIn('No tenant record is linked', body)
+        # No row was linked.
+        for t in Tenant.objects.filter(tenant_id__iexact='SAME'):
+            self.assertIsNone(t.user_id)
+
+    def test_does_not_steal_tenant_already_linked_to_another_user(self):
+        # Tenant already assigned to someone else must not be re-pointed.
+        keeper_user = self._make_orphan_user('keeper')
+        keeper_tenant = Tenant.objects.create(
+            tenant_id='TEN-BUSY', first_name='Keeper', last_name='X',
+            barangay='Poblacion', contact_number='09000000097',
+            user=keeper_user,
+        )
+        # Now an intruder whose username matches tenant_id tries to log in.
+        intruder = self._make_orphan_user('TEN-BUSY')
+        self.client.force_login(intruder)
+        self.client.get(reverse('tenant_portal'))
+        keeper_tenant.refresh_from_db()
+        self.assertEqual(keeper_tenant.user_id, keeper_user.pk,
+                         msg='Auto-link must not steal an already-assigned tenant')
+
+    def test_users_add_rejects_role_tenant_and_redirects_to_tenant_add(self):
+        admin = User.objects.create_user(username='boss2', password='Boss!Pass123')
+        UserProfile.objects.create(user=admin, role='admin')
+        self.client.force_login(admin)
+        response = self.client.post(reverse('user_add'), {
+            'username': 'sneak', 'password': '', 'password2': '',
+            'role': 'tenant',
+        })
+        # The view refuses and sends the admin to the correct entry point.
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], reverse('tenant_add'))
+        self.assertFalse(User.objects.filter(username='sneak').exists(),
+                         msg='No orphan tenant-role User should be created')

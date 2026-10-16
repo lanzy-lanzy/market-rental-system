@@ -50,6 +50,22 @@ def user_add(request):
     if request.method == 'POST':
         user_form = UserCreationForm(request.POST)
         profile_form = UserProfileForm(request.POST)
+        # A tenant-role login is only meaningful when it is bound to a
+        # Tenant row. That binding is created automatically by
+        # /tenants/add/ (via create_tenant_login); allowing the raw Users
+        # form to pick role='tenant' here produces an orphan that just
+        # bounces the person to no_tenant.html on first login. Refuse and
+        # redirect to the correct entry point instead. Read the raw POST
+        # value so the guard still fires even when the profile form has
+        # other validation errors.
+        if (request.POST.get('role') or '').strip() == 'tenant':
+            messages.error(
+                request,
+                'Tenant logins must be created from the Tenants page so the '
+                'account is linked to a tenant record. Use "Add Tenant" '
+                'under Tenants instead.',
+            )
+            return redirect('tenant_add')
         if user_form.is_valid() and profile_form.is_valid():
             user = user_form.save(commit=False)
             password = request.POST.get('password')
@@ -90,6 +106,20 @@ def user_edit(request, pk):
     if request.method == 'POST':
         user_form = UserCreationForm(request.POST, instance=user)
         profile_form = UserProfileForm(request.POST, instance=profile)
+        # Same guard as user_add: do not allow flipping an unlinked
+        # account into a tenant-role login. That would drop the person on
+        # the tenant portal's "no linked record" screen. Read the raw
+        # POST value so the guard fires even when other fields fail.
+        new_role = (request.POST.get('role') or '').strip()
+        has_link = getattr(user, 'tenant', None) is not None
+        if new_role == 'tenant' and not has_link:
+            messages.error(
+                request,
+                'This account is not linked to a tenant record, so the '
+                'Tenant role cannot be applied. Create the tenant (and its '
+                'login) from the Tenants page instead.',
+            )
+            return redirect('tenant_add')
         if user_form.is_valid() and profile_form.is_valid():
             user = user_form.save()
             password = request.POST.get('password')

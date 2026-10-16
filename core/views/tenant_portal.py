@@ -12,7 +12,7 @@ from django.db.models import Sum, Q
 from datetime import date
 from decimal import Decimal
 
-from core.models import RentalContract, Billing, Payment, TenantLedger, AuditLog
+from core.models import RentalContract, Billing, Payment, TenantLedger, AuditLog, Tenant
 from core.forms import TenantPasswordChangeForm
 from core.permissions import tenant_required, get_request_tenant
 
@@ -23,6 +23,47 @@ def is_htmx(request):
 
 def _zero(value):
     return value if value is not None else Decimal('0.00')
+
+
+def _try_autolink(request, user):
+    """Repair a tenant-role login that has no linked ``Tenant`` row.
+
+    Two scenarios produce this state today:
+
+    * an admin created the account via ``/users/add/`` with role='tenant'
+      instead of going through ``/tenants/add/`` (which is the canonical
+      entry point that both creates the Tenant AND generates the login),
+    * a legacy Tenant record exists but its ``user`` FK was never set.
+
+    We attempt a safe, one-shot reconnection: match on ``tenant_id`` equal
+    to the login username (case-insensitive), or on the email address. If
+    exactly one candidate Tenant is found and is currently unassigned, we
+    link it. Any ambiguity — multiple candidates, or the Tenant is already
+    linked to a different user — is left untouched so we never silently
+    re-point someone else's data.
+    """
+    if not user or not user.is_authenticated:
+        return None
+    base_qs = Tenant.objects.filter(user__isnull=True)
+    candidates = list(base_qs.filter(tenant_id__iexact=user.username)[:2])
+    if len(candidates) != 1 and user.email:
+        candidates = list(base_qs.filter(email__iexact=user.email)[:2])
+    if len(candidates) != 1:
+        return None
+    tenant = candidates[0]
+    tenant.user = user
+    tenant.save(update_fields=['user'])
+    AuditLog.objects.create(
+        user=user,
+        action='UPDATE',
+        module='Tenant',
+        description=(
+            f'Auto-linked tenant login {user.username} to Tenant {tenant.tenant_id} '
+            'on first portal access (no prior link).'
+        ),
+        ip_address=request.META.get('REMOTE_ADDR'),
+    )
+    return tenant
 
 
 def _render_no_tenant(request):
@@ -61,6 +102,8 @@ def _tenant_summary(tenant):
 @tenant_required
 def tenant_portal_dashboard(request):
     tenant = get_request_tenant(request.user)
+    if not tenant:
+        tenant = _try_autolink(request, request.user)
     if not tenant:
         return _render_no_tenant(request)
 
@@ -131,6 +174,8 @@ def tenant_portal_dashboard(request):
 @tenant_required
 def tenant_portal_history(request):
     tenant = get_request_tenant(request.user)
+    if not tenant:
+        tenant = _try_autolink(request, request.user)
     if not tenant:
         return _render_no_tenant(request)
 
