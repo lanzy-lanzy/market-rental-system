@@ -188,18 +188,63 @@ class TenantForm(forms.ModelForm):
 
 
 class StallForm(forms.ModelForm):
+    # Explicit ModelChoiceFields so we can (a) give the dropdowns clean
+    # empty labels ("— Select section —"), (b) order the choices, and
+    # (c) raise an actionable error if the underlying lookup table is
+    # empty — otherwise a ModelChoiceField would silently accept nothing
+    # and the operator just sees a blank <select> with no explanation.
+    section = forms.ModelChoiceField(
+        queryset=MarketSection.objects.order_by('name'),
+        label='Section',
+        required=True,
+        empty_label='— Select section —',
+        error_messages={
+            'required': 'Please choose a market section for this stall.',
+            'invalid_choice': 'The selected section no longer exists. Pick a current one.',
+        },
+        widget=forms.Select(attrs={'class': TW_SELECT}),
+    )
+    stall_type = forms.ModelChoiceField(
+        queryset=StallType.objects.order_by('name'),
+        label='Stall Type',
+        required=False,
+        empty_label='— Select stall type (optional) —',
+        error_messages={
+            'invalid_choice': 'The selected stall type no longer exists. Pick a current one.',
+        },
+        widget=forms.Select(attrs={'class': TW_SELECT}),
+    )
+
     class Meta:
         model = Stall
         fields = ['stall_number', 'section', 'stall_type', 'size', 'monthly_rate', 'status', 'remarks']
         widgets = {
             'stall_number': forms.TextInput(attrs={'class': TW_INPUT, 'placeholder': 'e.g., A-101'}),
-            'section': forms.Select(attrs={'class': TW_SELECT}),
-            'stall_type': forms.Select(attrs={'class': TW_SELECT}),
             'size': forms.NumberInput(attrs={'class': TW_INPUT, 'placeholder': 'Size in sqm', 'step': '0.01'}),
             'monthly_rate': forms.NumberInput(attrs={'class': TW_INPUT, 'placeholder': 'Monthly rental rate', 'step': '0.01'}),
             'status': forms.Select(attrs={'class': TW_SELECT}),
             'remarks': forms.Textarea(attrs={'class': TW_TEXTAREA, 'rows': 3, 'placeholder': 'Optional remarks'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Re-point the querysets on instantiation so a form bound before a
+        # section was created still sees the latest rows on the next render.
+        self.fields['section'].queryset = MarketSection.objects.order_by('name')
+        self.fields['stall_type'].queryset = StallType.objects.order_by('name')
+        # Surfaced to the templates so they can render an inline warning
+        # instead of a silent empty dropdown when lookups are missing.
+        self.section_options_available = self.fields['section'].queryset.exists()
+        self.stall_type_options_available = self.fields['stall_type'].queryset.exists()
+
+    def clean_section(self):
+        if not self.section_options_available:
+            raise forms.ValidationError(
+                'No market sections are configured yet. Ask an administrator '
+                'to add at least one under Settings → Market Sections before '
+                'creating a stall.'
+            )
+        return self.cleaned_data.get('section')
 
 
 class MarketSectionForm(forms.ModelForm):

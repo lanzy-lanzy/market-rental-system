@@ -17,7 +17,7 @@ class AssignedStallMapTests(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.section = MarketSection.objects.create(name='Vegetable Section')
+        cls.section, _ = MarketSection.objects.get_or_create(name='Vegetable Section')
         cls.occupied_stall = Stall.objects.create(
             stall_number='RGS-01', section=cls.section, monthly_rate=3000, status='Occupied')
         cls.vacant_stall = Stall.objects.create(
@@ -86,7 +86,7 @@ class ContractStallChoiceTests(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.section = MarketSection.objects.create(name='Grocery Section')
+        cls.section, _ = MarketSection.objects.get_or_create(name='Grocery Section')
         cls.vacant = Stall.objects.create(stall_number='GS-21', section=cls.section,
                                           monthly_rate=1200, status='Vacant')
         cls.occupied = Stall.objects.create(stall_number='GS-22', section=cls.section,
@@ -131,7 +131,7 @@ class MultiStallContractTests(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.section = MarketSection.objects.create(name='Dry Goods Section')
+        cls.section, _ = MarketSection.objects.get_or_create(name='Dry Goods Section')
         cls.held = Stall.objects.create(stall_number='DGS-01', section=cls.section,
                                         monthly_rate=1500, status='Occupied')
         cls.free = Stall.objects.create(stall_number='DGS-02', section=cls.section,
@@ -226,7 +226,7 @@ class ContractAddViewTests(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.section = MarketSection.objects.create(name='Grocery Section')
+        cls.section, _ = MarketSection.objects.get_or_create(name='Grocery Section')
         cls.free_a = Stall.objects.create(stall_number='GS-31', section=cls.section,
                                           monthly_rate=1200, status='Vacant')
         cls.free_b = Stall.objects.create(stall_number='GS-32', section=cls.section,

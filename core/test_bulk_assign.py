@@ -16,7 +16,7 @@ from core.models import (
 class BulkAssignStallsFormTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.section = MarketSection.objects.create(name='Dry Goods Section')
+        cls.section, _ = MarketSection.objects.get_or_create(name='Dry Goods Section')
         cls.free_a = Stall.objects.create(stall_number='DGS-11', section=cls.section,
                                           monthly_rate=1500, status='Vacant')
         cls.free_b = Stall.objects.create(stall_number='DGS-12', section=cls.section,
@@ -84,7 +84,7 @@ class BulkAssignStallsFormTests(TestCase):
 class BulkAssignViewTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.section = MarketSection.objects.create(name='Fruit Section')
+        cls.section, _ = MarketSection.objects.get_or_create(name='Fruit Section')
         cls.free_a = Stall.objects.create(stall_number='FS-11', section=cls.section,
                                           monthly_rate=1500, status='Vacant')
         cls.free_b = Stall.objects.create(stall_number='FS-12', section=cls.section,

@@ -43,6 +43,12 @@ from core.views.reports import (
 from core.views.ledger import ledger_list, ledger_view, ledger_print, ledger_list_print, ledger_list_export_pdf, ledger_view_export_pdf
 from core.views.notices import notice_list, notice_add, notice_print, notice_mark_served, notice_list_print, notice_list_export_pdf, notice_export_pdf
 from core.views.settings_views import settings_view, settings_update
+from core.views.lookups import (
+    market_section_list, market_section_create, market_section_update,
+    market_section_delete, market_section_quick_add,
+    stall_type_list, stall_type_create, stall_type_update,
+    stall_type_delete, stall_type_quick_add,
+)
 from core.views.audit import audit_log_list
 from core.views.users import user_list, user_add, user_edit, user_deactivate
 from core.views.tenant_portal import tenant_portal_dashboard, tenant_portal_history, tenant_portal_password
@@ -83,6 +89,20 @@ urlpatterns = [
     path('stalls/<int:pk>/export/pdf/', stall_view_export_pdf, name='stall_view_export_pdf'),
     path('stalls/add-modal/', stall_add_modal, name='stall_add_modal'),
     path('stalls/<int:pk>/edit-modal/', stall_edit_modal, name='stall_edit_modal'),
+
+    # Market sections (lookup table backing the Stall "Section" dropdown)
+    path('stalls/sections/', market_section_list, name='market_section_list'),
+    path('stalls/sections/create/', market_section_create, name='market_section_create'),
+    path('stalls/sections/<int:pk>/update/', market_section_update, name='market_section_update'),
+    path('stalls/sections/<int:pk>/delete/', market_section_delete, name='market_section_delete'),
+    path('stalls/sections/quick-add/', market_section_quick_add, name='market_section_quick_add'),
+
+    # Stall types (lookup table backing the Stall "Stall Type" dropdown)
+    path('stalls/stall-types/', stall_type_list, name='stall_type_list'),
+    path('stalls/stall-types/create/', stall_type_create, name='stall_type_create'),
+    path('stalls/stall-types/<int:pk>/update/', stall_type_update, name='stall_type_update'),
+    path('stalls/stall-types/<int:pk>/delete/', stall_type_delete, name='stall_type_delete'),
+    path('stalls/stall-types/quick-add/', stall_type_quick_add, name='stall_type_quick_add'),
 
     # Contracts
     path('contracts/', contract_list, name='contract_list'),

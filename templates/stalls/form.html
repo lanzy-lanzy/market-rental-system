@@ -12,21 +12,69 @@
     </div>
     <form method="post" action="{% if is_add %}{% url 'stall_add' %}{% else %}{% url 'stall_edit' stall.id %}{% endif %}" class="p-6">
       {% csrf_token %}
+      {% if form.non_field_errors %}
+      <div class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+        <p class="text-xs font-bold uppercase tracking-wider text-red-700">Please fix the following</p>
+        <ul class="mt-1.5 space-y-1 text-sm text-red-800">
+          {% for err in form.non_field_errors %}<li class="flex gap-2"><span aria-hidden="true">•</span><span>{{ err }}</span></li>{% endfor %}
+        </ul>
+      </div>
+      {% endif %}
       <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div>
-          <label class="block text-sm font-medium text-gray-700">Stall Number</label>
+          <label class="block text-sm font-medium text-gray-700">Stall Number <span class="text-red-500">*</span></label>
           {{ form.stall_number }}
           {% if form.stall_number.errors %}<p class="mt-1 text-xs text-red-500">{{ form.stall_number.errors.0 }}</p>{% endif %}
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700">Section</label>
+          <label class="block text-sm font-medium text-gray-700">Section <span class="text-red-500">*</span></label>
           {{ form.section }}
           {% if form.section.errors %}<p class="mt-1 text-xs text-red-500">{{ form.section.errors.0 }}</p>{% endif %}
+          <div class="mt-1 flex flex-wrap items-center gap-2 text-xs">
+            <a href="{% url 'market_section_list' %}" class="font-semibold text-primary-700 hover:underline">Manage sections →</a>
+            <details class="group inline-flex items-center gap-2">
+              <summary class="cursor-pointer list-none text-slate-500 hover:text-slate-700 select-none">+ Add inline</summary>
+              <div class="flex gap-2">
+                <input name="name" placeholder="New section name"
+                       class="rounded-lg border border-slate-300 px-2.5 py-1 text-xs focus:border-slate-900 focus:outline-none">
+                <button type="button"
+                        hx-post="{% url 'market_section_quick_add' %}"
+                        hx-include="previous input"
+                        hx-target="#id_section"
+                        hx-swap="outerHTML"
+                        class="rounded-lg bg-slate-900 px-3 py-1 text-xs font-semibold text-white hover:bg-slate-800">Add</button>
+              </div>
+            </details>
+          </div>
+          {% if not form.section_options_available %}
+          <p class="mt-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            No market sections are configured yet. Add one above or open <a href="{% url 'market_section_list' %}" class="font-semibold underline">Manage sections</a>.
+          </p>
+          {% endif %}
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Stall Type</label>
           {{ form.stall_type }}
           {% if form.stall_type.errors %}<p class="mt-1 text-xs text-red-500">{{ form.stall_type.errors.0 }}</p>{% endif %}
+          <div class="mt-1 flex flex-wrap items-center gap-2 text-xs">
+            <a href="{% url 'stall_type_list' %}" class="font-semibold text-primary-700 hover:underline">Manage stall types →</a>
+            <details class="group inline-flex items-center gap-2">
+              <summary class="cursor-pointer list-none text-slate-500 hover:text-slate-700 select-none">+ Add inline</summary>
+              <div class="flex gap-2">
+                <input name="name" placeholder="New stall type name"
+                       class="rounded-lg border border-slate-300 px-2.5 py-1 text-xs focus:border-slate-900 focus:outline-none">
+                <button type="button"
+                        hx-post="{% url 'stall_type_quick_add' %}"
+                        hx-include="previous input"
+                        hx-target="#id_stall_type"
+                        hx-swap="outerHTML"
+                        class="rounded-lg bg-slate-900 px-3 py-1 text-xs font-semibold text-white hover:bg-slate-800">Add</button>
+              </div>
+            </details>
+          </div>
+          {% if not form.stall_type_options_available %}
+          <p class="mt-1 text-xs text-amber-700">No stall types configured yet — this field is optional, or add one via <a href="{% url 'stall_type_list' %}" class="font-semibold underline">Manage stall types</a>.</p>
+          {% endif %}
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Size (sqm)</label>

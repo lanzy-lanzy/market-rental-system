@@ -22,9 +22,12 @@
     </div>
   </div>
 
-  <!-- Stats -->
+  <!-- Stats: each tile is a full-anchor link to the relevant list page.
+       Hovering raises the card, focusing shows a ring, keyboard Enter
+       navigates — no JS required, no nested interactive elements. -->
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-    <div class="rounded-xl border border-slate-200 bg-white p-4">
+    <a href="{% url 'stall_list' %}"
+       class="group block rounded-xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900/20">
       <div class="flex items-center justify-between">
         <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Total Stalls</p>
         <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-600">
@@ -33,8 +36,11 @@
       </div>
       <p class="mt-2 text-2xl font-semibold text-slate-900">{{ total_stalls }}</p>
       <p class="text-xs text-slate-500">{{ occupied_stalls }} occupied • {{ vacant_stalls }} vacant</p>
-    </div>
-    <div class="rounded-xl border border-slate-200 bg-white p-4">
+      <p class="mt-1 text-xs font-medium text-slate-500 opacity-0 transition group-hover:opacity-100">View stalls →</p>
+    </a>
+
+    <a href="{% url 'report_occupancy' %}"
+       class="group block rounded-xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900/20">
       <div class="flex items-center justify-between">
         <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Occupied</p>
         <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-green-50 border border-green-200 text-green-700">
@@ -44,8 +50,11 @@
       <p class="mt-2 text-2xl font-semibold text-slate-900">{{ occupied_stalls }}</p>
       <div class="mt-2 h-1.5 rounded-full bg-slate-100"><div class="h-1.5 rounded-full bg-green-600" style="width: {% if total_stalls %}{% widthratio occupied_stalls total_stalls 100 %}{% else %}0{% endif %}%"></div></div>
       <p class="mt-1 text-xs text-slate-500">{% if total_stalls %}{% widthratio occupied_stalls total_stalls 100 %}{% else %}0{% endif %}% occupancy</p>
-    </div>
-    <div class="rounded-xl border border-slate-200 bg-white p-4">
+      <p class="mt-1 text-xs font-medium text-slate-500 opacity-0 transition group-hover:opacity-100">Occupancy report →</p>
+    </a>
+
+    <a href="{% url 'stall_list' %}?status=Vacant"
+       class="group block rounded-xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900/20">
       <div class="flex items-center justify-between">
         <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Vacant</p>
         <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 border border-amber-200 text-amber-700">
@@ -54,9 +63,11 @@
       </div>
       <p class="mt-2 text-2xl font-semibold text-slate-900">{{ vacant_stalls }}</p>
       <p class="mt-1 text-xs text-slate-500">Available for lease</p>
-      <a href="{% url 'stall_list' %}?status=Vacant" class="mt-1 inline-flex text-xs font-medium text-slate-700 hover:text-slate-900">View →</a>
-    </div>
-    <div class="rounded-xl border border-slate-200 bg-white p-4">
+      <p class="mt-1 text-xs font-medium text-slate-500 opacity-0 transition group-hover:opacity-100">View vacant stalls →</p>
+    </a>
+
+    <a href="{% url 'tenant_list' %}"
+       class="group block rounded-xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900/20">
       <div class="flex items-center justify-between">
         <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Tenants</p>
         <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-800 text-white">
@@ -65,27 +76,36 @@
       </div>
       <p class="mt-2 text-2xl font-semibold text-slate-900">{{ total_tenants }}</p>
       <p class="mt-1 text-xs text-slate-500">Active tenants</p>
-    </div>
+      <p class="mt-1 text-xs font-medium text-slate-500 opacity-0 transition group-hover:opacity-100">View tenants →</p>
+    </a>
   </div>
 
-  <!-- Secondary stats -->
+  <!-- Secondary stats — same treatment: whole tile is an anchor. -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-    <div class="rounded-xl border border-slate-200 bg-white p-4">
+    <a href="{% url 'billing_list' %}"
+       class="group block rounded-xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900/20">
       <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Monthly Collectibles</p>
       <p class="mt-1 text-xl font-semibold text-slate-900">&#8369;{{ total_monthly_collectibles|floatformat:2|intcomma }}</p>
       <p class="text-xs text-slate-500">From {{ total_tenants }} active contracts</p>
-    </div>
-    <div class="rounded-xl border border-slate-200 bg-white p-4">
+      <p class="mt-1 text-xs font-medium text-slate-500 opacity-0 transition group-hover:opacity-100">Go to Billing →</p>
+    </a>
+
+    <a href="{% url 'payment_list' %}"
+       class="group block rounded-xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900/20">
       <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Collected (This Month)</p>
       <p class="mt-1 text-xl font-semibold text-green-700">&#8369;{{ total_collected|floatformat:2|intcomma }}</p>
       <p class="text-xs text-slate-500">{{ collection_percentage|floatformat:1 }}% of collectibles</p>
       <div class="mt-2 h-1.5 rounded-full bg-slate-100"><div class="h-1.5 rounded-full bg-green-600" style="width: {{ collection_percentage|floatformat:0 }}%"></div></div>
-    </div>
-    <div class="rounded-xl border border-slate-200 bg-white p-4">
+      <p class="mt-1 text-xs font-medium text-slate-500 opacity-0 transition group-hover:opacity-100">View payments →</p>
+    </a>
+
+    <a href="{% url 'report_overdue' %}"
+       class="group block rounded-xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900/20">
       <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Unpaid & Overdue</p>
       <p class="mt-1 text-xl font-semibold text-red-700">&#8369;{{ total_unpaid|floatformat:2|intcomma }}</p>
-      <p class="text-xs text-slate-500">{{ overdue_accounts }} overdue accounts • <a href="{% url 'report_overdue' %}" class="font-medium text-slate-700 hover:underline">View</a></p>
-    </div>
+      <p class="text-xs text-slate-500">{{ overdue_accounts }} overdue accounts</p>
+      <p class="mt-1 text-xs font-medium text-slate-500 opacity-0 transition group-hover:opacity-100">Overdue report →</p>
+    </a>
   </div>
 
   <!-- Tables -->
@@ -100,7 +120,9 @@
       </div>
       <div class="divide-y divide-slate-100">
         {% for payment in recent_payments %}
-        <div class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
+        {# Each row is a single anchor to the payment detail — no nested interactive elements. #}
+        <a href="{% url 'payment_view' payment.pk %}"
+           class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 focus:bg-slate-50 focus:outline-none transition-colors">
           <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 border border-slate-200 text-xs font-medium text-slate-700">{{ payment.receipt_number|slice:":2"|upper }}</div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-medium text-slate-900 truncate">{{ payment.tenant.full_name }} <span class="font-normal text-slate-500">• {{ payment.stall.stall_number|default:"—" }}</span></p>
@@ -110,7 +132,7 @@
             <p class="text-sm font-semibold text-slate-900">&#8369;{{ payment.amount_paid|floatformat:2|intcomma }}</p>
             <p class="text-xs text-slate-500">{{ payment.status }}</p>
           </div>
-        </div>
+        </a>
         {% empty %}
         <div class="px-4 py-10 text-center">
           <p class="text-sm text-slate-500">No recent payments</p>
@@ -131,7 +153,9 @@
       </div>
       <div class="divide-y divide-slate-100">
         {% for item in tenants_with_unpaid %}
-        <div class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
+        {# The whole row links to that tenant's ledger. The old inline "Ledger" link was removed so we do not nest <a> tags. #}
+        <a href="{% url 'ledger_view' item.tenant %}"
+           class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 focus:bg-slate-50 focus:outline-none transition-colors">
           <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 border border-red-200 text-xs font-medium text-red-700">{{ item.tenant__tenant_id|slice:":2"|upper }}</div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-medium text-slate-900 truncate">{{ item.tenant__full_name }}</p>
@@ -139,9 +163,9 @@
           </div>
           <div class="text-right">
             <p class="text-sm font-semibold text-red-700">&#8369;{{ item.total_balance|floatformat:2|intcomma }}</p>
-            <a href="{% url 'ledger_view' item.tenant %}" class="text-xs font-medium text-slate-600 hover:text-slate-900">Ledger</a>
+            <p class="text-xs text-slate-500">View ledger →</p>
           </div>
-        </div>
+        </a>
         {% empty %}
         <div class="px-4 py-10 text-center">
           <p class="text-sm font-medium text-green-700">All balances are paid</p>
@@ -158,20 +182,21 @@
     </div>
   </div>
 
+  <!-- Quick actions — already anchors, kept as-is with keyboard focus styling. -->
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-    <a href="{% url 'tenant_add' %}" class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 hover:bg-slate-50">
+    <a href="{% url 'tenant_add' %}" class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/20 transition">
       <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-800 text-white"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg></span>
       <div><p class="text-sm font-medium text-slate-900">Add Tenant</p><p class="text-xs text-slate-500">New stallholder</p></div>
     </a>
-    <a href="{% url 'stall_add' %}" class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 hover:bg-slate-50">
+    <a href="{% url 'stall_add' %}" class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/20 transition">
       <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-700"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/></svg></span>
       <div><p class="text-sm font-medium text-slate-900">Add Stall</p><p class="text-xs text-slate-500">Rental space</p></div>
     </a>
-    <a href="{% url 'billing_generate' %}" class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 hover:bg-slate-50">
+    <a href="{% url 'billing_generate' %}" class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/20 transition">
       <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-700"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></span>
       <div><p class="text-sm font-medium text-slate-900">Generate Bills</p><p class="text-xs text-slate-500">Monthly</p></div>
     </a>
-    <a href="{% url 'report_dashboard' %}" class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 hover:bg-slate-50">
+    <a href="{% url 'report_dashboard' %}" class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/20 transition">
       <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-700"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></span>
       <div><p class="text-sm font-medium text-slate-900">Reports</p><p class="text-xs text-slate-500">Export</p></div>
     </a>

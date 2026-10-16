@@ -96,6 +96,8 @@
         <div x-show="open" class="ml-4 mt-1 space-y-1 border-l border-white/20 pl-3">
           <a href="{% url 'stall_list' %}" class="block rounded-sm px-3 py-1.5 text-sm transition-colors {% if 'stall' in url_name and url_name != 'stall_add' %}bg-white/15 text-white font-medium{% else %}text-emerald-100/70 hover:bg-white/10 hover:text-white{% endif %}">List</a>
           <a href="{% url 'stall_add' %}" class="block rounded-sm px-3 py-1.5 text-sm transition-colors {% if url_name == 'stall_add' %}bg-white/15 text-white font-medium{% else %}text-emerald-100/70 hover:bg-white/10 hover:text-white{% endif %}">Add Stall</a>
+          <a href="{% url 'market_section_list' %}" class="block rounded-sm px-3 py-1.5 text-sm transition-colors {% if url_name == 'market_section_list' %}bg-white/15 text-white font-medium{% else %}text-emerald-100/70 hover:bg-white/10 hover:text-white{% endif %}">Sections</a>
+          <a href="{% url 'stall_type_list' %}" class="block rounded-sm px-3 py-1.5 text-sm transition-colors {% if url_name == 'stall_type_list' %}bg-white/15 text-white font-medium{% else %}text-emerald-100/70 hover:bg-white/10 hover:text-white{% endif %}">Stall Types</a>
         </div>
       </div>
 
