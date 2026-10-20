@@ -4,76 +4,82 @@
 {% block page_title %}{% if is_add %}Create Notice{% else %}Edit Notice{% endif %}{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto">
-  <div class="rounded-xl border border-gray-100 bg-card shadow-sm">
-    <div class="border-b border-gray-100 px-6 py-4">
-      <h3 class="text-lg font-semibold text-gray-900">{% if is_add %}Create New Notice{% else %}Edit Notice{% endif %}</h3>
+<div class="mx-auto max-w-2xl">
+  <div class="panel overflow-hidden">
+    <div class="panel-header">
+      <div>
+        <h3 class="panel-title">{% if is_add %}Create New Notice{% else %}Edit Notice{% endif %}</h3>
+        <p class="panel-subtitle">Official tenant notice &amp; service record</p>
+      </div>
+      <span class="stat-icon stat-icon-gold">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+      </span>
     </div>
-    <form method="post" action="{% if is_add %}{% url 'notice_add' %}{% endif %}" class="p-6 space-y-4">
+    <form method="post" action="{% if is_add %}{% url 'notice_add' %}{% endif %}" class="panel-body">
       {% csrf_token %}
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div class="form-grid sm:grid-cols-2">
         <div>
-          <label class="block text-sm font-medium text-gray-700">Tenant</label>
+          <label class="field-label">Tenant</label>
           {{ form.tenant }}
           {% if form.tenant.errors %}
-          <p class="mt-1 text-xs text-red-500">{{ form.tenant.errors.0 }}</p>
+          <p class="field-error">{{ form.tenant.errors.0 }}</p>
           {% endif %}
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700">Notice Type</label>
+          <label class="field-label">Notice Type</label>
           {{ form.notice_type }}
           {% if form.notice_type.errors %}
-          <p class="mt-1 text-xs text-red-500">{{ form.notice_type.errors.0 }}</p>
+          <p class="field-error">{{ form.notice_type.errors.0 }}</p>
           {% endif %}
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700">Notice Number</label>
+          <label class="field-label">Notice Number</label>
           {{ form.notice_number }}
           {% if form.notice_number.errors %}
-          <p class="mt-1 text-xs text-red-500">{{ form.notice_number.errors.0 }}</p>
+          <p class="field-error">{{ form.notice_number.errors.0 }}</p>
           {% endif %}
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700">Date Issued</label>
+          <label class="field-label">Date Issued</label>
           {{ form.date_issued }}
           {% if form.date_issued.errors %}
-          <p class="mt-1 text-xs text-red-500">{{ form.date_issued.errors.0 }}</p>
+          <p class="field-error">{{ form.date_issued.errors.0 }}</p>
           {% endif %}
         </div>
         <div class="sm:col-span-2">
-          <label class="block text-sm font-medium text-gray-700">Content</label>
+          <label class="field-label">Content</label>
           {{ form.content }}
           {% if form.content.errors %}
-          <p class="mt-1 text-xs text-red-500">{{ form.content.errors.0 }}</p>
+          <p class="field-error">{{ form.content.errors.0 }}</p>
           {% endif %}
         </div>
         <div>
           <label class="flex items-center gap-3">
             {{ form.is_served }}
-            <span class="text-sm font-medium text-gray-700">Mark as served</span>
+            <span class="text-sm font-semibold text-ink-soft">Mark as served</span>
           </label>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700">Served Date</label>
+          <label class="field-label">Served Date</label>
           {{ form.served_date }}
           {% if form.served_date.errors %}
-          <p class="mt-1 text-xs text-red-500">{{ form.served_date.errors.0 }}</p>
+          <p class="field-error">{{ form.served_date.errors.0 }}</p>
           {% endif %}
         </div>
         <div class="sm:col-span-2">
-          <label class="block text-sm font-medium text-gray-700">Remarks</label>
+          <label class="field-label">Remarks</label>
           {{ form.remarks }}
           {% if form.remarks.errors %}
-          <p class="mt-1 text-xs text-red-500">{{ form.remarks.errors.0 }}</p>
+          <p class="field-error">{{ form.remarks.errors.0 }}</p>
           {% endif %}
         </div>
       </div>
 
-      <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-4">
-        <a href="{% url 'notice_list' %}" class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+      <div class="mt-6 flex items-center justify-end gap-3 border-t border-emerald-900/10 pt-4">
+        <a href="{% url 'notice_list' %}" class="btn btn-ghost">
           Cancel
         </a>
-        <button type="submit" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors">
+        <button type="submit" class="btn btn-primary">
           {% if is_add %}Create Notice{% else %}Update Notice{% endif %}
         </button>
       </div>

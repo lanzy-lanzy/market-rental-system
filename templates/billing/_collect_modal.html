@@ -1,127 +1,130 @@
 {% load humanize %}
-<div class="p-6">
-  <div class="flex items-start justify-between border-b border-slate-100 pb-4">
+<div class="panel overflow-hidden">
+  <div class="panel-header">
     <div class="flex items-center gap-3">
-      <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white">
+      <span class="stat-icon">
         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-      </div>
+      </span>
       <div>
-        <h3 class="text-base font-bold text-slate-900">Collect Payment</h3>
-        <p class="text-xs text-slate-500">{{ billing.tenant.full_name }} • {{ billing.stall.stall_number }} • {{ billing.billing_month|stringformat:"02d" }}/{{ billing.billing_year }}</p>
+        <h3 class="panel-title">Collect Payment</h3>
+        <p class="panel-subtitle">{{ billing.tenant.full_name }} • {{ billing.stall.stall_number }} • {{ billing.billing_month|stringformat:"02d" }}/{{ billing.billing_year }}</p>
       </div>
     </div>
-    <button onclick="closeModal()" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+    <button onclick="closeModal()" class="btn-icon" title="Close"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
   </div>
 
-  <!-- Billing summary — collector sees Month & Amount at a glance -->
-  <div class="mt-4 grid grid-cols-2 gap-3 rounded-2xl bg-slate-50 border border-slate-200 p-4">
-    <div>
-      <p class="text-xs font-bold tracking-widest text-slate-400">BILLED MONTH</p>
-      <p class="mt-1 text-sm font-bold text-slate-900">{{ billing.billing_month|stringformat:"02d" }}/{{ billing.billing_year }}</p>
-      <p class="text-xs text-slate-500">Due {{ billing.due_date|date:"M d, Y" }}</p>
-    </div>
-    <div class="text-right">
-      <p class="text-xs font-bold tracking-widest text-slate-400">AMOUNT TO COLLECT</p>
-      <p class="mt-1 text-2xl font-extrabold text-slate-900 tabular-nums">₱{{ billing.balance|floatformat:2|intcomma }}</p>
-      <p class="text-xs text-slate-500">Total ₱{{ billing.total_due|floatformat:2|intcomma }} • Paid ₱{{ billing.amount_paid|floatformat:2|intcomma }}</p>
-    </div>
-    <div class="col-span-2 flex items-center justify-between pt-3 border-t border-slate-200">
-      <span class="text-xs font-medium text-slate-600">Tenant</span><span class="text-sm font-semibold text-slate-900">{{ billing.tenant.full_name }} ({{ billing.tenant.tenant_id }})</span>
-    </div>
-    <div class="col-span-2 flex items-center justify-between">
-      <span class="text-xs font-medium text-slate-600">Stall</span><span class="inline-flex rounded-full bg-slate-900 px-2.5 py-1 text-xs font-bold text-white">{{ billing.stall.stall_number }}</span>
-    </div>
-    <div class="col-span-2 flex items-center justify-between">
-      <span class="text-xs font-medium text-slate-600">Status</span>{% include 'includes/status_badge.html' with status=billing.status %}
-    </div>
-  </div>
+  <div class="panel-body">
 
-  <form hx-post="{% url 'billing_collect' billing.id %}" hx-target="#modal-content" hx-swap="innerHTML" class="mt-5 space-y-4">
-    {% csrf_token %}
-    {% if form.non_field_errors %}<div class="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">{{ form.non_field_errors.0 }}</div>{% endif %}
-
-    <div>
-      <label class="block text-sm font-bold text-slate-700">Amount Paid <span class="text-red-500">*</span></label>
-      <div class="relative mt-1.5">
-        <span class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold select-none">₱</span>
-        {{ form.amount_paid }}
-      </div>
-      {% if form.amount_paid.errors %}<p class="mt-1 text-xs text-red-600">{{ form.amount_paid.errors.0 }}</p>{% endif %}
-      <p class="mt-1.5 flex items-center justify-between text-xs">
-        <span class="text-slate-500">Balance: ₱{{ billing.balance|floatformat:2|intcomma }}</span>
-        <button type="button" id="fill-full" class="font-bold text-emerald-700 hover:underline">Fill full amount</button>
-      </p>
-      <!-- Auto-detected settlement state, driven purely by the entered amount -->
-      <div id="collect-outcome"
-           data-balance="{{ billing.balance|floatformat:2 }}"
-           data-amount-input="{{ form.amount_paid.id_for_label }}"
-           class="mt-2 rounded-xl border px-3 py-2 text-xs font-bold"></div>
-    </div>
-
-    <div class="grid grid-cols-2 gap-4">
+    <!-- Billing summary — collector sees Month & Amount at a glance -->
+    <div class="neu-inset-sm grid grid-cols-2 gap-3 rounded-xl p-4">
       <div>
-        <label class="block text-sm font-medium text-slate-700">Method</label>
-        <div class="mt-1.5">{{ form.payment_method }}</div>
-        {% if form.payment_method.errors %}<p class="mt-1 text-xs text-red-600">{{ form.payment_method.errors.0 }}</p>{% endif %}
+        <p class="stat-label">Billed Month</p>
+        <p class="mt-1 text-sm font-bold text-ink">{{ billing.billing_month|stringformat:"02d" }}/{{ billing.billing_year }}</p>
+        <p class="text-xs text-ink-muted">Due {{ billing.due_date|date:"M d, Y" }}</p>
       </div>
+      <div class="text-right">
+        <p class="stat-label">Amount to Collect</p>
+        <p class="mt-1 font-display text-2xl font-extrabold text-ink tabular-nums">₱{{ billing.balance|floatformat:2|intcomma }}</p>
+        <p class="text-xs text-ink-muted">Total ₱{{ billing.total_due|floatformat:2|intcomma }} • Paid ₱{{ billing.amount_paid|floatformat:2|intcomma }}</p>
+      </div>
+      <div class="col-span-2 flex items-center justify-between border-t border-emerald-900/10 pt-3">
+        <span class="text-xs font-medium text-ink-muted">Tenant</span><span class="text-sm font-semibold text-ink">{{ billing.tenant.full_name }} ({{ billing.tenant.tenant_id }})</span>
+      </div>
+      <div class="col-span-2 flex items-center justify-between">
+        <span class="text-xs font-medium text-ink-muted">Stall</span><span class="badge badge-muted mono">{{ billing.stall.stall_number }}</span>
+      </div>
+      <div class="col-span-2 flex items-center justify-between">
+        <span class="text-xs font-medium text-ink-muted">Status</span>{% include 'includes/status_badge.html' with status=billing.status %}
+      </div>
+    </div>
+
+    <form hx-post="{% url 'billing_collect' billing.id %}" hx-target="#modal-content" hx-swap="innerHTML" class="mt-5 space-y-4">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="alert alert-error">{{ form.non_field_errors.0 }}</div>{% endif %}
+
       <div>
-        <label class="block text-sm font-medium text-slate-700">Date</label>
-        <div class="mt-1.5">{{ form.payment_date }}</div>
-        {% if form.payment_date.errors %}<p class="mt-1 text-xs text-red-600">{{ form.payment_date.errors.0 }}</p>{% endif %}
+        <label class="field-label">Amount Paid <span class="text-red-500">*</span></label>
+        <div class="relative mt-1.5">
+          <span class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted font-bold select-none">₱</span>
+          {{ form.amount_paid }}
+        </div>
+        {% if form.amount_paid.errors %}<p class="field-error">{{ form.amount_paid.errors.0 }}</p>{% endif %}
+        <p class="mt-1.5 flex items-center justify-between text-xs">
+          <span class="text-ink-muted">Balance: ₱{{ billing.balance|floatformat:2|intcomma }}</span>
+          <button type="button" id="fill-full" class="font-bold text-emerald-700 hover:underline">Fill full amount</button>
+        </p>
+        <!-- Auto-detected settlement state, driven purely by the entered amount -->
+        <div id="collect-outcome"
+             data-balance="{{ billing.balance|floatformat:2 }}"
+             data-amount-input="{{ form.amount_paid.id_for_label }}"
+             class="mt-2 rounded-xl border border-emerald-900/10 bg-white/60 px-3 py-2 text-xs font-bold text-ink-muted"></div>
       </div>
-    </div>
 
-    <div>
-      <label class="block text-sm font-medium text-slate-700">Remarks <span class="text-slate-400 font-normal">(optional)</span></label>
-      <div class="mt-1.5">{{ form.remarks }}</div>
-      {% if form.remarks.errors %}<p class="mt-1 text-xs text-red-600">{{ form.remarks.errors.0 }}</p>{% endif %}
-    </div>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label class="field-label">Method</label>
+          <div class="mt-1.5">{{ form.payment_method }}</div>
+          {% if form.payment_method.errors %}<p class="field-error">{{ form.payment_method.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="field-label">Date</label>
+          <div class="mt-1.5">{{ form.payment_date }}</div>
+          {% if form.payment_date.errors %}<p class="field-error">{{ form.payment_date.errors.0 }}</p>{% endif %}
+        </div>
+      </div>
 
-    <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
-      <button type="button" onclick="closeModal()" class="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
-      <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow hover:bg-emerald-700">
-        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-        Confirm Collect
-      </button>
-    </div>
-    <p class="text-center text-xs text-slate-400">The printable receipt opens automatically after you confirm • Collector: {{ request.user.get_full_name|default:request.user.username }}</p>
-  </form>
+      <div>
+        <label class="field-label">Remarks <span class="text-ink-muted font-normal">(optional)</span></label>
+        <div class="mt-1.5">{{ form.remarks }}</div>
+        {% if form.remarks.errors %}<p class="field-error">{{ form.remarks.errors.0 }}</p>{% endif %}
+      </div>
 
-  <script>
-  (function () {
-    const box = document.getElementById('collect-outcome');
-    if (!box) return;
-    const input = document.getElementById(box.dataset.amountInput);
-    const balance = parseFloat(box.dataset.balance) || 0;
-    const peso = n => '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      <div class="flex items-center justify-end gap-3 pt-4 border-t border-emerald-900/10">
+        <button type="button" onclick="closeModal()" class="btn btn-ghost">Cancel</button>
+        <button type="submit" class="btn btn-primary">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          Confirm Collect
+        </button>
+      </div>
+      <p class="text-center text-xs text-ink-muted">The printable receipt opens automatically after you confirm • Collector: {{ request.user.get_full_name|default:request.user.username }}</p>
+    </form>
 
-    function refresh() {
-      const value = parseFloat(input.value) || 0;
-      let cls, label, note;
-      if (value <= 0) {
-        cls = 'border-slate-200 bg-slate-50 text-slate-500';
-        label = 'Awaiting amount';
-        note = 'Status is detected from the amount entered.';
-      } else if (value >= balance) {
-        cls = 'border-emerald-200 bg-emerald-50 text-emerald-800';
-        label = 'Full payment';
-        note = 'Billing will be marked <span class="font-extrabold">Paid</span>.';
-      } else {
-        cls = 'border-amber-200 bg-amber-50 text-amber-800';
-        label = 'Partial payment';
-        note = peso(balance - value) + ' will remain as balance (<span class="font-extrabold">Partial</span>).';
+    <script>
+    (function () {
+      const box = document.getElementById('collect-outcome');
+      if (!box) return;
+      const input = document.getElementById(box.dataset.amountInput);
+      const balance = parseFloat(box.dataset.balance) || 0;
+      const peso = n => '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      function refresh() {
+        const value = parseFloat(input.value) || 0;
+        let cls, label, note;
+        if (value <= 0) {
+          cls = 'border-emerald-900/10 bg-white/60 text-ink-muted';
+          label = 'Awaiting amount';
+          note = 'Status is detected from the amount entered.';
+        } else if (value >= balance) {
+          cls = 'border-emerald-300/40 bg-emerald-50 text-emerald-800';
+          label = 'Full payment';
+          note = 'Billing will be marked <span class="font-extrabold">Paid</span>.';
+        } else {
+          cls = 'border-gold-400/60 bg-gold-50 text-gold-800';
+          label = 'Partial payment';
+          note = peso(balance - value) + ' will remain as balance (<span class="font-extrabold">Partial</span>).';
+        }
+        box.className = 'mt-2 rounded-xl border px-3 py-2 text-xs font-bold ' + cls;
+        box.innerHTML = '<span class="uppercase tracking-wider">' + label + '</span> — ' + note;
       }
-      box.className = 'mt-2 rounded-xl border px-3 py-2 text-xs font-bold ' + cls;
-      box.innerHTML = '<span class="uppercase tracking-wider">' + label + '</span> — ' + note;
-    }
 
-    input.addEventListener('input', refresh);
-    document.getElementById('fill-full').addEventListener('click', function () {
-      input.value = balance.toFixed(2);
+      input.addEventListener('input', refresh);
+      document.getElementById('fill-full').addEventListener('click', function () {
+        input.value = balance.toFixed(2);
+        refresh();
+        input.focus();
+      });
       refresh();
-      input.focus();
-    });
-    refresh();
-  })();
-  </script>
+    })();
+    </script>
+  </div>
 </div>

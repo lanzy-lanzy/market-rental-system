@@ -7,78 +7,102 @@
 {% block report_subtitle %}{{ date_from }} to {{ date_to }}{% endblock %}
 
 {% block report_actions %}
-<div class="no-print mb-4 flex flex-wrap items-end gap-4">
+<div class="no-print filter-bar">
   <form class="flex flex-wrap items-end gap-3">
     <div>
-      <label class="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">Date From</label>
-      <input type="date" name="date_from" value="{{ date_from|default:'' }}" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200">
+      <label class="field-label" for="weekly_date_from">Date From</label>
+      <input type="date" id="weekly_date_from" name="date_from" value="{{ date_from|default:'' }}" class="field w-full">
     </div>
     <div>
-      <label class="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">Date To</label>
-      <input type="date" name="date_to" value="{{ date_to|default:'' }}" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200">
+      <label class="field-label" for="weekly_date_to">Date To</label>
+      <input type="date" id="weekly_date_to" name="date_to" value="{{ date_to|default:'' }}" class="field w-full">
     </div>
-    <button type="submit" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 transition-colors">Filter</button>
+    <button type="submit" class="btn btn-primary">Filter</button>
   </form>
-  <button onclick="window.print()" class="ml-auto rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Print</button>
-  <a href="{% url 'report_export_excel' %}?report=weekly&date_from={{ date_from }}&date_to={{ date_to }}" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">Excel</a>
-  <a href="{% url 'report_export_pdf' %}?report=weekly&date_from={{ date_from }}&date_to={{ date_to }}" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">PDF</a>
+  <div class="flex flex-wrap items-center gap-2 border-t border-emerald-900/10 pt-3">
+    <button onclick="window.print()" class="btn btn-ghost btn-sm">Print</button>
+    <a href="{% url 'report_export_excel' %}?report=weekly&date_from={{ date_from }}&date_to={{ date_to }}" class="btn btn-gold btn-sm">Excel</a>
+    <a href="{% url 'report_export_pdf' %}?report=weekly&date_from={{ date_from }}&date_to={{ date_to }}" class="btn btn-ghost btn-sm">PDF</a>
+  </div>
 </div>
 {% endblock %}
 
 {% block report_content %}
-<div class="mb-6">
-  <div class="grid grid-cols-3 gap-4">
-    <div class="rounded-lg bg-gray-50 p-4 text-center">
-      <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Total Collected</p>
-      <p class="text-2xl font-bold text-green-600">&#8369;{{ total_collected|floatformat:2|intcomma }}</p>
-    </div>
-    <div class="rounded-lg bg-gray-50 p-4 text-center">
-      <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Transaction Count</p>
-      <p class="text-2xl font-bold text-gray-900">{{ total_count }}</p>
-    </div>
-    <div class="rounded-lg bg-gray-50 p-4 text-center">
-      <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Week Period</p>
-      <p class="text-sm font-semibold text-gray-700">{{ date_from }} — {{ date_to }}</p>
-    </div>
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+  <div class="stat-card">
+    <p class="stat-label">Total Collected</p>
+    <p class="stat-value text-emerald-700">&#8369;{{ total_collected|floatformat:2|intcomma }}</p>
+    <p class="stat-meta">For the selected period</p>
+  </div>
+  <div class="stat-card">
+    <p class="stat-label">Transaction Count</p>
+    <p class="stat-value">{{ total_count }}</p>
+    <p class="stat-meta">Receipts issued</p>
+  </div>
+  <div class="stat-card">
+    <p class="stat-label">Week Period</p>
+    <p class="stat-value text-base">{{ date_from }} — {{ date_to }}</p>
+    <p class="stat-meta">Coverage window of this report</p>
   </div>
 </div>
 
-<div class="overflow-x-auto">
-  <table class="w-full border-collapse">
-    <thead>
-      <tr class="bg-gray-50">
-        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Date</th>
-        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Receipt</th>
-        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Tenant</th>
-        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Stall</th>
-        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Method</th>
-        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Amount</th>
-        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Collector</th>
-      </tr>
-    </thead>
-    <tbody class="divide-y divide-gray-100">
-      {% for payment in page_obj %}
-      <tr class="hover:bg-gray-50">
-        <td class="px-4 py-3 text-sm text-gray-600">{{ payment.payment_date|date:"M d, Y" }}</td>
-        <td class="px-4 py-3 font-mono text-sm text-gray-900">{{ payment.receipt_number }}</td>
-        <td class="px-4 py-3 text-sm text-gray-800">{{ payment.tenant.full_name }}</td>
-        <td class="px-4 py-3 text-sm text-gray-600">{{ payment.stall.stall_number }}</td>
-        <td class="px-4 py-3 text-sm text-gray-600">{{ payment.payment_method }}</td>
-        <td class="px-4 py-3 text-right text-sm font-medium text-green-600">&#8369;{{ payment.amount_paid|floatformat:2|intcomma }}</td>
-        <td class="px-4 py-3 text-sm text-gray-600">{{ payment.collected_by.get_full_name|default:payment.collected_by.username }}</td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="7" class="px-4 py-8 text-center text-sm text-gray-400">No records found for this period</td></tr>
-      {% endfor %}
-    </tbody>
-    <tfoot>
-      <tr class="bg-gray-100 font-semibold">
-        <td colspan="5" class="px-4 py-3 text-right text-sm text-gray-900">Grand Total:</td>
-        <td class="px-4 py-3 text-right text-sm text-green-700">&#8369;{{ total_collected|floatformat:2|intcomma }}</td>
-        <td></td>
-      </tr>
-    </tfoot>
-  </table>
+<div class="panel overflow-hidden">
+  <div class="panel-header">
+    <div>
+      <h3 class="panel-title">Weekly Collection Ledger</h3>
+      <p class="panel-subtitle">Every receipt in the selected period</p>
+    </div>
+    <span class="badge badge-gold"><span class="badge-dot"></span>{{ total_count }} receipt{{ total_count|pluralize }}</span>
+  </div>
+  <div class="table-wrap rounded-none border-0 bg-transparent shadow-none backdrop-blur-none">
+    <div class="overflow-x-auto">
+      <table class="table min-w-[900px]">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Receipt</th>
+            <th>Tenant</th>
+            <th>Stall</th>
+            <th>Method</th>
+            <th class="num">Amount</th>
+            <th>Collector</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for payment in page_obj %}
+          <tr>
+            <td>{{ payment.payment_date|date:"M d, Y" }}</td>
+            <td class="mono text-ink">{{ payment.receipt_number }}</td>
+            <td class="font-semibold text-ink">{{ payment.tenant.full_name }}</td>
+            <td>{{ payment.stall.stall_number }}</td>
+            <td>{{ payment.payment_method }}</td>
+            <td class="num font-semibold text-emerald-700">&#8369;{{ payment.amount_paid|floatformat:2|intcomma }}</td>
+            <td>{{ payment.collected_by.get_full_name|default:payment.collected_by.username }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="px-4 py-10 text-center">
+              <div class="empty-state">
+                <span class="empty-icon">
+                  <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                </span>
+                <p class="mt-4 text-sm font-semibold text-ink">No records found for this period</p>
+                <p class="mt-1 text-xs text-ink-muted">Try widening the date range above.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5" class="text-right">Grand Total:</td>
+            <td class="num text-emerald-700">&#8369;{{ total_collected|floatformat:2|intcomma }}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
 </div>
 {% include 'includes/pagination.html' %}
 {% endblock %}

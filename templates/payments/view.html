@@ -6,47 +6,169 @@
 
 {% block content %}
 <div class="space-y-6">
-  <div class="flex flex-wrap gap-3">
-    <a href="{% url 'payment_receipt' payment.id %}" class="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-black"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg> View Receipt</a>
-    <a href="{% url 'payment_print_receipt' payment.id %}" target="_blank" class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold hover:bg-slate-50"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg> Print Preview</a>
-    <a href="{% url 'payment_receipt_export_pdf' payment.id %}" class="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-black"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2"/></svg> Export PDF</a>
-    <a href="{% url 'payment_list' %}" class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold hover:bg-slate-50">← Back to Payments</a>
+
+  <!-- ══ Page head / actions ══ -->
+  <div class="page-head">
+    <div class="flex items-center gap-3">
+      <span class="stat-icon stat-icon-gold">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+      </span>
+      <div>
+        <h2 class="page-title">{{ payment.receipt_number }}</h2>
+        <p class="page-sub">{{ payment.tenant.full_name }} • {{ payment.stall.stall_number }} • {{ payment.payment_method }}</p>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <a href="{% url 'payment_receipt' payment.id %}" class="btn btn-primary">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+        View Receipt
+      </a>
+      <a href="{% url 'payment_print_receipt' payment.id %}" target="_blank" class="btn btn-ghost">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+        Print Preview
+      </a>
+      <a href="{% url 'payment_receipt_export_pdf' payment.id %}" class="btn btn-ghost">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2"/></svg>
+        Export PDF
+      </a>
+      <a href="{% url 'payment_list' %}" class="btn btn-ghost">← Back to Payments</a>
+    </div>
   </div>
 
-  <div class="grid lg:grid-cols-2 gap-6">
-    <div class="rounded-[20px] border border-slate-200 bg-white p-6">
-      <h3 class="text-xs font-bold tracking-widest text-slate-500">PAYMENT INFORMATION</h3>
-      <dl class="mt-4 space-y-3 text-sm">
-        <div class="flex justify-between"><dt class="text-slate-500">Receipt Number</dt><dd class="font-mono font-bold text-slate-900">{{ payment.receipt_number }}</dd></div>
-        <div class="flex justify-between"><dt class="text-slate-500">Official Receipt No.</dt><dd class="font-mono font-medium">{{ payment.official_receipt_no|default:"— (auto: " }}{{ payment.receipt_number }}{{ ")" }}</dd></div>
-        <div class="flex justify-between"><dt class="text-slate-500">Payment Date</dt><dd class="font-medium">{{ payment.payment_date|date:"F d, Y" }}</dd></div>
-        <div class="flex justify-between"><dt class="text-slate-500">Method</dt><dd><span class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold">{{ payment.payment_method }}</span></dd></div>
-        <div class="flex justify-between"><dt class="text-slate-500">Collector</dt><dd class="font-medium">{{ payment.collected_by.get_full_name|default:payment.collected_by.username }}</dd></div>
-        <div class="flex justify-between"><dt class="text-slate-500">Status</dt><dd>{% include 'includes/status_badge.html' with status=payment.status %}</dd></div>
-      </dl>
+  <!-- ══ Detail panels ══ -->
+  <div class="grid gap-6 lg:grid-cols-2">
+    <div class="panel overflow-hidden">
+      <div class="panel-header">
+        <div>
+          <h3 class="panel-title">Payment Information</h3>
+          <p class="panel-subtitle">Receipt, method and collector</p>
+        </div>
+      </div>
+      <div class="panel-body">
+        <dl class="space-y-3 text-sm">
+          <div class="flex items-center justify-between gap-4 border-b border-emerald-900/5 pb-2">
+            <dt class="text-ink-muted">Receipt Number</dt>
+            <dd class="mono font-bold text-ink">{{ payment.receipt_number }}</dd>
+          </div>
+          <div class="flex items-center justify-between gap-4 border-b border-emerald-900/5 pb-2">
+            <dt class="text-ink-muted">Official Receipt No.</dt>
+            <dd class="mono font-medium text-ink">{{ payment.official_receipt_no|default:"— (auto: " }}{{ payment.receipt_number }}{{ ")" }}</dd>
+          </div>
+          <div class="flex items-center justify-between gap-4 border-b border-emerald-900/5 pb-2">
+            <dt class="text-ink-muted">Payment Date</dt>
+            <dd class="font-medium text-ink">{{ payment.payment_date|date:"F d, Y" }}</dd>
+          </div>
+          <div class="flex items-center justify-between gap-4 border-b border-emerald-900/5 pb-2">
+            <dt class="text-ink-muted">Method</dt>
+            <dd><span class="chip">{{ payment.payment_method }}</span></dd>
+          </div>
+          <div class="flex items-center justify-between gap-4 border-b border-emerald-900/5 pb-2">
+            <dt class="text-ink-muted">Collector</dt>
+            <dd class="font-medium text-ink">{{ payment.collected_by.get_full_name|default:payment.collected_by.username }}</dd>
+          </div>
+          <div class="flex items-center justify-between gap-4">
+            <dt class="text-ink-muted">Status</dt>
+            <dd>{% include 'includes/status_badge.html' with status=payment.status %}</dd>
+          </div>
+        </dl>
+      </div>
     </div>
-    <div class="rounded-[20px] border border-slate-200 bg-white p-6">
-      <h3 class="text-xs font-bold tracking-widest text-slate-500">TENANT & STALL</h3>
-      <dl class="mt-4 space-y-3 text-sm">
-        <div class="flex justify-between"><dt class="text-slate-500">Tenant</dt><dd class="font-bold"><a href="{% url 'tenant_view' payment.tenant.id %}" class="hover:text-primary-700">{{ payment.tenant.full_name }}</a> <span class="font-mono text-slate-500">({{ payment.tenant.tenant_id }})</span></dd></div>
-        <div class="flex justify-between"><dt class="text-slate-500">Stall</dt><dd class="font-mono font-bold">{{ payment.stall.stall_number }} <span class="text-slate-500">• {{ payment.stall.section.name }}</span></dd></div>
-        <div class="flex justify-between"><dt class="text-slate-500">Billing Period</dt><dd class="font-medium">{{ payment.billing_month|stringformat:"02d" }}/{{ payment.billing_year }}</dd></div>
-        <div class="flex justify-between"><dt class="text-slate-500">Billing Ref</dt><dd class="text-xs"><a href="#" class="font-mono hover:underline">{{ payment.billing.id }}</a></dd></div>
-      </dl>
+
+    <div class="panel overflow-hidden">
+      <div class="panel-header">
+        <div>
+          <h3 class="panel-title">Tenant &amp; Stall</h3>
+          <p class="panel-subtitle">Who paid for which space</p>
+        </div>
+      </div>
+      <div class="panel-body">
+        <dl class="space-y-3 text-sm">
+          <div class="flex items-center justify-between gap-4 border-b border-emerald-900/5 pb-2">
+            <dt class="text-ink-muted">Tenant</dt>
+            <dd class="font-bold text-ink"><a href="{% url 'tenant_view' payment.tenant.id %}" class="link-emerald">{{ payment.tenant.full_name }}</a> <span class="mono text-xs text-ink-muted">({{ payment.tenant.tenant_id }})</span></dd>
+          </div>
+          <div class="flex items-center justify-between gap-4 border-b border-emerald-900/5 pb-2">
+            <dt class="text-ink-muted">Stall</dt>
+            <dd class="mono font-bold text-ink">{{ payment.stall.stall_number }} <span class="font-sans text-ink-muted">• {{ payment.stall.section.name }}</span></dd>
+          </div>
+          <div class="flex items-center justify-between gap-4 border-b border-emerald-900/5 pb-2">
+            <dt class="text-ink-muted">Billing Period</dt>
+            <dd class="font-medium text-ink">{{ payment.billing_month|stringformat:"02d" }}/{{ payment.billing_year }}</dd>
+          </div>
+          <div class="flex items-center justify-between gap-4">
+            <dt class="text-ink-muted">Billing Ref</dt>
+            <dd class="text-xs"><a href="#" class="mono link-emerald">{{ payment.billing.id }}</a></dd>
+          </div>
+        </dl>
+      </div>
     </div>
   </div>
 
-  <div class="rounded-[20px] border border-slate-200 bg-white p-6">
-    <h3 class="text-xs font-bold tracking-widest text-slate-500">AMOUNTS</h3>
-    <div class="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="rounded-2xl bg-slate-50 p-4 text-center"><p class="text-xs font-bold tracking-widest text-slate-500">Rental Amount</p><p class="mt-1 text-lg font-bold">&#8369;{{ payment.rental_amount|floatformat:2|intcomma }}</p></div>
-      <div class="rounded-2xl bg-red-50 p-4 text-center"><p class="text-xs font-bold tracking-widest text-red-600">Penalty</p><p class="mt-1 text-lg font-bold text-red-700">&#8369;{{ payment.penalty_amount|floatformat:2|intcomma }}</p></div>
-      <div class="rounded-2xl bg-slate-900 p-4 text-center text-white"><p class="text-xs font-bold tracking-widest text-white/60">Total Due</p><p class="mt-1 text-lg font-bold">&#8369;{{ payment.total_amount_due|floatformat:2|intcomma }}</p></div>
-      <div class="rounded-2xl bg-emerald-50 p-4 text-center"><p class="text-xs font-bold tracking-widest text-emerald-700">Amount Paid</p><p class="mt-1 text-lg font-bold text-emerald-700">&#8369;{{ payment.amount_paid|floatformat:2|intcomma }}</p></div>
+  <!-- ══ Amounts ══ -->
+  <div class="panel overflow-hidden">
+    <div class="panel-header">
+      <div>
+        <h3 class="panel-title">Amounts</h3>
+        <p class="panel-subtitle">Breakdown of this collection</p>
+      </div>
     </div>
-    {% if payment.discount %}<p class="mt-3 text-xs text-slate-500">Discount applied: &#8369;{{ payment.discount }}</p>{% endif %}
-    <p class="mt-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-800">Remaining balance for billing period: <span class="font-bold">&#8369;{{ payment.billing.balance|floatformat:2|intcomma }}</span> • Billing status: <span class="font-bold">{{ payment.billing.status }}</span> • Due: {{ payment.billing.due_date|date:"M d, Y" }}</p>
-    {% if payment.remarks %}<div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4"><p class="text-xs font-bold tracking-widest text-slate-500">Remarks</p><p class="mt-1 text-sm">{{ payment.remarks }}</p></div>{% endif %}
+    <div class="panel-body">
+      <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <p class="stat-label">Rental Amount</p>
+            <span class="stat-icon">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg>
+            </span>
+          </div>
+          <p class="stat-value num text-xl">&#8369;{{ payment.rental_amount|floatformat:2|intcomma }}</p>
+        </div>
+
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <p class="stat-label">Penalty</p>
+            <span class="stat-icon stat-icon-red">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+            </span>
+          </div>
+          <p class="stat-value num text-xl text-red-600">&#8369;{{ payment.penalty_amount|floatformat:2|intcomma }}</p>
+        </div>
+
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <p class="stat-label">Total Due</p>
+            <span class="stat-icon stat-icon-gold">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0121 9v8a2 2 0 01-2 2z"/></svg>
+            </span>
+          </div>
+          <p class="stat-value num text-xl text-ink">&#8369;{{ payment.total_amount_due|floatformat:2|intcomma }}</p>
+        </div>
+
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <p class="stat-label">Amount Paid</p>
+            <span class="stat-icon">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </span>
+          </div>
+          <p class="stat-value num text-xl text-emerald-700">&#8369;{{ payment.amount_paid|floatformat:2|intcomma }}</p>
+        </div>
+      </div>
+
+      {% if payment.discount %}<p class="mt-4 text-xs text-ink-muted">Discount applied: <span class="font-bold text-ink">&#8369;{{ payment.discount }}</span></p>{% endif %}
+
+      <div class="alert alert-warning mt-4">
+        <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/70 text-xs font-bold ring-1 ring-current/20">!</span>
+        <p class="flex-1">Remaining balance for billing period: <span class="font-bold">&#8369;{{ payment.billing.balance|floatformat:2|intcomma }}</span> • Billing status: <span class="font-bold">{% include 'includes/status_badge.html' with status=payment.billing.status %}</span> • Due: {{ payment.billing.due_date|date:"M d, Y" }}</p>
+      </div>
+
+      {% if payment.remarks %}
+      <div class="mt-4 rounded-2xl border border-emerald-900/10 bg-emerald-50/50 p-4">
+        <p class="stat-label">Remarks</p>
+        <p class="mt-1 text-sm text-ink-soft">{{ payment.remarks }}</p>
+      </div>
+      {% endif %}
+    </div>
   </div>
 </div>
 {% endblock %}

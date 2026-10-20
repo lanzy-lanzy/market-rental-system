@@ -68,28 +68,29 @@ def textlines(value):
 
 @register.filter
 def badge(status):
+    """Map a status string to the Emerald Glass badge classes."""
     palette = {
-        'paid': 'bg-green-100 text-green-800',
-        'unpaid': 'bg-yellow-100 text-yellow-800',
-        'overdue': 'bg-red-100 text-red-800',
-        'partial': 'bg-orange-100 text-orange-800',
-        'active': 'bg-green-100 text-green-800',
-        'inactive': 'bg-gray-100 text-gray-800',
-        'suspended': 'bg-red-100 text-red-800',
-        'terminated': 'bg-red-100 text-red-800',
-        'vacant': 'bg-blue-100 text-blue-800',
-        'occupied': 'bg-green-100 text-green-800',
-        'reserved': 'bg-purple-100 text-purple-800',
-        'maintenance': 'bg-orange-100 text-orange-800',
-        'void': 'bg-gray-100 text-gray-800',
-        'cancelled': 'bg-red-100 text-red-800',
-        'pending': 'bg-yellow-100 text-yellow-800',
-        'expired': 'bg-gray-100 text-gray-800',
-        'payment reminder': 'bg-blue-100 text-blue-800',
-        'overdue notice': 'bg-red-100 text-red-800',
-        'final demand': 'bg-red-100 text-red-800',
-        'vacancy notice': 'bg-blue-100 text-blue-800',
+        'paid': 'badge badge-success',
+        'unpaid': 'badge badge-danger',
+        'overdue': 'badge badge-danger',
+        'partial': 'badge badge-warning',
+        'active': 'badge badge-success',
+        'inactive': 'badge badge-muted',
+        'suspended': 'badge badge-warning',
+        'terminated': 'badge badge-danger',
+        'vacant': 'badge badge-muted',
+        'occupied': 'badge badge-success',
+        'reserved': 'badge badge-warning',
+        'maintenance': 'badge badge-warning',
+        'void': 'badge badge-muted',
+        'cancelled': 'badge badge-muted',
+        'pending': 'badge badge-info',
+        'expired': 'badge badge-warning',
+        'payment reminder': 'badge badge-info',
+        'overdue notice': 'badge badge-danger',
+        'final demand': 'badge badge-danger',
+        'vacancy notice': 'badge badge-info',
     }
     key = (status or '').lower()
-    css_class = palette.get(key, 'bg-gray-100 text-gray-800')
+    css_class = palette.get(key, 'badge badge-muted')
     return css_class

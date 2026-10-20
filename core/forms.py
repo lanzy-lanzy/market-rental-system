@@ -6,6 +6,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm as BaseUserCreationForm
 from django.contrib.auth.forms import PasswordChangeForm as BasePasswordChangeForm
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 
 from .models import (
     UserProfile, Tenant, Stall, MarketSection, StallType,
@@ -13,10 +14,12 @@ from .models import (
     PenaltySetting,
 )
 
-TW_INPUT = 'block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-4 focus:ring-slate-900/10 transition-all duration-200'
-TW_SELECT = 'block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-4 focus:ring-slate-900/10 transition-all duration-200'
-TW_TEXTAREA = 'block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-4 focus:ring-slate-900/10 transition-all duration-200'
-TW_CHECKBOX = 'h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900/20'
+# Design-system widget classes (liquid glass + neumorphic).
+# `.field` carries the inset neumorphic well; utilities only handle layout.
+TW_INPUT = 'field block w-full rounded-[0.9rem] px-3.5 py-2.5 text-sm font-medium text-ink transition-all duration-200'
+TW_SELECT = 'field block w-full rounded-[0.9rem] py-2.5 pl-3.5 pr-10 text-sm font-medium text-ink transition-all duration-200'
+TW_TEXTAREA = 'field block w-full rounded-[0.9rem] px-3.5 py-2.5 text-sm font-medium text-ink transition-all duration-200'
+TW_CHECKBOX = 'h-4 w-4 rounded border-ivory-300 text-emerald-600 focus:ring-emerald-500/30'
 
 
 class DateInput(forms.DateInput):
@@ -24,11 +27,19 @@ class DateInput(forms.DateInput):
 
 
 class UserProfileForm(forms.ModelForm):
+    """Profile details for a staff account.
+
+    The ``user`` FK is deliberately excluded: it is assigned by the view
+    (``profile.user = user``) once the account row exists. Leaving it in the
+    form made it a required field that the template never renders, so every
+    user creation failed validation with "This field is required." and the
+    account was never created — the new collector could therefore never sign in.
+    """
+
     class Meta:
         model = UserProfile
-        fields = ['user', 'role', 'phone', 'address']
+        fields = ['role', 'phone', 'address']
         widgets = {
-            'user': forms.Select(attrs={'class': TW_SELECT}),
             'role': forms.Select(attrs={'class': TW_SELECT}),
             'phone': forms.TextInput(attrs={'class': TW_INPUT, 'placeholder': 'Enter phone number'}),
             'address': forms.Textarea(attrs={'class': TW_TEXTAREA, 'rows': 3, 'placeholder': 'Enter address'}),
@@ -593,6 +604,28 @@ class UserCreationForm(BaseUserCreationForm):
         super().__init__(*args, **kwargs)
         self.fields['password1'].widget.attrs.update({'class': TW_INPUT, 'placeholder': 'Password'})
         self.fields['password2'].widget.attrs.update({'class': TW_INPUT, 'placeholder': 'Confirm password'})
+
+    def clean_username(self):
+        """Reject usernames that differ only in case, but let a user keep its own.
+
+        Django's ``UserCreationForm.clean_username()`` looks the username up
+        without excluding the instance being edited, so every *edit* failed
+        with "A user with that username already exists." Excluding the current
+        instance keeps the duplicate check for new accounts while allowing an
+        existing account to be edited (and renamed) normally.
+        """
+        username = self.cleaned_data.get('username')
+        if not username:
+            return username
+        queryset = User.objects.filter(username__iexact=username)
+        if self.instance and self.instance.pk:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        if queryset.exists():
+            raise ValidationError(
+                self.instance.unique_error_message(User, ['username']),
+                code='unique',
+            )
+        return username
 
 
 class TenantPasswordChangeForm(BasePasswordChangeForm):

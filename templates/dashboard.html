@@ -7,199 +7,214 @@
 
 {% block content %}
 <div class="space-y-6">
-  <!-- Welcome -->
-  <div class="rounded-xl border border-slate-200 bg-white p-5">
-    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-      <div>
-        <p class="text-xs font-medium text-slate-500">{{ user.profile.get_role_display|default:"Staff" }} • {% now "l, F d, Y" %}</p>
-        <h2 class="mt-1 text-xl font-semibold text-slate-900">Welcome back, {{ user.get_full_name|default:user.username }}</h2>
-        <p class="mt-1 text-sm text-slate-600">Overview of stalls, tenants and collections for <span class="font-medium text-slate-900">{{ system_settings.market_name|default:"the market" }}</span>.</p>
+
+  <!-- ══ Welcome hero ══ -->
+  <div class="panel glass-sheen overflow-hidden">
+    <div class="flex flex-col gap-5 p-5 lg:flex-row lg:items-center lg:justify-between lg:p-6">
+      <div class="min-w-0">
+        <div class="flex items-center gap-2">
+          <span class="chip chip-emerald">{{ user.profile.get_role_display|default:"Staff" }}</span>
+          <span class="text-xs font-medium text-ink-muted">{% now "l, F d, Y" %}</span>
+        </div>
+        <h2 class="mt-2 font-display text-xl font-extrabold text-ink">Welcome back, {{ user.get_full_name|default:user.username }}</h2>
+        <p class="mt-1 text-sm text-ink-soft">Overview of stalls, tenants and collections for <span class="font-semibold text-emerald-700">{{ system_settings.market_name|default:"the market" }}</span>.</p>
       </div>
-      <div class="flex gap-2">
-        <a href="{% url 'billing_list' %}" class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 shadow"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1"/></svg> Collect via Billing</a>
-        <a href="{% url 'billing_generate' %}" class="hidden sm:inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Generate Bills</a>
+      <div class="flex flex-wrap gap-2">
+        <a href="{% url 'billing_list' %}" class="btn btn-primary">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1"/></svg>
+          Collect via Billing
+        </a>
+        <a href="{% url 'billing_generate' %}" class="btn btn-ghost">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          Generate Bills
+        </a>
       </div>
     </div>
+    <div class="shimmer-line"></div>
   </div>
 
-  <!-- Stats: each tile is a full-anchor link to the relevant list page.
-       Hovering raises the card, focusing shows a ring, keyboard Enter
-       navigates — no JS required, no nested interactive elements. -->
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-    <a href="{% url 'stall_list' %}"
-       class="group block rounded-xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900/20">
+  <!-- ══ Primary stats — each tile links to the relevant list page ══ -->
+  <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <a href="{% url 'stall_list' %}" class="stat-card group">
       <div class="flex items-center justify-between">
-        <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Total Stalls</p>
-        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-600">
+        <p class="stat-label">Total Stalls</p>
+        <span class="stat-icon">
           <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/></svg>
         </span>
       </div>
-      <p class="mt-2 text-2xl font-semibold text-slate-900">{{ total_stalls }}</p>
-      <p class="text-xs text-slate-500">{{ occupied_stalls }} occupied • {{ vacant_stalls }} vacant</p>
-      <p class="mt-1 text-xs font-medium text-slate-500 opacity-0 transition group-hover:opacity-100">View stalls →</p>
+      <p class="stat-value">{{ total_stalls }}</p>
+      <p class="stat-meta">{{ occupied_stalls }} occupied • {{ vacant_stalls }} vacant</p>
+      <p class="mt-1 text-xs font-semibold text-emerald-700 opacity-0 transition group-hover:opacity-100">View stalls →</p>
     </a>
 
-    <a href="{% url 'report_occupancy' %}"
-       class="group block rounded-xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900/20">
+    <a href="{% url 'report_occupancy' %}" class="stat-card group">
       <div class="flex items-center justify-between">
-        <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Occupied</p>
-        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-green-50 border border-green-200 text-green-700">
+        <p class="stat-label">Occupied</p>
+        <span class="stat-icon">
           <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"/></svg>
         </span>
       </div>
-      <p class="mt-2 text-2xl font-semibold text-slate-900">{{ occupied_stalls }}</p>
-      <div class="mt-2 h-1.5 rounded-full bg-slate-100"><div class="h-1.5 rounded-full bg-green-600" style="width: {% if total_stalls %}{% widthratio occupied_stalls total_stalls 100 %}{% else %}0{% endif %}%"></div></div>
-      <p class="mt-1 text-xs text-slate-500">{% if total_stalls %}{% widthratio occupied_stalls total_stalls 100 %}{% else %}0{% endif %}% occupancy</p>
-      <p class="mt-1 text-xs font-medium text-slate-500 opacity-0 transition group-hover:opacity-100">Occupancy report →</p>
+      <p class="stat-value">{{ occupied_stalls }}</p>
+      <div class="mt-2 progress"><div class="progress-bar" style="width: {% if total_stalls %}{% widthratio occupied_stalls total_stalls 100 %}{% else %}0{% endif %}%"></div></div>
+      <p class="stat-meta mt-1">{% if total_stalls %}{% widthratio occupied_stalls total_stalls 100 %}{% else %}0{% endif %}% occupancy</p>
+      <p class="mt-1 text-xs font-semibold text-emerald-700 opacity-0 transition group-hover:opacity-100">Occupancy report →</p>
     </a>
 
-    <a href="{% url 'stall_list' %}?status=Vacant"
-       class="group block rounded-xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900/20">
+    <a href="{% url 'stall_list' %}?status=Vacant" class="stat-card group">
       <div class="flex items-center justify-between">
-        <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Vacant</p>
-        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 border border-amber-200 text-amber-700">
+        <p class="stat-label">Vacant</p>
+        <span class="stat-icon stat-icon-gold">
           <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/></svg>
         </span>
       </div>
-      <p class="mt-2 text-2xl font-semibold text-slate-900">{{ vacant_stalls }}</p>
-      <p class="mt-1 text-xs text-slate-500">Available for lease</p>
-      <p class="mt-1 text-xs font-medium text-slate-500 opacity-0 transition group-hover:opacity-100">View vacant stalls →</p>
+      <p class="stat-value">{{ vacant_stalls }}</p>
+      <p class="stat-meta">Available for lease</p>
+      <p class="mt-1 text-xs font-semibold text-emerald-700 opacity-0 transition group-hover:opacity-100">View vacant stalls →</p>
     </a>
 
-    <a href="{% url 'tenant_list' %}"
-       class="group block rounded-xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900/20">
+    <a href="{% url 'tenant_list' %}" class="stat-card group">
       <div class="flex items-center justify-between">
-        <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Tenants</p>
-        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-800 text-white">
+        <p class="stat-label">Tenants</p>
+        <span class="stat-icon">
           <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
         </span>
       </div>
-      <p class="mt-2 text-2xl font-semibold text-slate-900">{{ total_tenants }}</p>
-      <p class="mt-1 text-xs text-slate-500">Active tenants</p>
-      <p class="mt-1 text-xs font-medium text-slate-500 opacity-0 transition group-hover:opacity-100">View tenants →</p>
+      <p class="stat-value">{{ total_tenants }}</p>
+      <p class="stat-meta">Active tenants</p>
+      <p class="mt-1 text-xs font-semibold text-emerald-700 opacity-0 transition group-hover:opacity-100">View tenants →</p>
     </a>
   </div>
 
-  <!-- Secondary stats — same treatment: whole tile is an anchor. -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-    <a href="{% url 'billing_list' %}"
-       class="group block rounded-xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900/20">
-      <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Monthly Collectibles</p>
-      <p class="mt-1 text-xl font-semibold text-slate-900">&#8369;{{ total_monthly_collectibles|floatformat:2|intcomma }}</p>
-      <p class="text-xs text-slate-500">From {{ total_tenants }} active contracts</p>
-      <p class="mt-1 text-xs font-medium text-slate-500 opacity-0 transition group-hover:opacity-100">Go to Billing →</p>
+  <!-- ══ Money summary ══ -->
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+    <a href="{% url 'billing_list' %}" class="stat-card group">
+      <p class="stat-label">Monthly Collectibles</p>
+      <p class="stat-value text-2xl">&#8369;{{ total_monthly_collectibles|floatformat:2|intcomma }}</p>
+      <p class="stat-meta">From {{ total_tenants }} active contracts</p>
+      <p class="mt-1 text-xs font-semibold text-emerald-700 opacity-0 transition group-hover:opacity-100">Go to Billing →</p>
     </a>
 
-    <a href="{% url 'payment_list' %}"
-       class="group block rounded-xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900/20">
-      <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Collected (This Month)</p>
-      <p class="mt-1 text-xl font-semibold text-green-700">&#8369;{{ total_collected|floatformat:2|intcomma }}</p>
-      <p class="text-xs text-slate-500">{{ collection_percentage|floatformat:1 }}% of collectibles</p>
-      <div class="mt-2 h-1.5 rounded-full bg-slate-100"><div class="h-1.5 rounded-full bg-green-600" style="width: {{ collection_percentage|floatformat:0 }}%"></div></div>
-      <p class="mt-1 text-xs font-medium text-slate-500 opacity-0 transition group-hover:opacity-100">View payments →</p>
+    <a href="{% url 'payment_list' %}" class="stat-card group">
+      <p class="stat-label">Collected (This Month)</p>
+      <p class="stat-value text-2xl text-emerald-700">&#8369;{{ total_collected|floatformat:2|intcomma }}</p>
+      <p class="stat-meta">{{ collection_percentage|floatformat:1 }}% of collectibles</p>
+      <div class="mt-2 progress"><div class="progress-bar" style="width: {{ collection_percentage|floatformat:0 }}%"></div></div>
+      <p class="mt-1 text-xs font-semibold text-emerald-700 opacity-0 transition group-hover:opacity-100">View payments →</p>
     </a>
 
-    <a href="{% url 'report_overdue' %}"
-       class="group block rounded-xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900/20">
-      <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Unpaid & Overdue</p>
-      <p class="mt-1 text-xl font-semibold text-red-700">&#8369;{{ total_unpaid|floatformat:2|intcomma }}</p>
-      <p class="text-xs text-slate-500">{{ overdue_accounts }} overdue accounts</p>
-      <p class="mt-1 text-xs font-medium text-slate-500 opacity-0 transition group-hover:opacity-100">Overdue report →</p>
+    <a href="{% url 'report_overdue' %}" class="stat-card group">
+      <p class="stat-label">Unpaid &amp; Overdue</p>
+      <p class="stat-value text-2xl text-red-600">&#8369;{{ total_unpaid|floatformat:2|intcomma }}</p>
+      <p class="stat-meta">{{ overdue_accounts }} overdue accounts</p>
+      <p class="mt-1 text-xs font-semibold text-emerald-700 opacity-0 transition group-hover:opacity-100">Overdue report →</p>
     </a>
   </div>
 
-  <!-- Tables -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
-      <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+  <!-- ══ Tables ══ -->
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div class="panel overflow-hidden">
+      <div class="panel-header">
         <div>
-          <h3 class="text-sm font-semibold text-slate-900">Recent Payments</h3>
-          <p class="text-xs text-slate-500">Latest 5 collections</p>
+          <h3 class="panel-title">Recent Payments</h3>
+          <p class="panel-subtitle">Latest 5 collections</p>
         </div>
-        <a href="{% url 'payment_list' %}" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">View all</a>
+        <a href="{% url 'payment_list' %}" class="btn btn-ghost btn-sm">View all</a>
       </div>
-      <div class="divide-y divide-slate-100">
+      <div class="divide-y divide-emerald-900/5">
         {% for payment in recent_payments %}
-        {# Each row is a single anchor to the payment detail — no nested interactive elements. #}
-        <a href="{% url 'payment_view' payment.pk %}"
-           class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 focus:bg-slate-50 focus:outline-none transition-colors">
-          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 border border-slate-200 text-xs font-medium text-slate-700">{{ payment.receipt_number|slice:":2"|upper }}</div>
+        <a href="{% url 'payment_view' payment.pk %}" class="flex items-center gap-3 px-5 py-3 transition hover:bg-emerald-900/5">
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-900/5 text-xs font-bold text-emerald-700 ring-1 ring-emerald-900/5">{{ payment.receipt_number|slice:":2"|upper }}</span>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-slate-900 truncate">{{ payment.tenant.full_name }} <span class="font-normal text-slate-500">• {{ payment.stall.stall_number|default:"—" }}</span></p>
-            <p class="text-xs text-slate-500">{{ payment.receipt_number }} • {{ payment.payment_date|date:"M d, Y" }}</p>
+            <p class="truncate text-sm font-semibold text-ink">{{ payment.tenant.full_name }} <span class="font-normal text-ink-muted">• {{ payment.stall.stall_number|default:"—" }}</span></p>
+            <p class="text-xs text-ink-muted">{{ payment.receipt_number }} • {{ payment.payment_date|date:"M d, Y" }}</p>
           </div>
           <div class="text-right">
-            <p class="text-sm font-semibold text-slate-900">&#8369;{{ payment.amount_paid|floatformat:2|intcomma }}</p>
-            <p class="text-xs text-slate-500">{{ payment.status }}</p>
+            <p class="text-sm font-bold text-ink num">&#8369;{{ payment.amount_paid|floatformat:2|intcomma }}</p>
+            <p class="text-xs text-ink-muted">{{ payment.status }}</p>
           </div>
         </a>
         {% empty %}
-        <div class="px-4 py-10 text-center">
-          <p class="text-sm text-slate-500">No recent payments</p>
-          <p class="text-xs text-slate-400">Payments are auto-created via Billing → Collect</p>
-          <a href="{% url 'billing_list' %}" class="mt-2 inline-flex rounded-full bg-emerald-600 px-4 py-2 text-xs font-bold text-white">Go to Billing</a>
+        <div class="empty-state">
+          <span class="empty-icon">
+            <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+          </span>
+          <p class="mt-4 text-sm font-semibold text-ink">No recent payments</p>
+          <p class="mt-1 text-xs text-ink-muted">Payments are auto-created via Billing → Collect</p>
+          <a href="{% url 'billing_list' %}" class="btn btn-primary btn-sm mt-4">Go to Billing</a>
         </div>
         {% endfor %}
       </div>
     </div>
 
-    <div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
-      <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+    <div class="panel overflow-hidden">
+      <div class="panel-header">
         <div>
-          <h3 class="text-sm font-semibold text-slate-900">Unpaid Balances</h3>
-          <p class="text-xs text-slate-500">Top 5 by outstanding amount</p>
+          <h3 class="panel-title">Unpaid Balances</h3>
+          <p class="panel-subtitle">Top 5 by outstanding amount</p>
         </div>
-        <a href="{% url 'billing_list' %}?status=Unpaid" class="rounded-lg bg-emerald-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-900">View</a>
+        <a href="{% url 'billing_list' %}?status=Unpaid" class="btn btn-gold btn-sm">View</a>
       </div>
-      <div class="divide-y divide-slate-100">
+      <div class="divide-y divide-emerald-900/5">
         {% for item in tenants_with_unpaid %}
-        {# The whole row links to that tenant's ledger. The old inline "Ledger" link was removed so we do not nest <a> tags. #}
-        <a href="{% url 'ledger_view' item.tenant %}"
-           class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 focus:bg-slate-50 focus:outline-none transition-colors">
-          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 border border-red-200 text-xs font-medium text-red-700">{{ item.tenant__tenant_id|slice:":2"|upper }}</div>
+        <a href="{% url 'ledger_view' item.tenant %}" class="flex items-center gap-3 px-5 py-3 transition hover:bg-emerald-900/5">
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-50 text-xs font-bold text-red-600 ring-1 ring-red-200">{{ item.tenant__tenant_id|slice:":2"|upper }}</span>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-slate-900 truncate">{{ item.tenant__full_name }}</p>
-            <p class="text-xs font-mono text-slate-500">{{ item.tenant__tenant_id }}</p>
+            <p class="truncate text-sm font-semibold text-ink">{{ item.tenant__full_name }}</p>
+            <p class="text-xs text-ink-muted mono">{{ item.tenant__tenant_id }}</p>
           </div>
           <div class="text-right">
-            <p class="text-sm font-semibold text-red-700">&#8369;{{ item.total_balance|floatformat:2|intcomma }}</p>
-            <p class="text-xs text-slate-500">View ledger →</p>
+            <p class="text-sm font-bold text-red-600 num">&#8369;{{ item.total_balance|floatformat:2|intcomma }}</p>
+            <p class="text-xs text-ink-muted">View ledger →</p>
           </div>
         </a>
         {% empty %}
-        <div class="px-4 py-10 text-center">
-          <p class="text-sm font-medium text-green-700">All balances are paid</p>
-          <p class="text-xs text-slate-500">No outstanding amounts.</p>
+        <div class="empty-state">
+          <span class="empty-icon">
+            <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </span>
+          <p class="mt-4 text-sm font-semibold text-emerald-700">All balances are paid</p>
+          <p class="mt-1 text-xs text-ink-muted">No outstanding amounts.</p>
         </div>
         {% endfor %}
       </div>
       {% if tenants_with_unpaid %}
-      <div class="border-t border-slate-200 bg-slate-50 px-4 py-2.5 flex items-center justify-between text-xs">
-        <span class="text-slate-600">{{ overdue_accounts }} overdue accounts</span>
-        <a href="{% url 'report_unpaid_tenants' %}" class="font-medium text-slate-700 hover:underline">View report →</a>
+      <div class="flex items-center justify-between border-t border-emerald-900/10 bg-gold-100/30 px-5 py-2.5 text-xs">
+        <span class="font-medium text-ink-soft">{{ overdue_accounts }} overdue accounts</span>
+        <a href="{% url 'report_unpaid_tenants' %}" class="link-emerald">View report →</a>
       </div>
       {% endif %}
     </div>
   </div>
 
-  <!-- Quick actions — already anchors, kept as-is with keyboard focus styling. -->
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-    <a href="{% url 'tenant_add' %}" class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/20 transition">
-      <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-800 text-white"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg></span>
-      <div><p class="text-sm font-medium text-slate-900">Add Tenant</p><p class="text-xs text-slate-500">New stallholder</p></div>
-    </a>
-    <a href="{% url 'stall_add' %}" class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/20 transition">
-      <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-700"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/></svg></span>
-      <div><p class="text-sm font-medium text-slate-900">Add Stall</p><p class="text-xs text-slate-500">Rental space</p></div>
-    </a>
-    <a href="{% url 'billing_generate' %}" class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/20 transition">
-      <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-700"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></span>
-      <div><p class="text-sm font-medium text-slate-900">Generate Bills</p><p class="text-xs text-slate-500">Monthly</p></div>
-    </a>
-    <a href="{% url 'report_dashboard' %}" class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/20 transition">
-      <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-700"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></span>
-      <div><p class="text-sm font-medium text-slate-900">Reports</p><p class="text-xs text-slate-500">Export</p></div>
-    </a>
+  <!-- ══ Quick actions ══ -->
+  <div>
+    <p class="section-title mb-3">Quick Actions</p>
+    <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <a href="{% url 'tenant_add' %}" class="panel flex items-center gap-3 p-4 transition hover:-translate-y-0.5 hover:shadow-[var(--glass-shadow-lg)]">
+        <span class="stat-icon">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+        </span>
+        <div><p class="text-sm font-semibold text-ink">Add Tenant</p><p class="text-xs text-ink-muted">New stallholder</p></div>
+      </a>
+      <a href="{% url 'stall_add' %}" class="panel flex items-center gap-3 p-4 transition hover:-translate-y-0.5 hover:shadow-[var(--glass-shadow-lg)]">
+        <span class="stat-icon stat-icon-gold">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/></svg>
+        </span>
+        <div><p class="text-sm font-semibold text-ink">Add Stall</p><p class="text-xs text-ink-muted">Rental space</p></div>
+      </a>
+      <a href="{% url 'billing_generate' %}" class="panel flex items-center gap-3 p-4 transition hover:-translate-y-0.5 hover:shadow-[var(--glass-shadow-lg)]">
+        <span class="stat-icon stat-icon-blue">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        </span>
+        <div><p class="text-sm font-semibold text-ink">Generate Bills</p><p class="text-xs text-ink-muted">Monthly</p></div>
+      </a>
+      <a href="{% url 'report_dashboard' %}" class="panel flex items-center gap-3 p-4 transition hover:-translate-y-0.5 hover:shadow-[var(--glass-shadow-lg)]">
+        <span class="stat-icon stat-icon-red">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        </span>
+        <div><p class="text-sm font-semibold text-ink">Reports</p><p class="text-xs text-ink-muted">Export</p></div>
+      </a>
+    </div>
   </div>
 </div>
 {% endblock %}

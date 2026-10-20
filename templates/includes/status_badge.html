@@ -1,41 +1,6 @@
 {% with status=status %}
-<span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold leading-none border
-  {% if status == 'Active' or status == 'Paid' or status == 'Occupied' %}
-    bg-emerald-50 text-emerald-700 border-emerald-200
-  {% elif status == 'Inactive' or status == 'Vacant' or status == 'Cancelled' %}
-    bg-slate-100 text-slate-600 border-slate-200
-  {% elif status == 'Suspended' or status == 'Reserved' or status == 'Partial' %}
-    bg-amber-50 text-amber-700 border-amber-200
-  {% elif status == 'Terminated' or status == 'Void' or status == 'Overdue' %}
-    bg-red-50 text-red-700 border-red-200
-  {% elif status == 'Expired' or status == 'Maintenance' %}
-    bg-orange-50 text-orange-700 border-orange-200
-  {% elif status == 'Pending' %}
-    bg-sky-50 text-sky-700 border-sky-200
-  {% elif status == 'Unpaid' %}
-    bg-rose-50 text-rose-700 border-rose-200
-  {% else %}
-    bg-slate-100 text-slate-600 border-slate-200
-  {% endif %}">
-  <span class="inline-block h-1.5 w-1.5 rounded-full
-    {% if status == 'Active' or status == 'Paid' or status == 'Occupied' %}
-      bg-emerald-500
-    {% elif status == 'Inactive' or status == 'Vacant' or status == 'Cancelled' %}
-      bg-slate-400
-    {% elif status == 'Suspended' or status == 'Reserved' or status == 'Partial' %}
-      bg-amber-500
-    {% elif status == 'Terminated' or status == 'Void' or status == 'Overdue' %}
-      bg-red-500
-    {% elif status == 'Expired' or status == 'Maintenance' %}
-      bg-orange-500
-    {% elif status == 'Pending' %}
-      bg-sky-500
-    {% elif status == 'Unpaid' %}
-      bg-rose-500
-    {% else %}
-      bg-slate-400
-    {% endif %}">
-  </span>
+<span class="badge {% if status == 'Active' or status == 'Paid' or status == 'Occupied' %}badge-success{% elif status == 'Inactive' or status == 'Vacant' or status == 'Cancelled' %}badge-muted{% elif status == 'Suspended' or status == 'Reserved' or status == 'Partial' %}badge-warning{% elif status == 'Terminated' or status == 'Void' or status == 'Overdue' %}badge-danger{% elif status == 'Expired' or status == 'Maintenance' %}badge-warning{% elif status == 'Pending' %}badge-info{% elif status == 'Unpaid' %}badge-danger{% else %}badge-muted{% endif %}">
+  <span class="badge-dot"></span>
   {{ status }}
 </span>
 {% endwith %}

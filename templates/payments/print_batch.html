@@ -15,169 +15,171 @@
     .or-table td, .or-table th { page-break-inside: avoid; }
   </style>
 </head>
-<body class="bg-gray-50 font-sans antialiased text-gray-800">
+<body class="bg-white font-sans antialiased text-gray-800">
 
   <div class="mx-auto max-w-3xl p-6">
     <!-- Action Bar -->
-    <div class="mb-6 flex flex-wrap justify-end gap-2 no-print">
+    <div class="no-print mb-6 flex flex-wrap justify-end gap-2">
       <button onclick="window.print()"
-              class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors">
+              class="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white">
         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
         </svg>
         Print Receipt
       </button>
-      <a href="{% url 'payment_batch_export_pdf' %}" class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black">
+      <a href="{% url 'payment_batch_export_pdf' %}" class="inline-flex items-center gap-2 rounded-lg border border-emerald-800 px-4 py-2 text-sm font-semibold text-emerald-800">
         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2"/></svg>
         Export PDF
       </a>
       {% if back_url %}
-      <a href="{{ back_url }}" class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors">
+      <a href="{{ back_url }}" class="inline-flex items-center gap-2 rounded-lg border border-gray-400 bg-white px-4 py-2 text-sm font-medium text-gray-700">
         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
         Back to list
       </a>
       {% endif %}
       <button onclick="window.close()"
-              class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors">
+              class="inline-flex items-center gap-2 rounded-lg border border-gray-400 bg-white px-4 py-2 text-sm font-medium text-gray-700">
         Close
       </button>
     </div>
 
     <!-- ONE consolidated receipt document -->
-    <div class="rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
+    <div class="border border-gray-300 bg-white p-8">
 
-      <!-- Header -->
-      <div class="mb-6 border-b-2 border-gray-200 pb-6 text-center">
+      <!-- Letterhead -->
+      <div class="text-center">
         {% if settings.logo %}
         <img src="{{ settings.logo.url }}" alt="Logo" class="mx-auto mb-3 h-16 w-auto">
         {% endif %}
-        <h1 class="text-xl font-bold uppercase text-gray-900">{{ settings.municipality_name|default:"Republic of the Philippines" }}</h1>
-        <h2 class="text-lg font-semibold text-primary-700">{{ settings.market_name|default:"Public Market" }}</h2>
-        <p class="text-sm text-gray-500">{{ settings.office_name|default:"Market Administration Office" }}</p>
-        <h3 class="mt-4 text-base font-bold uppercase tracking-wider text-gray-800">Official Receipt</h3>
-        <p class="mt-1 text-[11px] uppercase tracking-widest text-gray-500">Consolidated — {{ month_count }} Billing Month{{ month_count|pluralize }}</p>
+        <h1 class="text-xl font-bold uppercase text-emerald-800">{{ settings.municipality_name|default:"Republic of the Philippines" }}</h1>
+        <h2 class="text-lg font-semibold text-emerald-700">{{ settings.market_name|default:"Public Market" }}</h2>
+        <p class="text-sm text-gray-600">{{ settings.office_name|default:"Market Administration Office" }}</p>
+        <h3 class="mt-4 text-base font-bold uppercase tracking-wider text-gray-900">Official Receipt</h3>
+        <p class="mt-1 text-[11px] uppercase tracking-widest text-gray-600">Consolidated — {{ month_count }} Billing Month{{ month_count|pluralize }}</p>
       </div>
 
+      <!-- Gold rule -->
+      <div class="mt-4 border-b-2 border-gold-500"></div>
+
       <!-- OR + Date -->
-      <div class="mb-6 flex items-start justify-between">
+      <div class="mt-5 flex items-start justify-between">
         <div>
-          <p class="text-sm text-gray-500">OR No:</p>
-          <p class="text-2xl font-extrabold tracking-wide text-gray-900">{{ official_receipt_no }}</p>
+          <p class="text-sm text-gray-600">OR No:</p>
+          <p class="mono text-2xl font-extrabold tracking-wide text-gray-900">{{ official_receipt_no }}</p>
         </div>
         <div class="text-right">
-          <p class="text-sm text-gray-500">Date Issued:</p>
+          <p class="text-sm text-gray-600">Date Issued:</p>
           <p class="text-base font-semibold text-gray-900">{{ payment_date|date:"F d, Y" }}</p>
-          <p class="text-sm font-bold tabular-nums text-gray-700">{{ issued_at|date:"h:i A" }}</p>
-          <p class="text-xs text-gray-400">Period Covered: {{ period_range }}</p>
+          <p class="mono text-sm font-bold tabular-nums text-gray-700">{{ issued_at|date:"h:i A" }}</p>
+          <p class="text-xs text-gray-600">Period Covered: {{ period_range }}</p>
         </div>
       </div>
 
       <!-- Payee -->
-      <div class="mb-6 rounded-lg bg-gray-50 p-4">
+      <div class="mt-5 border border-gray-300 p-4">
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Received From (Tenant)</p>
+            <p class="text-xs font-medium uppercase tracking-wider text-gray-600">Received From (Tenant)</p>
             <p class="text-sm font-semibold text-gray-900">{{ tenant.full_name }}</p>
           </div>
           <div>
-            <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Tenant ID</p>
-            <p class="text-sm text-gray-800 font-mono">{{ tenant.tenant_id }}</p>
+            <p class="text-xs font-medium uppercase tracking-wider text-gray-600">Tenant ID</p>
+            <p class="mono text-sm text-gray-800">{{ tenant.tenant_id }}</p>
           </div>
           <div>
-            <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Stall{% if stall_list|length > 1 %}s{% endif %}</p>
+            <p class="text-xs font-medium uppercase tracking-wider text-gray-600">Stall{% if stall_list|length > 1 %}s{% endif %}</p>
             <p class="text-sm text-gray-800">
-              {% for s in stall_list %}<span class="mr-1 inline-flex rounded bg-slate-900 px-2 py-0.5 font-mono text-[11px] font-bold text-white">{{ s }}</span>{% endfor %}
+              {% for s in stall_list %}<span class="mono mr-1 inline-block border border-gray-400 px-1.5 py-0.5 text-[11px] font-bold text-gray-900">{{ s }}</span>{% endfor %}
             </p>
           </div>
           <div>
-            <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Payment Method</p>
+            <p class="text-xs font-medium uppercase tracking-wider text-gray-600">Payment Method</p>
             <p class="text-sm font-semibold text-gray-900">{{ payment_method }}</p>
           </div>
         </div>
       </div>
 
-      <p class="mb-3 text-sm text-gray-700">
+      <p class="mb-3 mt-5 text-sm text-gray-700">
         This is to acknowledge receipt of payment covering the following billing month(s), settled together under this single official receipt:
       </p>
 
       <!-- Consolidated line items: one row per collected month -->
       <table class="or-table w-full border-collapse text-sm">
         <thead>
-          <tr class="border-y-2 border-gray-300 bg-gray-50 text-[11px] uppercase tracking-wider text-gray-600">
-            <th class="px-2 py-2 text-left" style="width:36px;">#</th>
-            <th class="px-2 py-2 text-left">Billing Period</th>
-            <th class="px-2 py-2 text-left">Stall</th>
-            <th class="px-2 py-2 text-right">Rental</th>
-            <th class="px-2 py-2 text-right">Penalty</th>
-            <th class="px-2 py-2 text-right">Discount</th>
-            <th class="px-2 py-2 text-right">Total Due</th>
-            <th class="px-2 py-2 text-right">Amount Paid</th>
+          <tr class="bg-gray-100 text-[11px] uppercase tracking-wider text-gray-700">
+            <th class="border border-gray-400 px-2 py-2 text-left" style="width:36px;">#</th>
+            <th class="border border-gray-400 px-2 py-2 text-left">Billing Period</th>
+            <th class="border border-gray-400 px-2 py-2 text-left">Stall</th>
+            <th class="border border-gray-400 px-2 py-2 text-right">Rental</th>
+            <th class="border border-gray-400 px-2 py-2 text-right">Penalty</th>
+            <th class="border border-gray-400 px-2 py-2 text-right">Discount</th>
+            <th class="border border-gray-400 px-2 py-2 text-right">Total Due</th>
+            <th class="border border-gray-400 px-2 py-2 text-right">Amount Paid</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-100">
+        <tbody>
           {% for p in payments %}
           <tr>
-            <td class="px-2 py-2 text-gray-500">{{ forloop.counter }}</td>
-            <td class="px-2 py-2 font-semibold text-gray-900">
+            <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ forloop.counter }}</td>
+            <td class="border border-gray-300 px-2 py-2 font-semibold text-gray-900">
               {% if p.billing_month == 1 %}January{% elif p.billing_month == 2 %}February{% elif p.billing_month == 3 %}March{% elif p.billing_month == 4 %}April{% elif p.billing_month == 5 %}May{% elif p.billing_month == 6 %}June{% elif p.billing_month == 7 %}July{% elif p.billing_month == 8 %}August{% elif p.billing_month == 9 %}September{% elif p.billing_month == 10 %}October{% elif p.billing_month == 11 %}November{% elif p.billing_month == 12 %}December{% endif %}
               {{ p.billing_year }}
             </td>
-            <td class="px-2 py-2 font-mono text-xs text-gray-700">{{ p.stall.stall_number }}</td>
-            <td class="px-2 py-2 text-right tabular-nums text-gray-800">{{ p.rental_amount|floatformat:2|intcomma }}</td>
-            <td class="px-2 py-2 text-right tabular-nums {% if p.penalty_amount > 0 %}text-red-600{% else %}text-gray-500{% endif %}">{{ p.penalty_amount|floatformat:2|intcomma }}</td>
-            <td class="px-2 py-2 text-right tabular-nums {% if p.discount > 0 %}text-green-600{% else %}text-gray-500{% endif %}">{{ p.discount|floatformat:2|intcomma }}</td>
-            <td class="px-2 py-2 text-right font-semibold tabular-nums text-gray-900">{{ p.total_amount_due|floatformat:2|intcomma }}</td>
-            <td class="px-2 py-2 text-right font-bold tabular-nums text-emerald-700">{{ p.amount_paid|floatformat:2|intcomma }}</td>
+            <td class="mono border border-gray-300 px-2 py-2 text-xs text-gray-800">{{ p.stall.stall_number }}</td>
+            <td class="border border-gray-300 px-2 py-2 text-right tabular-nums text-gray-800">{{ p.rental_amount|floatformat:2|intcomma }}</td>
+            <td class="border border-gray-300 px-2 py-2 text-right tabular-nums {% if p.penalty_amount > 0 %}text-red-700{% else %}text-gray-600{% endif %}">{{ p.penalty_amount|floatformat:2|intcomma }}</td>
+            <td class="border border-gray-300 px-2 py-2 text-right tabular-nums {% if p.discount > 0 %}text-emerald-700{% else %}text-gray-600{% endif %}">{{ p.discount|floatformat:2|intcomma }}</td>
+            <td class="border border-gray-300 px-2 py-2 text-right font-semibold tabular-nums text-gray-900">{{ p.total_amount_due|floatformat:2|intcomma }}</td>
+            <td class="border border-gray-300 px-2 py-2 text-right font-bold tabular-nums text-emerald-800">{{ p.amount_paid|floatformat:2|intcomma }}</td>
           </tr>
           {% endfor %}
         </tbody>
         <tfoot class="text-sm">
-          <tr class="border-t-2 border-gray-300 bg-gray-50 font-bold">
-            <td colspan="3" class="px-2 py-2 text-right uppercase tracking-wider text-gray-600">Totals ({{ month_count }} month{{ month_count|pluralize }})</td>
-            <td class="px-2 py-2 text-right tabular-nums text-gray-800">{{ rental_total|floatformat:2|intcomma }}</td>
-            <td class="px-2 py-2 text-right tabular-nums text-gray-800">{{ penalty_total|floatformat:2|intcomma }}</td>
-            <td class="px-2 py-2 text-right tabular-nums text-gray-800">{{ discount_total|floatformat:2|intcomma }}</td>
-            <td class="px-2 py-2 text-right tabular-nums text-gray-900">{{ total_due|floatformat:2|intcomma }}</td>
-            <td class="px-2 py-2 text-right tabular-nums text-emerald-700">{{ total_paid|floatformat:2|intcomma }}</td>
+          <tr class="font-bold">
+            <td colspan="3" class="border border-gray-400 bg-gray-100 px-2 py-2 text-right uppercase tracking-wider text-gray-700">Totals ({{ month_count }} month{{ month_count|pluralize }})</td>
+            <td class="border border-gray-400 bg-gray-100 px-2 py-2 text-right tabular-nums text-gray-800">{{ rental_total|floatformat:2|intcomma }}</td>
+            <td class="border border-gray-400 bg-gray-100 px-2 py-2 text-right tabular-nums text-gray-800">{{ penalty_total|floatformat:2|intcomma }}</td>
+            <td class="border border-gray-400 bg-gray-100 px-2 py-2 text-right tabular-nums text-gray-800">{{ discount_total|floatformat:2|intcomma }}</td>
+            <td class="border border-gray-400 bg-gray-100 px-2 py-2 text-right tabular-nums text-gray-900">{{ total_due|floatformat:2|intcomma }}</td>
+            <td class="border border-gray-400 bg-gray-100 px-2 py-2 text-right tabular-nums text-emerald-800">{{ total_paid|floatformat:2|intcomma }}</td>
           </tr>
         </tfoot>
       </table>
 
       <!-- Grand totals block -->
       <div class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Total Amount Due</p>
-          <p class="mt-1 text-lg font-extrabold tabular-nums text-gray-900">&#8369;{{ total_due|floatformat:2|intcomma }}</p>
+        <div class="border border-gray-400 p-3">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-gray-600">Total Amount Due</p>
+          <p class="mono mt-1 text-lg font-extrabold tabular-nums text-gray-900">&#8369;{{ total_due|floatformat:2|intcomma }}</p>
         </div>
-        <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-emerald-700">Total Amount Paid</p>
-          <p class="mt-1 text-lg font-extrabold tabular-nums text-emerald-700">&#8369;{{ total_paid|floatformat:2|intcomma }}</p>
+        <div class="border border-emerald-800 p-3">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-emerald-800">Total Amount Paid</p>
+          <p class="mono mt-1 text-lg font-extrabold tabular-nums text-emerald-800">&#8369;{{ total_paid|floatformat:2|intcomma }}</p>
         </div>
-        <div class="rounded-lg border {% if remaining_balance > 0 %}border-red-200 bg-red-50{% else %}border-emerald-200 bg-emerald-50{% endif %} p-3">
-          <p class="text-[10px] font-bold uppercase tracking-widest {% if remaining_balance > 0 %}text-red-700{% else %}text-emerald-700{% endif %}">Remaining Balance</p>
-          <p class="mt-1 text-lg font-extrabold tabular-nums {% if remaining_balance > 0 %}text-red-700{% else %}text-emerald-700{% endif %}">&#8369;{{ remaining_balance|floatformat:2|intcomma }}</p>
+        <div class="border {% if remaining_balance > 0 %}border-red-600{% else %}border-emerald-800{% endif %} p-3">
+          <p class="text-[10px] font-bold uppercase tracking-widest {% if remaining_balance > 0 %}text-red-700{% else %}text-emerald-800{% endif %}">Remaining Balance</p>
+          <p class="mono mt-1 text-lg font-extrabold tabular-nums {% if remaining_balance > 0 %}text-red-700{% else %}text-emerald-800{% endif %}">&#8369;{{ remaining_balance|floatformat:2|intcomma }}</p>
         </div>
       </div>
 
       <!-- Say line (amount in words) -->
-      <div class="mt-4 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-3">
-        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Say</p>
+      <div class="mt-4 border border-dashed border-gray-500 p-3">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-600">Say</p>
         <p class="mt-1 text-sm font-semibold uppercase text-gray-900">{{ amount_in_words }}</p>
       </div>
 
       <!-- Remarks -->
       {% if remarks %}
-      <div class="mt-4 rounded-lg bg-gray-50 p-3">
-        <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Remarks</p>
-        <p class="text-sm text-gray-700">{{ remarks }}</p>
+      <div class="mt-4 border border-gray-300 p-3">
+        <p class="text-xs font-medium uppercase tracking-wider text-gray-600">Remarks</p>
+        <p class="text-sm text-gray-800">{{ remarks }}</p>
       </div>
       {% endif %}
 
       <!-- Status -->
       <div class="mt-6 text-center">
-        <span class="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium
-          {% if remaining_balance > 0 %}bg-yellow-100 text-yellow-700{% else %}bg-green-100 text-green-700{% endif %}">
-          <span class="inline-block h-2 w-2 rounded-full {% if remaining_balance > 0 %}bg-yellow-500{% else %}bg-green-500{% endif %}"></span>
+        <span class="inline-flex items-center gap-1.5 border border-gray-400 px-4 py-1.5 text-sm font-medium {% if remaining_balance > 0 %}text-amber-700{% else %}text-emerald-800{% endif %}">
+          <span class="inline-block h-2 w-2 rounded-full {% if remaining_balance > 0 %}bg-amber-600{% else %}bg-emerald-700{% endif %}"></span>
           {% if remaining_balance > 0 %}Partially Settled{% else %}Paid in Full — {{ month_count }} Month{{ month_count|pluralize }} Settled{% endif %}
         </span>
       </div>
@@ -185,21 +187,21 @@
       <!-- Signature Lines -->
       <div class="mt-10 grid grid-cols-2 gap-8">
         <div class="text-center">
-          <div class="border-t border-gray-300 pt-2">
+          <div class="border-t border-gray-400 pt-2">
             <p class="text-sm font-semibold text-gray-900">{{ collected_by.get_full_name|default:collected_by.username }}</p>
-            <p class="text-xs text-gray-500">Collected By / Cashier</p>
+            <p class="text-xs text-gray-600">Collected By / Cashier</p>
           </div>
         </div>
         <div class="text-center">
-          <div class="border-t border-gray-300 pt-2">
+          <div class="border-t border-gray-400 pt-2">
             <p class="text-sm font-semibold text-gray-900">{{ tenant.full_name }}</p>
-            <p class="text-xs text-gray-500">Tenant Signature</p>
+            <p class="text-xs text-gray-600">Tenant Signature</p>
           </div>
         </div>
       </div>
 
       <!-- Footer -->
-      <div class="mt-8 border-t border-gray-200 pt-6 text-center text-xs text-gray-400">
+      <div class="mt-8 border-t border-gray-300 pt-5 text-center text-xs text-gray-600">
         <p>This is a system-generated consolidated official receipt covering {{ month_count }} billing month{{ month_count|pluralize }} listed above. Valid when properly signed.</p>
         <p>Generated by Market Rental and Collection Management System</p>
       </div>

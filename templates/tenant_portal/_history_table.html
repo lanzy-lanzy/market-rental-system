@@ -1,71 +1,123 @@
 {% load humanize %}
 {% load market_tags %}
-<div id="portal-history-wrapper" class="space-y-4">
+<div id="portal-history-wrapper" class="space-y-5">
 
-  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-    <div class="rounded-2xl border border-slate-200 bg-slate-900 px-5 py-4 text-white">
-      <p class="text-xs font-bold tracking-widest text-white/60">TOTAL BILLED</p>
-      <p class="mt-1 text-xl font-extrabold tabular-nums">&#8369;{{ total_billed|floatformat:2|intcomma }}</p>
+  <!-- ══════════ Totals ══════════ -->
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div class="stat-card">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <p class="stat-label">Total Billed</p>
+          <p class="stat-value text-emerald-800">&#8369;{{ total_billed|floatformat:2|intcomma }}</p>
+          <p class="stat-meta">Across all billing cycles</p>
+        </div>
+        <span class="stat-icon">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+        </span>
+      </div>
     </div>
-    <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4">
-      <p class="text-xs font-bold tracking-widest text-emerald-700">TOTAL PAID</p>
-      <p class="mt-1 text-xl font-extrabold text-emerald-700 tabular-nums">&#8369;{{ total_paid|floatformat:2|intcomma }}</p>
+    <div class="stat-card">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <p class="stat-label">Total Paid</p>
+          <p class="stat-value text-emerald-700">&#8369;{{ total_paid|floatformat:2|intcomma }}</p>
+          <p class="stat-meta">All-time contributions</p>
+        </div>
+        <span class="stat-icon stat-icon-gold">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        </span>
+      </div>
     </div>
-    <div class="rounded-2xl border border-red-200 bg-red-50 px-5 py-4">
-      <p class="text-xs font-bold tracking-widest text-red-700">OUTSTANDING BALANCE</p>
-      <p class="mt-1 text-xl font-extrabold text-red-700 tabular-nums">&#8369;{{ outstanding_balance|floatformat:2|intcomma }}</p>
+    <div class="stat-card">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <p class="stat-label">Outstanding Balance</p>
+          <p class="stat-value {% if outstanding_balance > 0 %}text-red-600{% else %}text-emerald-700{% endif %}">&#8369;{{ outstanding_balance|floatformat:2|intcomma }}</p>
+          <p class="stat-meta">{% if outstanding_balance > 0 %}Please settle at the collection office{% else %}Your account is fully paid up{% endif %}</p>
+        </div>
+        <span class="stat-icon {% if outstanding_balance > 0 %}stat-icon-red{% else %}stat-icon-gold{% endif %}">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+        </span>
+      </div>
     </div>
   </div>
 
-  <div class="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm">
-    <div class="overflow-x-auto">
-      <table class="w-full min-w-[900px] divide-y divide-slate-100">
-        <thead><tr class="bg-slate-50">
-          <th class="px-4 lg:px-5 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">DATE</th>
-          <th class="px-4 lg:px-5 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">DESCRIPTION</th>
-          <th class="px-4 lg:px-5 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">REFERENCE</th>
-          <th class="px-4 lg:px-5 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">STATUS</th>
-          <th class="px-4 lg:px-5 py-3.5 text-right text-xs font-bold tracking-widest text-slate-500">CHARGE</th>
-          <th class="px-4 lg:px-5 py-3.5 text-right text-xs font-bold tracking-widest text-slate-500">PAYMENT</th>
-          <th class="px-4 lg:px-5 py-3.5 text-right text-xs font-bold tracking-widest text-slate-500">BALANCE</th>
-          <th class="px-4 lg:px-5 py-3.5 text-right text-xs font-bold tracking-widest text-slate-500">ACTIONS</th>
-        </tr></thead>
-        <tbody class="divide-y divide-slate-50">
-          {% for entry in page_obj %}
-          {% with status=entry.payment.status|default:entry.billing.status %}
-          <tr class="hover:bg-slate-50/70 transition">
-            <td class="whitespace-nowrap px-4 lg:px-5 py-4 text-sm text-slate-600 tabular-nums">{{ entry.transaction_date|date:"M d, Y" }}</td>
-            <td class="px-4 lg:px-5 py-4 text-sm font-medium text-slate-900">{{ entry.description }}</td>
-            <td class="whitespace-nowrap px-4 lg:px-5 py-4 text-sm">
-              {% if entry.payment_id %}
-                <a href="{% url 'payment_view' entry.payment_id %}" class="font-mono text-xs font-bold text-primary-700 hover:underline">{{ entry.payment.receipt_number }}</a>
-              {% elif entry.billing_id %}
-                <a href="{% url 'billing_view' entry.billing_id %}" class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold tabular-nums text-slate-700 hover:bg-slate-50">{{ entry.billing.billing_month|stringformat:"02d" }}/{{ entry.billing.billing_year }} • {{ entry.billing.stall.stall_number }}</a>
-              {% else %}
-                <span class="text-slate-400">—</span>
-              {% endif %}
-            </td>
-            <td class="whitespace-nowrap px-4 lg:px-5 py-4">{% include 'includes/status_badge.html' with status=status %}</td>
-            <td class="whitespace-nowrap px-4 lg:px-5 py-4 text-right text-sm font-semibold text-red-600 tabular-nums">{% if entry.debit > 0 %}&#8369;{{ entry.debit|floatformat:2|intcomma }}{% else %}<span class="text-slate-300">—</span>{% endif %}</td>
-            <td class="whitespace-nowrap px-4 lg:px-5 py-4 text-right text-sm font-semibold text-emerald-600 tabular-nums">{% if entry.credit > 0 %}&#8369;{{ entry.credit|floatformat:2|intcomma }}{% else %}<span class="text-slate-300">—</span>{% endif %}</td>
-            <td class="whitespace-nowrap px-4 lg:px-5 py-4 text-right text-sm font-bold text-slate-900 tabular-nums">&#8369;{{ entry.balance|floatformat:2|intcomma }}</td>
-            <td class="whitespace-nowrap px-4 lg:px-5 py-4 text-right">
-              <div class="flex items-center justify-end gap-1.5">
+  <!-- ══════════ Ledger table ══════════ -->
+  <div class="panel overflow-hidden">
+    <div class="panel-header">
+      <div>
+        <h3 class="panel-title">Transaction ledger</h3>
+        <p class="panel-subtitle">Every charge and payment posted to your account</p>
+      </div>
+      <span class="badge badge-muted">{{ page_obj.paginator.count }} entries</span>
+    </div>
+    <div class="table-wrap rounded-none border-0 bg-transparent shadow-none">
+      <div class="overflow-x-auto">
+        <table class="table min-w-[900px]">
+          <thead><tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Reference</th>
+            <th>Status</th>
+            <th class="text-right">Charge</th>
+            <th class="text-right">Payment</th>
+            <th class="text-right">Balance</th>
+            <th class="text-right">Actions</th>
+          </tr></thead>
+          <tbody>
+            {% for entry in page_obj %}
+            {% with status=entry.payment.status|default:entry.billing.status %}
+            <tr>
+              <td class="whitespace-nowrap tabular-nums">{{ entry.transaction_date|date:"M d, Y" }}</td>
+              <td class="font-semibold text-ink">{{ entry.description }}</td>
+              <td class="whitespace-nowrap">
                 {% if entry.payment_id %}
-                <a href="{% url 'payment_receipt' entry.payment_id %}" class="inline-flex items-center gap-1 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-black">Receipt</a>
-                <a href="{% url 'payment_print_receipt' entry.payment_id %}" target="_blank" class="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50" title="Print"><svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg></a>
+                  <a href="{% url 'payment_view' entry.payment_id %}" class="mono text-xs font-bold text-emerald-700 hover:underline">{{ entry.payment.receipt_number }}</a>
                 {% elif entry.billing_id %}
-                <a href="{% url 'billing_view' entry.billing_id %}" class="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-900 hover:text-white transition" title="View"><svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></a>
+                  <a href="{% url 'billing_view' entry.billing_id %}" class="chip chip-emerald">{{ entry.billing.billing_month|stringformat:"02d" }}/{{ entry.billing.billing_year }} • {{ entry.billing.stall.stall_number }}</a>
+                {% else %}
+                  <span class="text-ink-muted">—</span>
                 {% endif %}
+              </td>
+              <td class="whitespace-nowrap">{% include 'includes/status_badge.html' with status=status %}</td>
+              <td class="num whitespace-nowrap font-semibold text-red-600">{% if entry.debit > 0 %}&#8369;{{ entry.debit|floatformat:2|intcomma }}{% else %}<span class="text-ink-muted">—</span>{% endif %}</td>
+              <td class="num whitespace-nowrap font-semibold text-emerald-600">{% if entry.credit > 0 %}&#8369;{{ entry.credit|floatformat:2|intcomma }}{% else %}<span class="text-ink-muted">—</span>{% endif %}</td>
+              <td class="num whitespace-nowrap font-bold text-ink">&#8369;{{ entry.balance|floatformat:2|intcomma }}</td>
+              <td class="whitespace-nowrap">
+                <div class="flex items-center justify-end gap-1.5">
+                  {% if entry.payment_id %}
+                  <a href="{% url 'payment_receipt' entry.payment_id %}" class="btn btn-primary btn-sm">Receipt</a>
+                  <a href="{% url 'payment_print_receipt' entry.payment_id %}" target="_blank" class="btn-icon" title="Print"><svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg></a>
+                  {% elif entry.billing_id %}
+                  <a href="{% url 'billing_view' entry.billing_id %}" class="btn-icon" title="View"><svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></a>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endwith %}
+            {% empty %}
+            <tr><td colspan="8">
+              <div class="empty-state">
+                <span class="empty-icon">
+                  <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </span>
+                <p class="mt-3 text-sm font-bold text-ink">No matching transactions</p>
+                <p class="mt-1 text-xs text-ink-muted">Try adjusting or clearing the filters above.</p>
               </div>
-            </td>
-          </tr>
-          {% endwith %}
-          {% empty %}
-          <tr><td colspan="8" class="px-6 py-14 text-center"><div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400"><svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div><p class="mt-3 text-sm font-bold text-slate-700">No matching transactions</p><p class="mt-1 text-xs text-slate-500">Try adjusting or clearing the filters above.</p></td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+            </td></tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4">Account totals — all transactions</td>
+              <td class="num">&#8369;{{ total_billed|floatformat:2|intcomma }}</td>
+              <td class="num">&#8369;{{ total_paid|floatformat:2|intcomma }}</td>
+              <td class="num">&#8369;{{ outstanding_balance|floatformat:2|intcomma }}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </div>
   </div>
 

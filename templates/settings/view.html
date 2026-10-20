@@ -5,80 +5,117 @@
 {% block page_subtitle %}Municipality, market & billing configuration{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto space-y-6">
-  <div class="rounded-[22px] border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 p-6 text-white relative overflow-hidden">
-    <div class="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-primary-600/20 blur-2xl"></div>
-    <h3 class="relative text-lg font-extrabold tracking-tight" style="font-family:'Plus Jakarta Sans'">System Configuration</h3>
-    <p class="relative mt-1 text-sm text-white/70">These values appear on receipts, reports and official notices. Changes are audited.</p>
+<div class="mx-auto max-w-4xl space-y-6">
+
+  <!-- ══ Hero ══ -->
+  <div class="glass-deep relative overflow-hidden rounded-2xl p-6 text-white">
+    <div class="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-emerald-400/20 blur-2xl"></div>
+    <h3 class="relative font-display text-lg font-extrabold tracking-tight">System Configuration</h3>
+    <p class="relative mt-1 text-sm text-white/75">These values appear on receipts, reports and official notices. Changes are audited.</p>
+    <div class="shimmer-line mt-4"></div>
   </div>
 
-  <div class="rounded-[22px] border border-slate-200 bg-white shadow-sm overflow-hidden">
-    <form method="post" action="{% url 'settings_update' %}" enctype="multipart/form-data" class="p-6 sm:p-7 space-y-7">
+  <!-- ══ Form ══ -->
+  <div class="panel overflow-hidden">
+    <div class="panel-header">
+      <div>
+        <h3 class="panel-title">Configuration</h3>
+        <p class="panel-subtitle">Every field below is written onto printed receipts, contracts and reports</p>
+      </div>
+      <span class="badge badge-gold"><span class="badge-dot"></span>Audited</span>
+    </div>
+    <form method="post" action="{% url 'settings_update' %}" enctype="multipart/form-data" class="panel-body">
       {% csrf_token %}
 
       <div>
-        <h4 class="text-xs font-bold tracking-widest text-slate-500 mb-3 pb-2 border-b border-slate-100">MUNICIPALITY & MARKET</h4>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <p class="form-section">Municipality &amp; Market</p>
+        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label class="block text-xs font-bold tracking-wide text-slate-700">Municipality / City Name</label>
+            <label class="field-label" for="{{ form.municipality_name.id_for_label }}">Municipality / City Name</label>
             <div class="mt-2">{{ form.municipality_name }}</div>
-            {% if form.municipality_name.errors %}<p class="mt-1 text-xs font-medium text-red-600">{{ form.municipality_name.errors.0 }}</p>{% endif %}
+            {% if form.municipality_name.errors %}<p class="field-error">{{ form.municipality_name.errors.0 }}</p>{% endif %}
           </div>
           <div>
-            <label class="block text-xs font-bold tracking-wide text-slate-700">Market Name</label>
+            <label class="field-label" for="{{ form.market_name.id_for_label }}">Market Name</label>
             <div class="mt-2">{{ form.market_name }}</div>
-            {% if form.market_name.errors %}<p class="mt-1 text-xs font-medium text-red-600">{{ form.market_name.errors.0 }}</p>{% endif %}
+            {% if form.market_name.errors %}<p class="field-error">{{ form.market_name.errors.0 }}</p>{% endif %}
           </div>
           <div>
-            <label class="block text-xs font-bold tracking-wide text-slate-700">Office Name</label>
+            <label class="field-label" for="{{ form.office_name.id_for_label }}">Office Name</label>
             <div class="mt-2">{{ form.office_name }}</div>
-            {% if form.office_name.errors %}<p class="mt-1 text-xs font-medium text-red-600">{{ form.office_name.errors.0 }}</p>{% endif %}
+            {% if form.office_name.errors %}<p class="field-error">{{ form.office_name.errors.0 }}</p>{% endif %}
           </div>
           <div>
-            <label class="block text-xs font-bold tracking-wide text-slate-700">Receipt Prefix</label>
+            <label class="field-label" for="{{ form.receipt_prefix.id_for_label }}">Receipt Prefix</label>
             <div class="mt-2">{{ form.receipt_prefix }}</div>
-            {% if form.receipt_prefix.errors %}<p class="mt-1 text-xs font-medium text-red-600">{{ form.receipt_prefix.errors.0 }}</p>{% endif %}
+            {% if form.receipt_prefix.errors %}<p class="field-error">{{ form.receipt_prefix.errors.0 }}</p>{% endif %}
           </div>
         </div>
       </div>
 
-      <div>
-        <h4 class="text-xs font-bold tracking-widest text-slate-500 mb-3 pb-2 border-b border-slate-100">BILLING & PENALTY RULES</h4>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div><label class="block text-xs font-bold tracking-wide text-slate-700">Default Due Day</label><div class="mt-2">{{ form.default_due_day }}</div>{% if form.default_due_day.errors %}<p class="mt-1 text-xs text-red-600">{{ form.default_due_day.errors.0 }}</p>{% endif %}</div>
-          <div><label class="block text-xs font-bold tracking-wide text-slate-700">Penalty Type</label><div class="mt-2">{{ form.penalty_type }}</div>{% if form.penalty_type.errors %}<p class="mt-1 text-xs text-red-600">{{ form.penalty_type.errors.0 }}</p>{% endif %}</div>
-          <div><label class="block text-xs font-bold tracking-wide text-slate-700">Penalty Value</label><div class="mt-2">{{ form.penalty_value }}</div>{% if form.penalty_value.errors %}<p class="mt-1 text-xs text-red-600">{{ form.penalty_value.errors.0 }}</p>{% endif %}</div>
-          <div><label class="block text-xs font-bold tracking-wide text-slate-700">Grace Period (days)</label><div class="mt-2">{{ form.grace_period }}</div>{% if form.grace_period.errors %}<p class="mt-1 text-xs text-red-600">{{ form.grace_period.errors.0 }}</p>{% endif %}</div>
-        </div>
-        <p class="mt-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs leading-5 text-amber-800">💡 Penalties are auto-computed after the grace period. Fixed = flat amount, Percentage = % of rental.</p>
-      </div>
-
-      <div>
-        <h4 class="text-xs font-bold tracking-widest text-slate-500 mb-3 pb-2 border-b border-slate-100">CONTRACT TERMS &amp; GUIDELINES</h4>
-        <label class="block text-xs font-bold tracking-wide text-slate-700">Terms and Conditions printed on every rental contract</label>
-        <div class="mt-2">{{ form.terms_and_conditions }}</div>
-        {% if form.terms_and_conditions.errors %}<p class="mt-1 text-xs text-red-600">{{ form.terms_and_conditions.errors.0 }}</p>{% endif %}
-        <p class="mt-3 rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-xs leading-5 text-slate-600">Write one clause per line — the numbering is yours, the printout keeps it. These clauses appear in the <b>Terms and Conditions</b> section of every printed contract and PDF.</p>
-      </div>
-
-      <div>
-        <h4 class="text-xs font-bold tracking-widest text-slate-500 mb-3 pb-2 border-b border-slate-100">BRANDING & APPEARANCE</h4>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="mt-7">
+        <p class="form-section">Billing &amp; Penalty Rules</p>
+        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
-            <label class="block text-xs font-bold tracking-wide text-slate-700">Logo</label>
-            <div class="mt-2 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-              {% if settings.logo %}<img src="{{ settings.logo.url }}" alt="Current logo" class="h-10 w-auto rounded-lg border border-slate-200 bg-white">{% endif %}
+            <label class="field-label" for="{{ form.default_due_day.id_for_label }}">Default Due Day</label>
+            <div class="mt-2">{{ form.default_due_day }}</div>
+            {% if form.default_due_day.errors %}<p class="field-error">{{ form.default_due_day.errors.0 }}</p>{% endif %}
+          </div>
+          <div>
+            <label class="field-label" for="{{ form.penalty_type.id_for_label }}">Penalty Type</label>
+            <div class="mt-2">{{ form.penalty_type }}</div>
+            {% if form.penalty_type.errors %}<p class="field-error">{{ form.penalty_type.errors.0 }}</p>{% endif %}
+          </div>
+          <div>
+            <label class="field-label" for="{{ form.penalty_value.id_for_label }}">Penalty Value</label>
+            <div class="mt-2">{{ form.penalty_value }}</div>
+            {% if form.penalty_value.errors %}<p class="field-error">{{ form.penalty_value.errors.0 }}</p>{% endif %}
+          </div>
+          <div>
+            <label class="field-label" for="{{ form.grace_period.id_for_label }}">Grace Period (days)</label>
+            <div class="mt-2">{{ form.grace_period }}</div>
+            {% if form.grace_period.errors %}<p class="field-error">{{ form.grace_period.errors.0 }}</p>{% endif %}
+          </div>
+        </div>
+        <div class="alert alert-warning mt-4">
+          <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/70 text-xs font-bold ring-1 ring-current/20">💡</span>
+          <p class="flex-1 font-medium">Penalties are auto-computed after the grace period. Fixed = flat amount, Percentage = % of rental.</p>
+        </div>
+      </div>
+
+      <div class="mt-7">
+        <p class="form-section">Contract Terms &amp; Guidelines</p>
+        <label class="field-label mt-4" for="{{ form.terms_and_conditions.id_for_label }}">Terms and Conditions printed on every rental contract</label>
+        <div class="mt-2">{{ form.terms_and_conditions }}</div>
+        {% if form.terms_and_conditions.errors %}<p class="field-error">{{ form.terms_and_conditions.errors.0 }}</p>{% endif %}
+        <div class="alert alert-info mt-4">
+          <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/70 text-xs font-bold ring-1 ring-current/20">i</span>
+          <p class="flex-1 font-medium">Write one clause per line — the numbering is yours, the printout keeps it. These clauses appear in the <b>Terms and Conditions</b> section of every printed contract and PDF.</p>
+        </div>
+      </div>
+
+      <div class="mt-7">
+        <p class="form-section">Branding &amp; Appearance</p>
+        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label class="field-label" for="{{ form.logo.id_for_label }}">Logo</label>
+            <div class="mt-2 flex items-center gap-3 rounded-xl border border-white/70 bg-white/50 p-3">
+              {% if settings.logo %}<img src="{{ settings.logo.url }}" alt="Current logo" class="h-10 w-auto rounded-lg border border-emerald-900/10 bg-white">{% endif %}
               <div class="flex-1">{{ form.logo }}</div>
             </div>
-            {% if form.logo.errors %}<p class="mt-1 text-xs text-red-600">{{ form.logo.errors.0 }}</p>{% endif %}
+            {% if form.logo.errors %}<p class="field-error">{{ form.logo.errors.0 }}</p>{% endif %}
           </div>
-          <div><label class="block text-xs font-bold tracking-wide text-slate-700">Theme Color</label><div class="mt-2">{{ form.theme_color }}</div>{% if form.theme_color.errors %}<p class="mt-1 text-xs text-red-600">{{ form.theme_color.errors.0 }}</p>{% endif %}</div>
+          <div>
+            <label class="field-label" for="{{ form.theme_color.id_for_label }}">Theme Color</label>
+            <div class="mt-2">{{ form.theme_color }}</div>
+            {% if form.theme_color.errors %}<p class="field-error">{{ form.theme_color.errors.0 }}</p>{% endif %}
+          </div>
         </div>
       </div>
 
-      <div class="flex items-center justify-end gap-3 border-t border-slate-100 pt-5">
-        <a href="{% url 'dashboard' %}" class="rounded-full border border-slate-200 bg-white px-6 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50">Cancel</a>
-        <button type="submit" class="rounded-full bg-slate-900 px-6 py-2.5 text-sm font-bold text-white shadow hover:bg-black">Save Settings</button>
+      <div class="mt-7 flex items-center justify-end gap-3 border-t border-emerald-900/10 pt-5">
+        <a href="{% url 'dashboard' %}" class="btn btn-ghost">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save Settings</button>
       </div>
     </form>
   </div>

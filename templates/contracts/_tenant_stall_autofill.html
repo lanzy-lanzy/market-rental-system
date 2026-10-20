@@ -22,9 +22,9 @@ Runs only on tenant change so an encoder mid-edit is never overwritten on load.
   function say(message, tone) {
     if (!hint) return;
     hint.textContent = message;
-    hint.className = 'mt-1 text-xs font-medium ' + (
+    hint.className = 'field-hint ' + (
       tone === 'ok' ? 'text-emerald-700' :
-      tone === 'warn' ? 'text-amber-700' : 'text-slate-500');
+      tone === 'warn' ? 'text-amber-700' : 'text-ink-muted');
   }
 
   function money(value) {

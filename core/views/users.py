@@ -67,10 +67,8 @@ def user_add(request):
             )
             return redirect('tenant_add')
         if user_form.is_valid() and profile_form.is_valid():
+            # UserCreationForm.save() already hashes password1 onto the user.
             user = user_form.save(commit=False)
-            password = request.POST.get('password')
-            if password:
-                user.set_password(password)
             user.save()
             profile = profile_form.save(commit=False)
             profile.user = user
@@ -121,11 +119,8 @@ def user_edit(request, pk):
             )
             return redirect('tenant_add')
         if user_form.is_valid() and profile_form.is_valid():
+            # UserCreationForm.save() re-hashes password1 onto the user.
             user = user_form.save()
-            password = request.POST.get('password')
-            if password:
-                user.set_password(password)
-                user.save()
             profile_form.save()
             AuditLog.objects.create(
                 user=request.user,

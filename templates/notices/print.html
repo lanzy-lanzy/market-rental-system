@@ -13,50 +13,52 @@
     }
   </style>
 </head>
-<body class="bg-white p-8 font-sans">
+<body class="bg-white p-8 font-sans text-gray-800">
   <div class="no-print mb-4 flex justify-end gap-2">
-    <button onclick="window.print()" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 transition-colors">Print</button>
-    <a href="{% url 'notice_export_pdf' notice.id %}" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black">Export PDF</a>
+    <button onclick="window.print()" class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white">Print</button>
+    <a href="{% url 'notice_export_pdf' notice.id %}" class="rounded-lg border border-emerald-800 bg-white px-4 py-2 text-sm font-semibold text-emerald-800">Export PDF</a>
   </div>
 
-  <div class="max-w-2xl mx-auto border border-gray-300 p-8">
+  <div class="mx-auto max-w-2xl border border-gray-300 bg-white p-8">
     <!-- Letterhead -->
-    <div class="text-center border-b-2 border-gray-800 pb-4 mb-6">
-      <h1 class="text-lg font-bold uppercase text-gray-900">Republic of the Philippines</h1>
-      <h2 class="text-base font-semibold text-primary-800">PUBLIC MARKET</h2>
+    <div class="text-center">
+      <h1 class="text-lg font-bold uppercase text-emerald-800">Republic of the Philippines</h1>
+      <h2 class="text-base font-semibold uppercase text-emerald-700">PUBLIC MARKET</h2>
       <p class="text-sm text-gray-600">Market Administration Office</p>
     </div>
+    <!-- Gold rule -->
+    <div class="mt-3 border-b-2 border-gold-500"></div>
 
-    <div class="text-center mb-6">
+    <div class="mb-6 mt-5 text-center">
       <h3 class="text-base font-bold uppercase tracking-wider text-gray-900">{{ notice.get_notice_type_display }}</h3>
-      <p class="text-sm text-gray-500">Notice No: {{ notice.notice_number }}</p>
-      <p class="text-sm text-gray-500">Date Issued: {{ notice.date_issued|date:"F d, Y" }}</p>
+      <p class="text-sm text-gray-600">Notice No: <span class="mono font-semibold text-gray-900">{{ notice.notice_number }}</span></p>
+      <p class="text-sm text-gray-600">Date Issued: {{ notice.date_issued|date:"F d, Y" }}</p>
     </div>
 
     <!-- To -->
     <div class="mb-4">
-      <p class="text-sm font-semibold text-gray-800">{{ notice.tenant.full_name }}</p>
-      <p class="text-sm text-gray-600">{{ notice.tenant.address|linebreaksbr }}</p>
+      <p class="text-sm font-semibold text-gray-900">{{ notice.tenant.full_name }}</p>
+      <p class="text-sm text-gray-700">{{ notice.tenant.address|linebreaksbr }}</p>
     </div>
 
-    <p class="text-sm text-gray-700 mb-2">Dear <strong>{{ notice.tenant.full_name }}</strong>,</p>
+    <p class="mb-2 text-sm text-gray-800">Dear <strong>{{ notice.tenant.full_name }}</strong>,</p>
 
     <!-- Content -->
-    <div class="mb-6 text-sm text-gray-800 leading-relaxed">
+    <div class="mb-6 text-sm leading-relaxed text-gray-800">
       {{ notice.content|linebreaksbr }}
     </div>
 
     <!-- Signature -->
     <div class="mt-10">
       <div class="text-center">
-        <div class="border-t border-gray-300 pt-2 inline-block px-8">
+        <div class="inline-block border-t border-gray-400 px-8 pt-2">
           <p class="text-sm font-semibold text-gray-900">Market Administrator</p>
         </div>
       </div>
     </div>
 
     <!-- Footer Info -->
-    <div class="mt-6 pt-4 border-t border-gray-200 text-xs text-gray-400 text-center">
+    <div class="mt-6 border-t border-gray-300 pt-4 text-center text-xs text-gray-600">
       <p>This notice is officially issued by the Market Administration Office.</p>
       {% if notice.remarks %}
       <p class="mt-1">Remarks: {{ notice.remarks }}</p>

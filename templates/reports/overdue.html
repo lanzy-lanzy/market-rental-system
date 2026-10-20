@@ -7,60 +7,95 @@
 {% block report_subtitle %}{{ total_count }} accounts • Total overdue &#8369;{{ total_overdue|floatformat:2|intcomma }}{% endblock %}
 
 {% block report_actions %}
-<div class="no-print mb-4 flex justify-end gap-2">
-  <button onclick="window.print()" class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm">Print</button>
-  <a href="{% url 'report_export_excel' %}?report=overdue" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white">Excel</a>
-  <a href="{% url 'report_export_pdf' %}?report=overdue" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white">PDF</a>
+<div class="no-print filter-bar">
+  <div class="flex flex-wrap items-center gap-2">
+    <button onclick="window.print()" class="btn btn-ghost btn-sm">Print</button>
+    <a href="{% url 'report_export_excel' %}?report=overdue" class="btn btn-gold btn-sm">Excel</a>
+    <a href="{% url 'report_export_pdf' %}?report=overdue" class="btn btn-ghost btn-sm">PDF</a>
+  </div>
 </div>
 {% endblock %}
 
 {% block report_content %}
-<div class="mb-6 grid grid-cols-2 gap-4">
-  <div class="rounded-lg bg-red-50 p-4 text-center">
-    <p class="text-xs font-medium uppercase tracking-wider text-red-600">Total Overdue Balance</p>
-    <p class="text-2xl font-bold text-red-700">&#8369;{{ total_overdue|floatformat:2|intcomma }}</p>
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+  <div class="stat-card">
+    <div class="flex items-center justify-between">
+      <p class="stat-label">Total Overdue Balance</p>
+      <span class="stat-icon stat-icon-red">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </span>
+    </div>
+    <p class="stat-value text-red-600">&#8369;{{ total_overdue|floatformat:2|intcomma }}</p>
+    <p class="stat-meta">Outstanding across all overdue accounts</p>
   </div>
-  <div class="rounded-lg bg-gray-50 p-4 text-center">
-    <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Accounts</p>
-    <p class="text-2xl font-bold text-gray-900">{{ total_count }}</p>
+  <div class="stat-card">
+    <div class="flex items-center justify-between">
+      <p class="stat-label">Accounts</p>
+      <span class="stat-icon stat-icon-gold">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      </span>
+    </div>
+    <p class="stat-value">{{ total_count }}</p>
+    <p class="stat-meta">Accounts past the due date</p>
   </div>
 </div>
 
-<div class="overflow-x-auto">
-  <table class="w-full border-collapse">
-    <thead>
-      <tr class="bg-gray-50">
-        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Tenant ID</th>
-        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Tenant</th>
-        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Stall</th>
-        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Section</th>
-        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Rental</th>
-        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Penalty</th>
-        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Total Due</th>
-        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Balance</th>
-        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Due Date</th>
-        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Status</th>
-      </tr>
-    </thead>
-    <tbody class="divide-y divide-gray-100">
-      {% for billing in page_obj %}
-      <tr class="hover:bg-gray-50">
-        <td class="px-4 py-3 text-sm font-mono text-gray-600">{{ billing.tenant.tenant_id }}</td>
-        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ billing.tenant.full_name }}</td>
-        <td class="px-4 py-3 text-sm text-gray-600">{{ billing.stall.stall_number }}</td>
-        <td class="px-4 py-3 text-sm text-gray-600">{{ billing.stall.section.name }}</td>
-        <td class="px-4 py-3 text-right text-sm">&#8369;{{ billing.rental_amount|floatformat:2|intcomma }}</td>
-        <td class="px-4 py-3 text-right text-sm text-red-600">{{ billing.penalty_amount|floatformat:2|intcomma }}</td>
-        <td class="px-4 py-3 text-right text-sm font-medium">&#8369;{{ billing.total_due|floatformat:2|intcomma }}</td>
-        <td class="px-4 py-3 text-right text-sm font-bold text-red-600">&#8369;{{ billing.balance|floatformat:2|intcomma }}</td>
-        <td class="px-4 py-3 text-sm text-gray-600">{{ billing.due_date|date:"M d, Y" }}</td>
-        <td class="px-4 py-3">{% include 'includes/status_badge.html' with status=billing.status %}</td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="10" class="px-4 py-8 text-center text-sm text-gray-400">No overdue accounts — all current!</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="panel overflow-hidden">
+  <div class="panel-header">
+    <div>
+      <h3 class="panel-title">Overdue Accounts</h3>
+      <p class="panel-subtitle">Past-due rentals with penalties and remaining balance</p>
+    </div>
+    <span class="badge badge-danger"><span class="badge-dot"></span>{{ total_count }} overdue</span>
+  </div>
+  <div class="table-wrap rounded-none border-0 bg-transparent shadow-none backdrop-blur-none">
+    <div class="overflow-x-auto">
+      <table class="table min-w-[1100px]">
+        <thead>
+          <tr>
+            <th>Tenant ID</th>
+            <th>Tenant</th>
+            <th>Stall</th>
+            <th>Section</th>
+            <th class="num">Rental</th>
+            <th class="num">Penalty</th>
+            <th class="num">Total Due</th>
+            <th class="num">Balance</th>
+            <th>Due Date</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for billing in page_obj %}
+          <tr>
+            <td class="mono">{{ billing.tenant.tenant_id }}</td>
+            <td class="font-semibold text-ink">{{ billing.tenant.full_name }}</td>
+            <td>{{ billing.stall.stall_number }}</td>
+            <td>{{ billing.stall.section.name }}</td>
+            <td class="num">&#8369;{{ billing.rental_amount|floatformat:2|intcomma }}</td>
+            <td class="num text-red-600">{{ billing.penalty_amount|floatformat:2|intcomma }}</td>
+            <td class="num font-semibold">&#8369;{{ billing.total_due|floatformat:2|intcomma }}</td>
+            <td class="num font-bold text-red-600">&#8369;{{ billing.balance|floatformat:2|intcomma }}</td>
+            <td>{{ billing.due_date|date:"M d, Y" }}</td>
+            <td>{% include 'includes/status_badge.html' with status=billing.status %}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="10" class="px-4 py-10 text-center">
+              <div class="empty-state">
+                <span class="empty-icon">
+                  <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </span>
+                <p class="mt-4 text-sm font-semibold text-emerald-700">No overdue accounts — all current!</p>
+                <p class="mt-1 text-xs text-ink-muted">Every tenant is paid up to date.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 {% include 'includes/pagination.html' %}
 {% endblock %}

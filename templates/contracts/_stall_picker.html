@@ -6,22 +6,22 @@ and bulk assign does the same for its own page.
 {% endcomment %}
 <div class="relative mb-2">
   <input type="text" data-stall-filter placeholder="Filter stalls..." autocomplete="off"
-         class="block w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10">
+         class="field w-full pl-9 pr-24">
   <button type="button" data-stall-toggle
-          class="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-emerald-700 hover:text-emerald-900">Select All</button>
+          class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm">Select All</button>
 </div>
-<div data-stall-list class="max-h-[280px] overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-1.5">
+<div data-stall-list class="neu-inset-sm max-h-[280px] overflow-y-auto rounded-xl p-3 space-y-1.5">
   {% for checkbox in form.stalls %}
-  <label class="stall-option flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-white transition-colors cursor-pointer">
+  <label class="stall-option flex cursor-pointer items-center gap-2 rounded-xl px-2 py-1.5 transition hover:bg-white/70">
     {{ checkbox.tag }}
-    <span class="text-sm font-medium text-slate-800">{{ checkbox.choice_label }}</span>
+    <span class="text-sm font-medium text-ink">{{ checkbox.choice_label }}</span>
   </label>
   {% empty %}
-  <p class="text-sm text-gray-400 italic">No vacant stall is available — release a stall first.</p>
+  <p class="text-sm text-ink-muted italic">No vacant stall is available — release a stall first.</p>
   {% endfor %}
 </div>
-<p class="mt-1 text-xs text-gray-500"><b data-stall-count>0</b> selected &bull; each stall keeps its own monthly rate</p>
-{% if form.stalls.errors %}<p class="mt-1 text-xs text-red-500">{{ form.stalls.errors.0 }}</p>{% endif %}
+<p class="field-hint"><b data-stall-count>0</b> selected &bull; each stall keeps its own monthly rate</p>
+{% if form.stalls.errors %}<p class="field-error">{{ form.stalls.errors.0 }}</p>{% endif %}
 
 <script>
 (function () {

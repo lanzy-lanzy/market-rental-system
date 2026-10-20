@@ -1,29 +1,51 @@
 <div id="ledger-table-wrapper" class="space-y-4">
-  <div class="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm">
+  <div class="table-wrap">
     <div class="overflow-x-auto">
-      <table class="w-full">
-        <thead><tr class="bg-slate-50 border-b border-slate-200">
-          <th class="px-6 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">TENANT ID</th>
-          <th class="px-6 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">NAME</th>
-          <th class="px-6 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">CONTACT</th>
-          <th class="px-6 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">STALL</th>
-          <th class="px-6 py-3.5 text-center text-xs font-bold tracking-widest text-slate-500">ACTION</th>
-        </tr></thead>
-        <tbody class="divide-y divide-slate-50">
+      <table class="table min-w-[720px]">
+        <thead>
+          <tr>
+            <th>Tenant ID</th>
+            <th>Name</th>
+            <th>Contact</th>
+            <th>Stall</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
           {% for tenant in page_obj %}
-          <tr class="hover:bg-slate-50/70 transition">
-            <td class="px-6 py-4"><span class="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-mono font-bold text-white">{{ tenant.tenant_id }}</span></td>
-            <td class="px-6 py-4"><div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary-50 border border-primary-100 text-xs font-bold text-primary-700">{{ tenant.full_name|slice:":1"|upper }}</span><span class="text-sm font-semibold text-slate-900">{{ tenant.full_name }}</span></div></td>
-            <td class="px-6 py-4 text-sm text-slate-600">{{ tenant.contact_number|default:"—" }}</td>
-            <td class="px-6 py-4 text-sm font-medium text-slate-700">{% with contracts=tenant.contracts.all %}{% for c in contracts %}{% if c.status == 'Active' %}<span class="rounded-full border border-slate-200 bg-white px-2 py-1 text-xs font-bold">{{ c.stall.stall_number }}</span> {% endif %}{% endfor %}{% endwith %}</td>
-            <td class="px-6 py-4 text-center"><a href="{% url 'ledger_view' tenant.id %}" class="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-4 py-1.5 text-xs font-bold text-white hover:bg-black"><svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> View Ledger</a></td>
+          <tr>
+            <td class="whitespace-nowrap"><span class="chip chip-emerald mono">{{ tenant.tenant_id }}</span></td>
+            <td>
+              <div class="flex items-center gap-3">
+                <span class="avatar h-8 w-8 text-xs">{{ tenant.full_name|slice:":1"|upper }}</span>
+                <span class="truncate text-sm font-semibold text-ink">{{ tenant.full_name }}</span>
+              </div>
+            </td>
+            <td class="text-sm text-ink-soft">{{ tenant.contact_number|default:"—" }}</td>
+            <td class="text-sm font-medium text-ink">{% with contracts=tenant.contracts.all %}{% for c in contracts %}{% if c.status == 'Active' %}<span class="chip">{{ c.stall.stall_number }}</span> {% endif %}{% endfor %}{% endwith %}</td>
+            <td class="text-right">
+              <a href="{% url 'ledger_view' tenant.id %}" class="btn btn-ghost btn-sm">
+                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                View Ledger
+              </a>
+            </td>
           </tr>
           {% empty %}
-          <tr><td colspan="5" class="px-6 py-14 text-center"><p class="text-sm font-bold text-slate-700">No tenants with active contracts</p><p class="text-xs text-slate-500">Register a tenant and assign a stall first.</p></td></tr>
+          <tr>
+            <td colspan="5">
+              <div class="empty-state">
+                <span class="empty-icon">
+                  <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                </span>
+                <p class="mt-4 text-sm font-semibold text-ink">No tenants with active contracts</p>
+                <p class="mt-1 text-xs text-ink-muted">Register a tenant and assign a stall first.</p>
+              </div>
+            </td>
+          </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-    {% include 'includes/pagination.html' with pagination_target='ledger-table-wrapper' %}
   </div>
+  {% include 'includes/pagination.html' with pagination_target='ledger-table-wrapper' %}
 </div>

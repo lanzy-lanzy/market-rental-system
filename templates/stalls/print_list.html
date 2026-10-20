@@ -4,47 +4,51 @@
   <meta charset="UTF-8">
   <title>Stalls List - Print Preview</title>
   <link rel="stylesheet" href="{% static 'css/output.css' %}?v={{ STATIC_VERSION }}">
-  <style>@media print { .no-print { display:none!important } @page { margin:0.5in; size:A4 landscape; } }</style>
+  <style>
+    @media print { .no-print { display:none!important } @page { margin:0.5in; size:A4 landscape; } }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  </style>
 </head>
-<body class="bg-white p-6 font-sans">
+<body class="bg-white p-6 font-sans text-ink">
   <div class="max-w-6xl mx-auto">
     <div class="no-print mb-4 flex justify-end gap-2">
-      <button onclick="window.print()" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black">Print</button>
-      <a href="{% url 'stall_list_export_pdf' %}?{{ request.GET.urlencode }}" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Export PDF</a>
-      <button onclick="window.close()" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm">Close</button>
+      <button onclick="window.print()" class="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-semibold text-white">Print</button>
+      <a href="{% url 'stall_list_export_pdf' %}?{{ request.GET.urlencode }}" class="rounded-lg border border-emerald-800/40 px-4 py-2 text-sm font-semibold text-emerald-800">Export PDF</a>
+      <button onclick="window.close()" class="rounded-lg border border-ink/30 px-4 py-2 text-sm font-semibold text-ink-soft">Close</button>
     </div>
-    <div class="text-center border-b-2 border-slate-800 pb-4 mb-6">
-      <h1 class="text-sm font-bold uppercase">{{ system_settings.municipality_name|default:"Municipality" }} — {{ system_settings.market_name|default:"Public Market" }}</h1>
-      <p class="text-xs text-slate-500">{{ system_settings.office_name|default:"Market Administration Office" }}</p>
-      <h2 class="mt-3 text-lg font-bold uppercase">Stalls List</h2>
-      <p class="text-xs text-slate-500">Generated {{ now|date:"F d, Y h:i A" }} • By {{ user.get_full_name|default:user.username }}{% if search_query %} • Search: "{{ search_query }}"{% endif %}{% if status_filter %} • Status: {{ status_filter }}{% endif %}{% if section_filter %} • Section filter{% endif %}</p>
+    <div class="text-center border-b-2 border-emerald-800 pb-4 mb-6">
+      <h1 class="text-sm font-bold uppercase text-emerald-900">{{ system_settings.municipality_name|default:"Municipality" }} — {{ system_settings.market_name|default:"Public Market" }}</h1>
+      <p class="text-xs text-ink-soft">{{ system_settings.office_name|default:"Market Administration Office" }}</p>
+      <h2 class="mt-3 text-lg font-bold uppercase text-emerald-800">Stalls List</h2>
+      <div class="divider-gold mx-auto mt-2"></div>
+      <p class="mt-3 text-xs text-ink-muted">Generated {{ now|date:"F d, Y h:i A" }} • By {{ user.get_full_name|default:user.username }}{% if search_query %} • Search: "{{ search_query }}"{% endif %}{% if status_filter %} • Status: {{ status_filter }}{% endif %}{% if section_filter %} • Section filter{% endif %}</p>
     </div>
-    <div class="mb-4 text-xs text-slate-600">Total: <strong>{{ stalls.count }}</strong> stalls</div>
+    <div class="mb-4 text-xs text-ink-soft">Total: <strong class="text-emerald-900">{{ stalls.count }}</strong> stalls</div>
     <table class="w-full border-collapse text-xs">
-      <thead><tr class="bg-slate-100">
-        <th class="font-bold border border-slate-300 px-2 py-2 text-left uppercase">Stall #</th>
-        <th class="font-bold border border-slate-300 px-2 py-2 text-left uppercase">Section</th>
-        <th class="font-bold border border-slate-300 px-2 py-2 text-left uppercase">Type</th>
-        <th class="font-bold border border-slate-300 px-2 py-2 text-left uppercase">Size</th>
-        <th class="font-bold border border-slate-300 px-2 py-2 text-right uppercase">Rate</th>
-        <th class="font-bold border border-slate-300 px-2 py-2 text-left uppercase">Status</th>
-        <th class="font-bold border border-slate-300 px-2 py-2 text-left uppercase">Tenant</th>
+      <thead><tr class="bg-emerald-100/60">
+        <th class="font-bold border border-emerald-900/25 px-2 py-2 text-left uppercase text-emerald-900">Stall #</th>
+        <th class="font-bold border border-emerald-900/25 px-2 py-2 text-left uppercase text-emerald-900">Section</th>
+        <th class="font-bold border border-emerald-900/25 px-2 py-2 text-left uppercase text-emerald-900">Type</th>
+        <th class="font-bold border border-emerald-900/25 px-2 py-2 text-right uppercase text-emerald-900">Size</th>
+        <th class="font-bold border border-emerald-900/25 px-2 py-2 text-right uppercase text-emerald-900">Rate</th>
+        <th class="font-bold border border-emerald-900/25 px-2 py-2 text-left uppercase text-emerald-900">Status</th>
+        <th class="font-bold border border-emerald-900/25 px-2 py-2 text-left uppercase text-emerald-900">Tenant</th>
       </tr></thead>
       <tbody>
         {% for stall in stalls %}
-        <tr class="even:bg-slate-50/50">
-          <td class="border border-slate-200 px-2 py-1.5 font-mono font-bold">{{ stall.stall_number }}</td>
-          <td class="border border-slate-200 px-2 py-1.5">{{ stall.section.name }}</td>
-          <td class="border border-slate-200 px-2 py-1.5">{{ stall.stall_type.name|default:"—" }}</td>
-          <td class="border border-slate-200 px-2 py-1.5">{{ stall.size|floatformat:1|default:"—" }} sqm</td>
-          <td class="border border-slate-200 px-2 py-1.5 text-right font-bold">₱{{ stall.monthly_rate|floatformat:2|intcomma }}</td>
-          <td class="border border-slate-200 px-2 py-1.5">{{ stall.status }}</td>
-          <td class="border border-slate-200 px-2 py-1.5">{% for c in stall.contracts.all %}{% if c.status == 'Active' %}{{ c.tenant.full_name }}{% endif %}{% empty %}—{% endfor %}</td>
+        <tr class="even:bg-emerald-50/60">
+          <td class="border border-ink/20 px-2 py-1.5 font-mono font-bold text-ink">{{ stall.stall_number }}</td>
+          <td class="border border-ink/20 px-2 py-1.5 text-ink-soft">{{ stall.section.name }}</td>
+          <td class="border border-ink/20 px-2 py-1.5 text-ink-soft">{{ stall.stall_type.name|default:"—" }}</td>
+          <td class="border border-ink/20 px-2 py-1.5 text-right text-ink-soft">{{ stall.size|floatformat:1|default:"—" }} sqm</td>
+          <td class="border border-ink/20 px-2 py-1.5 text-right font-bold text-ink">₱{{ stall.monthly_rate|floatformat:2|intcomma }}</td>
+          <td class="border border-ink/20 px-2 py-1.5 text-ink-soft">{{ stall.status }}</td>
+          <td class="border border-ink/20 px-2 py-1.5 text-ink-soft">{% for c in stall.contracts.all %}{% if c.status == 'Active' %}{{ c.tenant.full_name }}{% endif %}{% empty %}—{% endfor %}</td>
         </tr>
-        {% empty %}<tr><td colspan="7" class="border px-2 py-4 text-center text-slate-400">No stalls found</td></tr>{% endfor %}
+        {% empty %}<tr><td colspan="7" class="border border-ink/20 px-2 py-4 text-center text-ink-muted">No stalls found</td></tr>{% endfor %}
       </tbody>
     </table>
-    <div class="mt-8 grid grid-cols-2 gap-8 text-center text-xs"><div class="border-t pt-2 mt-12">Prepared by<br><span class="font-semibold">{{ user.get_full_name|default:user.username }}</span></div><div class="border-t pt-2 mt-12">Verified by<br><span class="font-semibold">Market Administrator</span></div></div>
+    <div class="mt-8 grid grid-cols-2 gap-8 text-center text-xs"><div class="border-t border-ink/40 pt-2 mt-12">Prepared by<br><span class="font-semibold text-ink">{{ user.get_full_name|default:user.username }}</span></div><div class="border-t border-ink/40 pt-2 mt-12">Verified by<br><span class="font-semibold text-ink">Market Administrator</span></div></div>
   </div>
 </body>
 </html>

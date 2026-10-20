@@ -7,111 +7,132 @@
 {% block report_subtitle %}{{ month_name }} {{ year }}{% endblock %}
 
 {% block report_actions %}
-<div class="no-print mb-4 flex flex-wrap items-end gap-4">
+<div class="no-print filter-bar">
   <form class="flex flex-wrap items-end gap-3">
     <div>
-      <label class="block text-xs font-medium uppercase tracking-wider text-gray-500 mb-1">Month</label>
-      <select name="month" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200">
+      <label class="field-label" for="tenants_month">Month</label>
+      <select name="month" id="tenants_month" class="field w-full">
         {% for m in "123456789012"|make_list %}
         <option value="{{ forloop.counter }}" {% if forloop.counter == month %}selected{% endif %}>{{ forloop.counter|stringformat:"02d" }}</option>
         {% endfor %}
       </select>
     </div>
-    <div>
-      <label class="block text-xs font-medium uppercase tracking-wider text-gray-500 mb-1">Year</label>
-      <input type="number" name="year" value="{{ year }}" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200 w-20">
+    <div class="w-28">
+      <label class="field-label" for="tenants_year">Year</label>
+      <input type="number" id="tenants_year" name="year" value="{{ year }}" class="field w-full">
     </div>
-    <button type="submit" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 transition-colors">Filter</button>
+    <button type="submit" class="btn btn-primary">Filter</button>
   </form>
-  <button onclick="window.print()" class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors ml-auto">Print</button>
-  {% if 'Paid' in report_type %}
-    <a href="{% url 'report_export_excel' %}?report=paid&month={{ month }}&year={{ year }}" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">Excel</a>
-    <a href="{% url 'report_export_pdf' %}?report=paid&month={{ month }}&year={{ year }}" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">PDF</a>
-  {% elif 'Unpaid' in report_type %}
-    <a href="{% url 'report_export_excel' %}?report=unpaid&month={{ month }}&year={{ year }}" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">Excel</a>
-    <a href="{% url 'report_export_pdf' %}?report=unpaid&month={{ month }}&year={{ year }}" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">PDF</a>
-  {% elif 'Overdue' in report_type %}
-    <a href="{% url 'report_export_excel' %}?report=overdue&month={{ month }}&year={{ year }}" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">Excel</a>
-    <a href="{% url 'report_export_pdf' %}?report=overdue&month={{ month }}&year={{ year }}" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">PDF</a>
-  {% endif %}
+  <div class="flex flex-wrap items-center gap-2 border-t border-emerald-900/10 pt-3">
+    <button onclick="window.print()" class="btn btn-ghost btn-sm">Print</button>
+    {% if 'Paid' in report_type %}
+      <a href="{% url 'report_export_excel' %}?report=paid&month={{ month }}&year={{ year }}" class="btn btn-gold btn-sm">Excel</a>
+      <a href="{% url 'report_export_pdf' %}?report=paid&month={{ month }}&year={{ year }}" class="btn btn-ghost btn-sm">PDF</a>
+    {% elif 'Unpaid' in report_type %}
+      <a href="{% url 'report_export_excel' %}?report=unpaid&month={{ month }}&year={{ year }}" class="btn btn-gold btn-sm">Excel</a>
+      <a href="{% url 'report_export_pdf' %}?report=unpaid&month={{ month }}&year={{ year }}" class="btn btn-ghost btn-sm">PDF</a>
+    {% elif 'Overdue' in report_type %}
+      <a href="{% url 'report_export_excel' %}?report=overdue&month={{ month }}&year={{ year }}" class="btn btn-gold btn-sm">Excel</a>
+      <a href="{% url 'report_export_pdf' %}?report=overdue&month={{ month }}&year={{ year }}" class="btn btn-ghost btn-sm">PDF</a>
+    {% endif %}
+  </div>
 </div>
 {% endblock %}
 
 {% block report_content %}
-<div class="mb-6">
-  <div class="grid grid-cols-2 gap-4">
-    <div class="bg-green-50 rounded-lg p-4 text-center">
-      <p class="text-xs font-medium uppercase tracking-wider text-green-600">
-        {% if 'Paid' in report_type %}Total Collected{% elif 'Unpaid' in report_type %}Total Unpaid{% else %}Total Overdue{% endif %}
-      </p>
-      <p class="text-2xl font-bold text-green-700">
-        &#8369;
-        {% if total_collected %}
-          {{ total_collected|floatformat:2|intcomma }}
-        {% elif total_unpaid %}
-          {{ total_unpaid|floatformat:2|intcomma }}
-        {% elif total_overdue %}
-          {{ total_overdue|floatformat:2|intcomma }}
-        {% else %}
-          0.00
-        {% endif %}
-      </p>
-    </div>
-    <div class="bg-gray-50 rounded-lg p-4 text-center">
-      <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Tenant Count</p>
-      <p class="text-2xl font-bold text-gray-900">{{ total_count }}</p>
-    </div>
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+  <div class="stat-card">
+    <p class="stat-label">
+      {% if 'Paid' in report_type %}Total Collected{% elif 'Unpaid' in report_type %}Total Unpaid{% else %}Total Overdue{% endif %}
+    </p>
+    <p class="stat-value text-emerald-700">
+      &#8369;
+      {% if total_collected %}
+        {{ total_collected|floatformat:2|intcomma }}
+      {% elif total_unpaid %}
+        {{ total_unpaid|floatformat:2|intcomma }}
+      {% elif total_overdue %}
+        {{ total_overdue|floatformat:2|intcomma }}
+      {% else %}
+        0.00
+      {% endif %}
+    </p>
+    <p class="stat-meta">Amount recorded for {{ month_name }} {{ year }}</p>
+  </div>
+  <div class="stat-card">
+    <p class="stat-label">Tenant Count</p>
+    <p class="stat-value">{{ total_count }}</p>
+    <p class="stat-meta">Accounts covered by this report</p>
   </div>
 </div>
 
-<div class="overflow-x-auto">
-  <table class="w-full border-collapse">
-    <thead>
-      <tr class="bg-gray-50">
-        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Tenant ID</th>
-        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Tenant Name</th>
-        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Stall</th>
-        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Section</th>
-        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Rental</th>
-        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Penalty</th>
-        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Total Due</th>
-        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Paid</th>
-        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Balance</th>
-        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Status</th>
-      </tr>
-    </thead>
-    <tbody class="divide-y divide-gray-100">
-      {% for billing in page_obj %}
-      <tr class="hover:bg-gray-50">
-        <td class="px-4 py-3 text-sm font-mono text-gray-600">{{ billing.tenant.tenant_id }}</td>
-        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ billing.tenant.full_name }}</td>
-        <td class="px-4 py-3 text-sm text-gray-600">{{ billing.stall.stall_number }}</td>
-        <td class="px-4 py-3 text-sm text-gray-600">{{ billing.stall.section.name }}</td>
-        <td class="px-4 py-3 text-sm text-right text-gray-800">&#8369;{{ billing.rental_amount|floatformat:2|intcomma }}</td>
-        <td class="px-4 py-3 text-sm text-right text-red-600">{{ billing.penalty_amount|floatformat:2|intcomma }}</td>
-        <td class="px-4 py-3 text-sm font-medium text-right text-gray-900">&#8369;{{ billing.total_due|floatformat:2|intcomma }}</td>
-        <td class="px-4 py-3 text-sm text-right text-green-600">&#8369;{{ billing.amount_paid|floatformat:2|intcomma }}</td>
-        <td class="px-4 py-3 text-sm font-medium text-right {% if billing.balance > 0 %}text-red-600{% else %}text-green-600{% endif %}">&#8369;{{ billing.balance|floatformat:2|intcomma }}</td>
-        <td class="px-4 py-3">{% include 'includes/status_badge.html' with status=billing.status %}</td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="10" class="px-4 py-8 text-center text-sm text-gray-400">No records found</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-    <tfoot>
-      <tr class="bg-gray-100 font-semibold">
-        <td colspan="4" class="px-4 py-3 text-sm text-gray-900 text-right">Grand Total:</td>
-        <td class="px-4 py-3 text-sm text-right text-gray-900"></td>
-        <td class="px-4 py-3 text-sm text-right text-gray-900"></td>
-        <td class="px-4 py-3 text-sm text-right text-gray-900"></td>
-        <td class="px-4 py-3 text-sm text-right text-green-700"></td>
-        <td class="px-4 py-3 text-sm text-right text-red-700"></td>
-        <td></td>
-      </tr>
-    </tfoot>
-  </table>
+<div class="panel overflow-hidden">
+  <div class="panel-header">
+    <div>
+      <h3 class="panel-title">{{ report_type|default:"Tenants Report" }}</h3>
+      <p class="panel-subtitle">Per-tenant billing status for {{ month_name }} {{ year }}</p>
+    </div>
+    <span class="badge badge-gold"><span class="badge-dot"></span>{{ total_count }} tenant{{ total_count|pluralize }}</span>
+  </div>
+  <div class="table-wrap rounded-none border-0 bg-transparent shadow-none backdrop-blur-none">
+    <div class="overflow-x-auto">
+      <table class="table min-w-[1100px]">
+        <thead>
+          <tr>
+            <th>Tenant ID</th>
+            <th>Tenant Name</th>
+            <th>Stall</th>
+            <th>Section</th>
+            <th class="num">Rental</th>
+            <th class="num">Penalty</th>
+            <th class="num">Total Due</th>
+            <th class="num">Paid</th>
+            <th class="num">Balance</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for billing in page_obj %}
+          <tr>
+            <td class="mono">{{ billing.tenant.tenant_id }}</td>
+            <td class="font-semibold text-ink">{{ billing.tenant.full_name }}</td>
+            <td>{{ billing.stall.stall_number }}</td>
+            <td>{{ billing.stall.section.name }}</td>
+            <td class="num">&#8369;{{ billing.rental_amount|floatformat:2|intcomma }}</td>
+            <td class="num text-red-600">{{ billing.penalty_amount|floatformat:2|intcomma }}</td>
+            <td class="num font-semibold text-ink">&#8369;{{ billing.total_due|floatformat:2|intcomma }}</td>
+            <td class="num text-emerald-700">&#8369;{{ billing.amount_paid|floatformat:2|intcomma }}</td>
+            <td class="num font-semibold {% if billing.balance > 0 %}text-red-600{% else %}text-emerald-700{% endif %}">&#8369;{{ billing.balance|floatformat:2|intcomma }}</td>
+            <td>{% include 'includes/status_badge.html' with status=billing.status %}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="10" class="px-4 py-10 text-center">
+              <div class="empty-state">
+                <span class="empty-icon">
+                  <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                </span>
+                <p class="mt-4 text-sm font-semibold text-ink">No records found</p>
+                <p class="mt-1 text-xs text-ink-muted">Nothing matched this report for the selected period.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4" class="text-right">Grand Total:</td>
+            <td class="num"></td>
+            <td class="num"></td>
+            <td class="num"></td>
+            <td class="num text-emerald-700"></td>
+            <td class="num text-red-600"></td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
 </div>
 
 {% include 'includes/pagination.html' %}

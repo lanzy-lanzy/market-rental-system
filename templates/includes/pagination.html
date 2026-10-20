@@ -1,43 +1,43 @@
 {% if page_obj.paginator.num_pages > 1 %}
 <nav class="mt-6 flex flex-col items-center gap-4 sm:flex-row sm:justify-between" aria-label="Pagination">
-  <p class="text-sm font-medium text-slate-600">
-    Showing <span class="font-bold text-slate-900">{{ page_obj.start_index }}</span>
-    to <span class="font-bold text-slate-900">{{ page_obj.end_index }}</span>
-    of <span class="font-bold text-slate-900">{{ page_obj.paginator.count }}</span> entries
+  <p class="text-sm font-medium text-ink-soft">
+    Showing <span class="font-bold text-ink">{{ page_obj.start_index }}</span>
+    to <span class="font-bold text-ink">{{ page_obj.end_index }}</span>
+    of <span class="font-bold text-ink">{{ page_obj.paginator.count }}</span> entries
   </p>
   <div class="flex items-center gap-1.5">
     {% if page_obj.has_previous %}
     <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page=1"
        {% if pagination_target %}hx-get="{{ request.path }}?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page=1" hx-target="#{{ pagination_target }}" hx-push-url="true" hx-swap="innerHTML"{% endif %}
-       class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition">
+       class="btn-icon" title="First page">
       «
     </a>
     <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}"
        {% if pagination_target %}hx-get="{{ request.path }}?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}" hx-target="#{{ pagination_target }}" hx-push-url="true" hx-swap="innerHTML"{% endif %}
-       class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition">
+       class="btn-icon" title="Previous page">
       ‹
     </a>
     {% endif %}
 
     {% for num in page_obj.paginator.page_range %}
       {% if num == page_obj.number %}
-      <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-sm font-bold text-white shadow">{{ num }}</span>
+      <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-700 text-sm font-bold text-white shadow-[0_8px_18px_-10px_rgb(5_150_105_/_0.9)]">{{ num }}</span>
       {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
       <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ num }}"
          {% if pagination_target %}hx-get="{{ request.path }}?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ num }}" hx-target="#{{ pagination_target }}" hx-push-url="true" hx-swap="innerHTML"{% endif %}
-         class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50">{{ num }}</a>
+         class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/70 bg-white/55 text-sm font-bold text-ink-soft shadow-[var(--neu-shadow-sm)] transition hover:bg-white hover:text-emerald-800">{{ num }}</a>
       {% endif %}
     {% endfor %}
 
     {% if page_obj.has_next %}
     <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}"
        {% if pagination_target %}hx-get="{{ request.path }}?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}" hx-target="#{{ pagination_target }}" hx-push-url="true" hx-swap="innerHTML"{% endif %}
-       class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition">
+       class="btn-icon" title="Next page">
       ›
     </a>
     <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.paginator.num_pages }}"
        {% if pagination_target %}hx-get="{{ request.path }}?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.paginator.num_pages }}" hx-target="#{{ pagination_target }}" hx-push-url="true" hx-swap="innerHTML"{% endif %}
-       class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition">
+       class="btn-icon" title="Last page">
       »
     </a>
     {% endif %}

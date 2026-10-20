@@ -7,70 +7,96 @@
 {% block report_subtitle %}{{ date_from }} to {{ date_to }}{% endblock %}
 
 {% block report_actions %}
-<div class="no-print mb-4 flex flex-wrap items-end gap-4">
+<div class="no-print filter-bar">
   <form class="flex flex-wrap items-end gap-3">
-    <div>
-      <label class="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">Tenant ID</label>
-      <input type="text" name="tenant" value="{{ tenant_id|default:'' }}" placeholder="Tenant ID" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm w-32">
+    <div class="w-36">
+      <label class="field-label" for="ledger_tenant">Tenant ID</label>
+      <input type="text" id="ledger_tenant" name="tenant" value="{{ tenant_id|default:'' }}" placeholder="Tenant ID" class="field w-full">
     </div>
     <div>
-      <label class="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">Date From</label>
-      <input type="date" name="date_from" value="{{ date_from }}" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
+      <label class="field-label" for="ledger_date_from">Date From</label>
+      <input type="date" id="ledger_date_from" name="date_from" value="{{ date_from }}" class="field w-full">
     </div>
     <div>
-      <label class="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">Date To</label>
-      <input type="date" name="date_to" value="{{ date_to }}" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
+      <label class="field-label" for="ledger_date_to">Date To</label>
+      <input type="date" id="ledger_date_to" name="date_to" value="{{ date_to }}" class="field w-full">
     </div>
-    <button type="submit" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white">Filter</button>
+    <button type="submit" class="btn btn-primary">Filter</button>
   </form>
-  <button onclick="window.print()" class="ml-auto rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm">Print</button>
-  <a href="{% url 'report_export_excel' %}?report=ledger&tenant={{ tenant_id }}&date_from={{ date_from }}&date_to={{ date_to }}" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white">Excel</a>
+  <div class="flex flex-wrap items-center gap-2 border-t border-emerald-900/10 pt-3">
+    <button onclick="window.print()" class="btn btn-ghost btn-sm">Print</button>
+    <a href="{% url 'report_export_excel' %}?report=ledger&tenant={{ tenant_id }}&date_from={{ date_from }}&date_to={{ date_to }}" class="btn btn-gold btn-sm">Excel</a>
+  </div>
 </div>
 {% endblock %}
 
 {% block report_content %}
-<div class="mb-6 grid grid-cols-3 gap-4">
-  <div class="rounded-lg bg-red-50 p-4 text-center">
-    <p class="text-xs font-medium uppercase tracking-wider text-red-600">Total Debit (Billed)</p>
-    <p class="text-xl font-bold text-red-700">&#8369;{{ total_debit|floatformat:2|intcomma }}</p>
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+  <div class="stat-card">
+    <p class="stat-label">Total Debit (Billed)</p>
+    <p class="stat-value text-red-600">&#8369;{{ total_debit|floatformat:2|intcomma }}</p>
+    <p class="stat-meta">Charges posted to tenant accounts</p>
   </div>
-  <div class="rounded-lg bg-green-50 p-4 text-center">
-    <p class="text-xs font-medium uppercase tracking-wider text-green-600">Total Credit (Paid)</p>
-    <p class="text-xl font-bold text-green-700">&#8369;{{ total_credit|floatformat:2|intcomma }}</p>
+  <div class="stat-card">
+    <p class="stat-label">Total Credit (Paid)</p>
+    <p class="stat-value text-emerald-700">&#8369;{{ total_credit|floatformat:2|intcomma }}</p>
+    <p class="stat-meta">Collections offset against charges</p>
   </div>
-  <div class="rounded-lg {% if total_debit|add:'-total_credit' > 0 %}bg-red-50{% else %}bg-green-50{% endif %} p-4 text-center">
-    <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Outstanding Balance</p>
-    <p class="text-xl font-bold {% if total_debit > total_credit %}text-red-700{% else %}text-green-700{% endif %}">&#8369;{{ total_debit|add:"-total_credit"|floatformat:2|intcomma }}</p>
+  <div class="stat-card">
+    <p class="stat-label">Outstanding Balance</p>
+    <p class="stat-value {% if total_debit|add:'-total_credit' > 0 %}text-red-600{% else %}text-emerald-700{% endif %}">&#8369;{{ total_debit|add:"-total_credit"|floatformat:2|intcomma }}</p>
+    <p class="stat-meta">Debit less credit</p>
   </div>
 </div>
 
-<div class="overflow-x-auto">
-  <table class="w-full border-collapse">
-    <thead>
-      <tr class="bg-gray-50">
-        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Date</th>
-        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Tenant</th>
-        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Description</th>
-        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Debit</th>
-        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Credit</th>
-        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Balance</th>
-      </tr>
-    </thead>
-    <tbody class="divide-y divide-gray-100">
-      {% for entry in page_obj %}
-      <tr class="hover:bg-gray-50">
-        <td class="px-4 py-3 text-sm text-gray-600">{{ entry.transaction_date|date:"M d, Y" }}</td>
-        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ entry.tenant.full_name }}</td>
-        <td class="px-4 py-3 text-sm text-gray-600">{{ entry.description }}</td>
-        <td class="px-4 py-3 text-right text-sm text-red-600">{% if entry.debit %}&#8369;{{ entry.debit|floatformat:2|intcomma }}{% else %}--{% endif %}</td>
-        <td class="px-4 py-3 text-right text-sm text-green-600">{% if entry.credit %}&#8369;{{ entry.credit|floatformat:2|intcomma }}{% else %}--{% endif %}</td>
-        <td class="px-4 py-3 text-right text-sm font-bold {% if entry.balance > 0 %}text-red-600{% else %}text-green-600{% endif %}">&#8369;{{ entry.balance|floatformat:2|intcomma }}</td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="6" class="px-4 py-8 text-center text-sm text-gray-400">No ledger entries for this period</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="panel overflow-hidden">
+  <div class="panel-header">
+    <div>
+      <h3 class="panel-title">Ledger Entries</h3>
+      <p class="panel-subtitle">Every debit and credit posted in the period</p>
+    </div>
+    <span class="badge badge-gold"><span class="badge-dot"></span>{{ date_from }} → {{ date_to }}</span>
+  </div>
+  <div class="table-wrap rounded-none border-0 bg-transparent shadow-none backdrop-blur-none">
+    <div class="overflow-x-auto">
+      <table class="table min-w-[860px]">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Tenant</th>
+            <th>Description</th>
+            <th class="num">Debit</th>
+            <th class="num">Credit</th>
+            <th class="num">Balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in page_obj %}
+          <tr>
+            <td>{{ entry.transaction_date|date:"M d, Y" }}</td>
+            <td class="font-semibold text-ink">{{ entry.tenant.full_name }}</td>
+            <td>{{ entry.description }}</td>
+            <td class="num text-red-600">{% if entry.debit %}&#8369;{{ entry.debit|floatformat:2|intcomma }}{% else %}--{% endif %}</td>
+            <td class="num text-emerald-700">{% if entry.credit %}&#8369;{{ entry.credit|floatformat:2|intcomma }}{% else %}--{% endif %}</td>
+            <td class="num font-bold {% if entry.balance > 0 %}text-red-600{% else %}text-emerald-700{% endif %}">&#8369;{{ entry.balance|floatformat:2|intcomma }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="px-4 py-10 text-center">
+              <div class="empty-state">
+                <span class="empty-icon">
+                  <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                </span>
+                <p class="mt-4 text-sm font-semibold text-ink">No ledger entries for this period</p>
+                <p class="mt-1 text-xs text-ink-muted">Ledger rows are posted when bills are generated or collections received.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 {% include 'includes/pagination.html' %}
 {% endblock %}

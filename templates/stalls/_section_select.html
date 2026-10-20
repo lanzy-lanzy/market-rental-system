@@ -1,7 +1,7 @@
 {# Fresh <select> fragment returned by market_section_quick_add so HTMX #}
 {# can swap it in place after a new section is created from the stall form. #}
 <select name="section" id="id_section" required
-        class="block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-4 focus:ring-slate-900/10 transition-all duration-200">
+        class="field w-full pr-10">
   <option value="">— Select section —</option>
   {% for s in sections %}
   <option value="{{ s.pk }}" {% if selected_id == s.pk %}selected{% endif %}>{{ s.name }}</option>

@@ -1,6 +1,6 @@
 {# Fresh <select> fragment returned by stall_type_quick_add. #}
 <select name="stall_type" id="id_stall_type"
-        class="block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-4 focus:ring-slate-900/10 transition-all duration-200">
+        class="field w-full pr-10">
   <option value="">— Select stall type (optional) —</option>
   {% for t in types %}
   <option value="{{ t.pk }}" {% if selected_id == t.pk %}selected{% endif %}>{{ t.name }}</option>

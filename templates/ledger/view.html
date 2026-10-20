@@ -7,127 +7,156 @@
 
 {% block content %}
 <div class="space-y-6">
-  <!-- Header -->
-  <div class="rounded-[20px] border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 p-6 text-white relative overflow-hidden">
-    <div class="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-primary-600/20 blur-2xl"></div>
-    <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+  <!-- ══ Tenant hero ══ -->
+  <div class="panel glass-sheen overflow-hidden">
+    <div class="relative flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between lg:p-6">
       <div class="flex items-center gap-4">
-        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-slate-900">
+        <span class="stat-icon h-14 w-14 rounded-2xl">
           <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-        </div>
-        <div>
-          <h2 class="text-xl font-extrabold tracking-tight" style="font-family:'Plus Jakarta Sans'">{{ tenant.full_name }}</h2>
-          <p class="text-sm text-white/70 font-mono">{{ tenant.tenant_id }} • {{ tenant.business_name|default:"No business name" }} • {{ tenant.contact_number }}</p>
-          <p class="text-xs text-white/50">{{ tenant.address|truncatechars:80 }}</p>
+        </span>
+        <div class="min-w-0">
+          <h2 class="font-display text-xl font-extrabold text-ink">{{ tenant.full_name }}</h2>
+          <p class="mono mt-1 text-sm text-ink-soft">{{ tenant.tenant_id }} • {{ tenant.business_name|default:"No business name" }} • {{ tenant.contact_number }}</p>
+          <p class="mt-0.5 truncate text-xs text-ink-muted">{{ tenant.address|truncatechars:80 }}</p>
         </div>
       </div>
-      <div class="flex gap-2">
-        <a href="{% url 'ledger_print' tenant.id %}" target="_blank" class="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-slate-900 shadow hover:bg-slate-50">
-          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg> Print
+      <div class="flex flex-wrap items-center gap-2">
+        <a href="{% url 'ledger_print' tenant.id %}" target="_blank" class="btn btn-primary">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+          Print
         </a>
-        <a href="{% url 'tenant_view' tenant.id %}" class="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/20 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/15">Back to Tenant</a>
+        <a href="{% url 'tenant_view' tenant.id %}" class="btn btn-ghost">Back to Tenant</a>
       </div>
     </div>
+    <div class="shimmer-line"></div>
   </div>
 
-  <!-- Summary -->
+  <!-- ══ Summary ══ -->
   <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-    <div class="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
-      <p class="text-xs font-bold tracking-widest text-slate-500">Total Billed (Debit)</p>
-      <p class="mt-1 text-2xl font-extrabold text-red-600">&#8369;{{ total_debits|floatformat:2|intcomma }}</p>
-      <p class="text-xs text-slate-500">Sum of all billings</p>
+    <div class="stat-card">
+      <div class="flex items-center justify-between">
+        <p class="stat-label">Total Billed (Debit)</p>
+        <span class="stat-icon stat-icon-red">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m7-7H5"/></svg>
+        </span>
+      </div>
+      <p class="stat-value num text-red-600">&#8369;{{ total_debits|floatformat:2|intcomma }}</p>
+      <p class="stat-meta">Sum of all billings</p>
     </div>
-    <div class="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
-      <p class="text-xs font-bold tracking-widest text-slate-500">Total Paid (Credit)</p>
-      <p class="mt-1 text-2xl font-extrabold text-emerald-600">&#8369;{{ total_credits|floatformat:2|intcomma }}</p>
-      <p class="text-xs text-slate-500">Sum of verified payments</p>
+
+    <div class="stat-card">
+      <div class="flex items-center justify-between">
+        <p class="stat-label">Total Paid (Credit)</p>
+        <span class="stat-icon">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </span>
+      </div>
+      <p class="stat-value num text-emerald-700">&#8369;{{ total_credits|floatformat:2|intcomma }}</p>
+      <p class="stat-meta">Sum of verified payments</p>
     </div>
-    <div class="rounded-[20px] border {% if running_balance > 0 %}border-red-200 bg-red-50{% else %}border-emerald-200 bg-emerald-50{% endif %} p-5">
-      <p class="text-xs font-bold tracking-widest {% if running_balance > 0 %}text-red-700{% else %}text-emerald-700{% endif %}">Outstanding Balance</p>
-      <p class="mt-1 text-2xl font-extrabold {% if running_balance > 0 %}text-red-600{% else %}text-emerald-600{% endif %}">&#8369;{{ running_balance|floatformat:2|intcomma }}</p>
-      <p class="text-xs {% if running_balance > 0 %}text-red-600{% else %}text-emerald-600{% endif %}">{% if running_balance > 0 %}Amount still due{% else %}Fully paid — no balance{% endif %}</p>
+
+    <div class="stat-card">
+      <div class="flex items-center justify-between">
+        <p class="stat-label">Outstanding Balance</p>
+        <span class="stat-icon stat-icon-gold">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </span>
+      </div>
+      <p class="stat-value num {% if running_balance > 0 %}text-red-600{% else %}text-emerald-700{% endif %}">&#8369;{{ running_balance|floatformat:2|intcomma }}</p>
+      <p class="stat-meta">{% if running_balance > 0 %}Amount still due{% else %}Fully paid — no balance{% endif %}</p>
     </div>
   </div>
 
-  <!-- Ledger Table -->
+  <!-- ══ Ledger table ══ -->
   <div id="ledger-entries-wrapper" class="space-y-4">
-  <div class="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm">
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-slate-100 text-sm">
-        <thead>
-          <tr class="bg-slate-50">
-            <th class="px-4 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">Date</th>
-            <th class="px-4 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">Billing Period</th>
-            <th class="px-4 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">Stall</th>
-            <th class="px-4 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">Description</th>
-            <th class="px-4 py-3.5 text-right text-xs font-bold tracking-widest text-slate-500">Rental</th>
-            <th class="px-4 py-3.5 text-right text-xs font-bold tracking-widest text-slate-500">Penalty</th>
-            <th class="px-4 py-3.5 text-right text-xs font-bold tracking-widest text-slate-500">Debit</th>
-            <th class="px-4 py-3.5 text-right text-xs font-bold tracking-widest text-slate-500">Credit</th>
-            <th class="px-4 py-3.5 text-right text-xs font-bold tracking-widest text-slate-500">Balance</th>
-            <th class="px-4 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">Receipt / OR</th>
-            <th class="px-4 py-3.5 text-left text-xs font-bold tracking-widest text-slate-500">Status</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-50">
-          {% for entry in page_obj %}
-          <tr class="hover:bg-slate-50/70 transition">
-            <td class="whitespace-nowrap px-4 py-3 text-xs font-medium text-slate-600">{{ entry.transaction_date|date:"M d, Y" }}</td>
-            <td class="whitespace-nowrap px-4 py-3 text-xs font-bold text-slate-700">
-              {% if entry.billing %}
-                <span class="rounded-full border border-slate-200 bg-white px-2.5 py-1">{{ entry.billing.billing_month|stringformat:"02d" }}/{{ entry.billing.billing_year }}</span>
-              {% else %}--{% endif %}
-            </td>
-            <td class="whitespace-nowrap px-4 py-3 text-xs font-mono font-bold text-slate-900">
-              {% if entry.billing %}{{ entry.billing.stall.stall_number }}{% elif entry.payment %}{{ entry.payment.stall.stall_number }}{% else %}--{% endif %}
-            </td>
-            <td class="px-4 py-3 text-xs text-slate-700 max-w-[220px] truncate" title="{{ entry.description }}">{{ entry.description }}</td>
-            <td class="whitespace-nowrap px-4 py-3 text-xs text-right text-slate-600">
-              {% if entry.billing and entry.debit > 0 %}&#8369;{{ entry.billing.rental_amount|floatformat:2|intcomma }}{% else %}--{% endif %}
-            </td>
-            <td class="whitespace-nowrap px-4 py-3 text-xs text-right text-red-600">
-              {% if entry.billing and entry.billing.penalty_amount > 0 and entry.debit > 0 %}&#8369;{{ entry.billing.penalty_amount|floatformat:2|intcomma }}{% else %}--{% endif %}
-            </td>
-            <td class="whitespace-nowrap px-4 py-3 text-xs text-right {% if entry.debit > 0 %}text-red-600 font-bold{% endif %}">{% if entry.debit > 0 %}&#8369;{{ entry.debit|floatformat:2|intcomma }}{% else %}--{% endif %}</td>
-            <td class="whitespace-nowrap px-4 py-3 text-xs text-right {% if entry.credit > 0 %}text-emerald-600 font-bold{% endif %}">{% if entry.credit > 0 %}&#8369;{{ entry.credit|floatformat:2|intcomma }}{% else %}--{% endif %}</td>
-            <td class="whitespace-nowrap px-4 py-3 text-xs font-extrabold text-right {% if entry.balance > 0 %}text-red-600{% else %}text-emerald-600{% endif %}">&#8369;{{ entry.balance|floatformat:2|intcomma }}</td>
-            <td class="whitespace-nowrap px-4 py-3 text-xs font-mono">
-              {% if entry.payment %}
-                <span class="rounded-full bg-slate-900 px-2 py-1 text-white">{{ entry.payment.receipt_number }}</span>
-                {% if entry.payment.official_receipt_no and entry.payment.official_receipt_no != entry.payment.receipt_number %}
-                  <span class="ml-1 text-[10px] text-slate-500">OR: {{ entry.payment.official_receipt_no }}</span>
+    <div class="table-wrap">
+      <div class="overflow-x-auto">
+        <table class="table min-w-[1180px]">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Billing Period</th>
+              <th>Stall</th>
+              <th>Description</th>
+              <th class="num">Rental</th>
+              <th class="num">Penalty</th>
+              <th class="num">Debit</th>
+              <th class="num">Credit</th>
+              <th class="num">Balance</th>
+              <th>Receipt / OR</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in page_obj %}
+            <tr>
+              <td class="num whitespace-nowrap text-xs font-medium text-ink-soft">{{ entry.transaction_date|date:"M d, Y" }}</td>
+              <td class="whitespace-nowrap text-xs font-bold text-ink">
+                {% if entry.billing %}
+                  <span class="chip">{{ entry.billing.billing_month|stringformat:"02d" }}/{{ entry.billing.billing_year }}</span>
+                {% else %}--{% endif %}
+              </td>
+              <td class="mono whitespace-nowrap text-xs font-bold text-ink">
+                {% if entry.billing %}{{ entry.billing.stall.stall_number }}{% elif entry.payment %}{{ entry.payment.stall.stall_number }}{% else %}--{% endif %}
+              </td>
+              <td class="max-w-[220px] truncate text-xs text-ink-soft" title="{{ entry.description }}">{{ entry.description }}</td>
+              <td class="num whitespace-nowrap text-xs text-ink-soft">
+                {% if entry.billing and entry.debit > 0 %}&#8369;{{ entry.billing.rental_amount|floatformat:2|intcomma }}{% else %}--{% endif %}
+              </td>
+              <td class="num whitespace-nowrap text-xs text-red-600">
+                {% if entry.billing and entry.billing.penalty_amount > 0 and entry.debit > 0 %}&#8369;{{ entry.billing.penalty_amount|floatformat:2|intcomma }}{% else %}--{% endif %}
+              </td>
+              <td class="num whitespace-nowrap text-xs {% if entry.debit > 0 %}font-bold text-red-600{% endif %}">{% if entry.debit > 0 %}&#8369;{{ entry.debit|floatformat:2|intcomma }}{% else %}--{% endif %}</td>
+              <td class="num whitespace-nowrap text-xs {% if entry.credit > 0 %}font-bold text-emerald-700{% endif %}">{% if entry.credit > 0 %}&#8369;{{ entry.credit|floatformat:2|intcomma }}{% else %}--{% endif %}</td>
+              <td class="num whitespace-nowrap text-xs font-extrabold {% if entry.balance > 0 %}text-red-600{% else %}text-emerald-700{% endif %}">&#8369;{{ entry.balance|floatformat:2|intcomma }}</td>
+              <td class="mono whitespace-nowrap text-xs">
+                {% if entry.payment %}
+                  <span class="chip chip-emerald">{{ entry.payment.receipt_number }}</span>
+                  {% if entry.payment.official_receipt_no and entry.payment.official_receipt_no != entry.payment.receipt_number %}
+                    <span class="ml-1 text-[10px] text-ink-muted">OR: {{ entry.payment.official_receipt_no }}</span>
+                  {% endif %}
+                {% else %}
+                  <span class="text-ink-muted">—</span>
                 {% endif %}
-              {% else %}
-                <span class="text-slate-400">—</span>
-              {% endif %}
-            </td>
-            <td class="whitespace-nowrap px-4 py-3">
-              {% if entry.payment %}
-                {% include 'includes/status_badge.html' with status=entry.payment.status %}
-              {% elif entry.billing %}
-                {% include 'includes/status_badge.html' with status=entry.billing.status %}
-              {% else %}
-                <span class="text-xs text-slate-400">—</span>
-              {% endif %}
-            </td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="12" class="px-6 py-12 text-center"><p class="text-sm font-bold text-slate-700">No ledger entries found</p><p class="text-xs text-slate-500">Entries appear when billings are generated and payments recorded.</p></td></tr>
-          {% endfor %}
-        </tbody>
-        <tfoot class="bg-slate-50">
-          <tr>
-            <td colspan="6" class="px-4 py-3 text-sm font-bold text-right text-slate-900">Running Totals:</td>
-            <td class="px-4 py-3 text-sm font-bold text-right text-red-600">&#8369;{{ total_debits|floatformat:2|intcomma }}</td>
-            <td class="px-4 py-3 text-sm font-bold text-right text-emerald-600">&#8369;{{ total_credits|floatformat:2|intcomma }}</td>
-            <td class="px-4 py-3 text-sm font-bold text-right {% if running_balance > 0 %}text-red-600{% else %}text-green-600{% endif %}">&#8369;{{ running_balance|floatformat:2|intcomma }}</td>
-            <td colspan="2"></td>
-          </tr>
-        </tfoot>
-      </table>
+              </td>
+              <td class="whitespace-nowrap">
+                {% if entry.payment %}
+                  {% include 'includes/status_badge.html' with status=entry.payment.status %}
+                {% elif entry.billing %}
+                  {% include 'includes/status_badge.html' with status=entry.billing.status %}
+                {% else %}
+                  <span class="text-xs text-ink-muted">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="11">
+                <div class="empty-state">
+                  <span class="empty-icon">
+                    <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m4 10V11m4 6V9M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                  </span>
+                  <p class="mt-4 text-sm font-semibold text-ink">No ledger entries found</p>
+                  <p class="mt-1 text-xs text-ink-muted">Entries appear when billings are generated and payments recorded.</p>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="6" class="text-right">Running Totals:</td>
+              <td class="num text-red-600">&#8369;{{ total_debits|floatformat:2|intcomma }}</td>
+              <td class="num text-emerald-700">&#8369;{{ total_credits|floatformat:2|intcomma }}</td>
+              <td class="num {% if running_balance > 0 %}text-red-600{% else %}text-emerald-700{% endif %}">&#8369;{{ running_balance|floatformat:2|intcomma }}</td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </div>
-  </div>
-  {% include 'includes/pagination.html' with pagination_target='ledger-entries-wrapper' %}
+    {% include 'includes/pagination.html' with pagination_target='ledger-entries-wrapper' %}
   </div>
 </div>
 {% endblock %}

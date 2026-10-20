@@ -4,77 +4,90 @@
 {% block page_title %}{% if is_add %}New Rental Contract{% else %}Edit Contract: {{ contract.tenant.full_name }}{% endif %}{% endblock %}
 
 {% block content %}
-<div class="mx-auto max-w-3xl">
-  <div class="rounded-xl border border-gray-100 bg-card shadow-sm">
-    <div class="border-b border-gray-100 px-6 py-4">
-      <h3 class="text-lg font-semibold text-gray-900">{% if is_add %}New Rental Contract{% else %}Edit Contract{% endif %}</h3>
-      <p class="mt-1 text-sm text-gray-500">{% if is_add %}Create a new rental contract for a tenant.{% else %}Update the contract details.{% endif %}</p>
+<div class="mx-auto max-w-3xl space-y-5">
+
+  <!-- ══ Page head ══ -->
+  <div class="page-head">
+    <div>
+      <p class="page-title">{% if is_add %}New Rental Contract{% else %}Edit Contract{% endif %}</p>
+      <p class="page-sub">{% if is_add %}Create a new rental contract for a tenant.{% else %}Update the contract details.{% endif %}</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <h3 class="panel-title">{% if is_add %}New Rental Contract{% else %}Edit Contract{% endif %}</h3>
+        <p class="panel-subtitle">{% if is_add %}Create a new rental contract for a tenant.{% else %}Update the contract details.{% endif %}</p>
+      </div>
+    </div>
+    <div class="panel-body">
       {% if is_add %}
-      <div class="mt-3 rounded-xl bg-emerald-50 border border-emerald-200 p-3 flex gap-2 text-xs text-emerald-800 leading-snug">
+      <div class="alert alert-info mb-5">
         <svg class="h-4 w-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         <span><b>Auto billing:</b> On save, billing for {{ form.start_date.value|default:"the start month" }} and current month will be auto-created — collector can immediately Collect with just Amount. No manual billing encode needed.</span>
       </div>
       {% endif %}
+      <form method="post" action="{% if is_add %}{% url 'contract_add' %}{% else %}{% url 'contract_edit' contract.id %}{% endif %}">
+        {% csrf_token %}
+        <div class="form-grid sm:grid-cols-2">
+          <div>
+            <label class="field-label">Tenant</label>
+            {{ form.tenant }}
+            {% if form.tenant.errors %}<p class="field-error">{{ form.tenant.errors.0 }}</p>{% endif %}
+          </div>
+          <div class="sm:col-span-2">
+            <label class="field-label">{% if is_add %}Stalls — select one or more{% else %}Stall{% endif %}</label>
+            {% if is_add %}
+            {% include 'contracts/_stall_picker.html' %}
+            {% else %}
+            {{ form.stall }}
+            {% if form.stall.errors %}<p class="field-error">{{ form.stall.errors.0 }}</p>{% endif %}
+            {% endif %}
+            <p id="stall-autofill-hint" class="field-hint"></p>
+          </div>
+          <div>
+            <label class="field-label">Start Date</label>
+            {{ form.start_date }}
+            {% if form.start_date.errors %}<p class="field-error">{{ form.start_date.errors.0 }}</p>{% endif %}
+          </div>
+          <div>
+            <label class="field-label">End Date <span class="text-ink-muted font-normal">(optional)</span></label>
+            {{ form.end_date }}
+            {% if form.end_date.errors %}<p class="field-error">{{ form.end_date.errors.0 }}</p>{% endif %}
+          </div>
+          <div>
+            <label class="field-label">Monthly Rent (&#8369;) {% if is_add %}<span class="text-ink-muted font-normal">(blank = each stall's rate)</span>{% endif %}</label>
+            {{ form.monthly_rent }}
+            {% if form.monthly_rent.errors %}<p class="field-error">{{ form.monthly_rent.errors.0 }}</p>{% endif %}
+          </div>
+          <div>
+            <label class="field-label">Due Day <span class="text-ink-muted font-normal">(day of month)</span></label>
+            {{ form.due_day }}
+            {% if form.due_day.errors %}<p class="field-error">{{ form.due_day.errors.0 }}</p>{% endif %}
+          </div>
+          <div>
+            <label class="field-label">Security Deposit (&#8369;)</label>
+            {{ form.security_deposit }}
+            {% if form.security_deposit.errors %}<p class="field-error">{{ form.security_deposit.errors.0 }}</p>{% endif %}
+          </div>
+          <div>
+            <label class="field-label">Status</label>
+            {{ form.status }}
+            {% if form.status.errors %}<p class="field-error">{{ form.status.errors.0 }}</p>{% endif %}
+          </div>
+          <div class="sm:col-span-2">
+            <label class="field-label">Remarks</label>
+            {{ form.remarks }}
+            {% if form.remarks.errors %}<p class="field-error">{{ form.remarks.errors.0 }}</p>{% endif %}
+          </div>
+        </div>
+        <div class="mt-6 flex items-center justify-end gap-3 border-t border-emerald-900/10 pt-4">
+          <a href="{% url 'contract_list' %}" class="btn btn-ghost">Cancel</a>
+          <button type="submit" class="btn btn-primary">{% if is_add %}Create Contract{% else %}Update Contract{% endif %}</button>
+        </div>
+      </form>
     </div>
-    <form method="post" action="{% if is_add %}{% url 'contract_add' %}{% else %}{% url 'contract_edit' contract.id %}{% endif %}" class="p-6">
-      {% csrf_token %}
-      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Tenant</label>
-          {{ form.tenant }}
-          {% if form.tenant.errors %}<p class="mt-1 text-xs text-red-500">{{ form.tenant.errors.0 }}</p>{% endif %}
-        </div>
-        <div class="sm:col-span-2">
-          <label class="block text-sm font-medium text-gray-700">{% if is_add %}Stalls — select one or more{% else %}Stall{% endif %}</label>
-          {% if is_add %}
-          {% include 'contracts/_stall_picker.html' %}
-          {% else %}
-          {{ form.stall }}
-          {% if form.stall.errors %}<p class="mt-1 text-xs text-red-500">{{ form.stall.errors.0 }}</p>{% endif %}
-          {% endif %}
-          <p id="stall-autofill-hint" class="mt-1 text-xs font-medium"></p>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Start Date</label>
-          {{ form.start_date }}
-          {% if form.start_date.errors %}<p class="mt-1 text-xs text-red-500">{{ form.start_date.errors.0 }}</p>{% endif %}
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">End Date <span class="text-gray-400">(optional)</span></label>
-          {{ form.end_date }}
-          {% if form.end_date.errors %}<p class="mt-1 text-xs text-red-500">{{ form.end_date.errors.0 }}</p>{% endif %}
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Monthly Rent (&#8369;) {% if is_add %}<span class="text-gray-400">(blank = each stall's rate)</span>{% endif %}</label>
-          {{ form.monthly_rent }}
-          {% if form.monthly_rent.errors %}<p class="mt-1 text-xs text-red-500">{{ form.monthly_rent.errors.0 }}</p>{% endif %}
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Due Day <span class="text-gray-400">(day of month)</span></label>
-          {{ form.due_day }}
-          {% if form.due_day.errors %}<p class="mt-1 text-xs text-red-500">{{ form.due_day.errors.0 }}</p>{% endif %}
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Security Deposit (&#8369;)</label>
-          {{ form.security_deposit }}
-          {% if form.security_deposit.errors %}<p class="mt-1 text-xs text-red-500">{{ form.security_deposit.errors.0 }}</p>{% endif %}
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Status</label>
-          {{ form.status }}
-          {% if form.status.errors %}<p class="mt-1 text-xs text-red-500">{{ form.status.errors.0 }}</p>{% endif %}
-        </div>
-        <div class="sm:col-span-2">
-          <label class="block text-sm font-medium text-gray-700">Remarks</label>
-          {{ form.remarks }}
-          {% if form.remarks.errors %}<p class="mt-1 text-xs text-red-500">{{ form.remarks.errors.0 }}</p>{% endif %}
-        </div>
-      </div>
-      <div class="mt-6 flex items-center justify-end gap-3 border-t border-gray-100 pt-4">
-        <a href="{% url 'contract_list' %}" class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Cancel</a>
-        <button type="submit" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors">{% if is_add %}Create Contract{% else %}Update Contract{% endif %}</button>
-      </div>
-    </form>
   </div>
 </div>
 {% include 'contracts/_tenant_stall_autofill.html' %}

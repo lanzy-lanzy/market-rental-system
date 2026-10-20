@@ -7,64 +7,87 @@
 {% block report_subtitle %}{{ month_name }} {{ year }}{% endblock %}
 
 {% block report_actions %}
-<div class="no-print mb-4 flex flex-wrap items-end gap-4">
+<div class="no-print filter-bar">
   <form class="flex flex-wrap items-end gap-3">
     <div>
-      <label class="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">Month</label>
-      <select name="month" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700">
+      <label class="field-label" for="section_month">Month</label>
+      <select name="month" id="section_month" class="field w-full">
         {% for m in "123456789012"|make_list %}
         <option value="{{ forloop.counter }}" {% if forloop.counter == month %}selected{% endif %}>{{ forloop.counter|stringformat:"02d" }}</option>
         {% endfor %}
       </select>
     </div>
-    <div>
-      <label class="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">Year</label>
-      <input type="number" name="year" value="{{ year }}" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm w-24">
+    <div class="w-28">
+      <label class="field-label" for="section_year">Year</label>
+      <input type="number" id="section_year" name="year" value="{{ year }}" class="field w-full">
     </div>
-    <button type="submit" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">Filter</button>
+    <button type="submit" class="btn btn-primary">Filter</button>
   </form>
-  <button onclick="window.print()" class="ml-auto rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm">Print</button>
-  <a href="{% url 'report_export_excel' %}?report=section&month={{ month }}&year={{ year }}" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white">Excel</a>
-  <a href="{% url 'report_export_pdf' %}?report=section&month={{ month }}&year={{ year }}" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white">PDF</a>
+  <div class="flex flex-wrap items-center gap-2 border-t border-emerald-900/10 pt-3">
+    <button onclick="window.print()" class="btn btn-ghost btn-sm">Print</button>
+    <a href="{% url 'report_export_excel' %}?report=section&month={{ month }}&year={{ year }}" class="btn btn-gold btn-sm">Excel</a>
+    <a href="{% url 'report_export_pdf' %}?report=section&month={{ month }}&year={{ year }}" class="btn btn-ghost btn-sm">PDF</a>
+  </div>
 </div>
 {% endblock %}
 
 {% block report_content %}
-<div class="overflow-x-auto">
-  <table class="w-full border-collapse">
-    <thead>
-      <tr class="bg-gray-50">
-        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Section</th>
-        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Stalls</th>
-        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Occupied</th>
-        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Vacant</th>
-        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Billed</th>
-        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Collected</th>
-        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Balance</th>
-      </tr>
-    </thead>
-    <tbody class="divide-y divide-gray-100">
-      {% for row in section_data %}
-      <tr class="hover:bg-gray-50">
-        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ row.section.name }}</td>
-        <td class="px-4 py-3 text-right text-sm text-gray-600">{{ row.total_stalls }}</td>
-        <td class="px-4 py-3 text-right text-sm text-green-600">{{ row.occupied }}</td>
-        <td class="px-4 py-3 text-right text-sm text-amber-600">{{ row.vacant }}</td>
-        <td class="px-4 py-3 text-right text-sm text-gray-900">&#8369;{{ row.total_billed|floatformat:2|intcomma }}</td>
-        <td class="px-4 py-3 text-right text-sm text-green-600">&#8369;{{ row.total_collected|floatformat:2|intcomma }}</td>
-        <td class="px-4 py-3 text-right text-sm font-medium {% if row.total_balance > 0 %}text-red-600{% else %}text-green-600{% endif %}">&#8369;{{ row.total_balance|floatformat:2|intcomma }}</td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="7" class="px-4 py-8 text-center text-sm text-gray-400">No sections found</td></tr>
-      {% endfor %}
-    </tbody>
-    <tfoot>
-      <tr class="bg-gray-100 font-semibold">
-        <td class="px-4 py-3 text-right text-sm" colspan="4">Totals:</td>
-        <td class="px-4 py-3 text-right text-sm">&#8369;{{ section_data|length }}</td>
-        <td colspan="2"></td>
-      </tr>
-    </tfoot>
-  </table>
+<div class="panel overflow-hidden">
+  <div class="panel-header">
+    <div>
+      <h3 class="panel-title">Section Performance</h3>
+      <p class="panel-subtitle">Occupancy and collections per market section</p>
+    </div>
+    <span class="badge badge-gold"><span class="badge-dot"></span>{{ month_name }} {{ year }}</span>
+  </div>
+  <div class="table-wrap rounded-none border-0 bg-transparent shadow-none backdrop-blur-none">
+    <div class="overflow-x-auto">
+      <table class="table min-w-[900px]">
+        <thead>
+          <tr>
+            <th>Section</th>
+            <th class="num">Stalls</th>
+            <th class="num">Occupied</th>
+            <th class="num">Vacant</th>
+            <th class="num">Billed</th>
+            <th class="num">Collected</th>
+            <th class="num">Balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in section_data %}
+          <tr>
+            <td class="font-semibold text-ink">{{ row.section.name }}</td>
+            <td class="num">{{ row.total_stalls }}</td>
+            <td class="num text-emerald-700">{{ row.occupied }}</td>
+            <td class="num text-amber-600">{{ row.vacant }}</td>
+            <td class="num font-semibold text-ink">&#8369;{{ row.total_billed|floatformat:2|intcomma }}</td>
+            <td class="num text-emerald-700">&#8369;{{ row.total_collected|floatformat:2|intcomma }}</td>
+            <td class="num font-semibold {% if row.total_balance > 0 %}text-red-600{% else %}text-emerald-700{% endif %}">&#8369;{{ row.total_balance|floatformat:2|intcomma }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="px-4 py-10 text-center">
+              <div class="empty-state">
+                <span class="empty-icon">
+                  <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/></svg>
+                </span>
+                <p class="mt-4 text-sm font-semibold text-ink">No sections found</p>
+                <p class="mt-1 text-xs text-ink-muted">Sections appear once market sections are configured.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4" class="text-right">Totals:</td>
+            <td class="num">&#8369;{{ section_data|length }}</td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
 </div>
 {% endblock %}
