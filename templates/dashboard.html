@@ -6,6 +6,115 @@
 {% block page_subtitle %}Overview as of {% now "F d, Y" %} • {{ system_settings.market_name|default:"Public Market" }}{% endblock %}
 
 {% block content %}
+{% if is_collector %}
+<div class="space-y-6">
+
+  <!-- ══ Collector hero — collection-only workspace ══ -->
+  <div class="panel glass-sheen overflow-hidden">
+    <div class="flex flex-col gap-5 p-5 lg:flex-row lg:items-center lg:justify-between lg:p-6">
+      <div class="min-w-0">
+        <div class="flex items-center gap-2">
+          <span class="chip chip-emerald">{{ user.profile.get_role_display|default:"Collector" }}</span>
+          <span class="text-xs font-medium text-ink-muted">{% now "l, F d, Y" %}</span>
+        </div>
+        <h2 class="mt-2 font-display text-xl font-extrabold text-ink">Welcome back, {{ user.get_full_name|default:user.username }}</h2>
+        <p class="mt-1 text-sm text-ink-soft">Record collections, reprint the receipts you issued and review the months still waiting to be collected.</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <a href="{% url 'billing_list' %}" class="btn btn-primary">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1"/></svg>
+          Collection Queue
+        </a>
+        <a href="{% url 'payment_add' %}" class="btn btn-ghost">Record Payment</a>
+        <a href="{% url 'payment_list' %}" class="btn btn-ghost">My Collections</a>
+      </div>
+    </div>
+    <div class="shimmer-line"></div>
+  </div>
+
+  <!-- ══ My collection figures ══ -->
+  <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <a href="{% url 'payment_list' %}?date_from={{ today|date:'Y-m-d' }}&amp;date_to={{ today|date:'Y-m-d' }}" class="stat-card group">
+      <div class="flex items-center justify-between">
+        <p class="stat-label">Collected Today</p>
+        <span class="stat-icon">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </span>
+      </div>
+      <p class="stat-value text-2xl text-emerald-700">&#8369;{{ collected_today|floatformat:2|intcomma }}</p>
+      <p class="stat-meta">{{ collected_today_count }} receipt{{ collected_today_count|pluralize }} issued</p>
+    </a>
+
+    <a href="{% url 'payment_list' %}" class="stat-card group">
+      <div class="flex items-center justify-between">
+        <p class="stat-label">Collected This Month</p>
+        <span class="stat-icon stat-icon-gold">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M3.5 9.5h17M4 20h16a1 1 0 001-1V10a1 1 0 00-1-1H4a1 1 0 00-1 1v9a1 1 0 001 1z"/></svg>
+        </span>
+      </div>
+      <p class="stat-value text-2xl">&#8369;{{ collected_month|floatformat:2|intcomma }}</p>
+      <p class="stat-meta">{{ collected_month_count }} collection{{ collected_month_count|pluralize }} this month</p>
+    </a>
+
+    <a href="{% url 'payment_list' %}" class="stat-card group">
+      <div class="flex items-center justify-between">
+        <p class="stat-label">My Receipts</p>
+        <span class="stat-icon">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        </span>
+      </div>
+      <p class="stat-value">{{ receipts_issued }}</p>
+      <p class="stat-meta">Payments you processed</p>
+    </a>
+
+    <a href="{% url 'billing_list' %}" class="stat-card group">
+      <div class="flex items-center justify-between">
+        <p class="stat-label">Open Billings</p>
+        <span class="stat-icon stat-icon-red">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"/></svg>
+        </span>
+      </div>
+      <p class="stat-value text-2xl text-red-600">{{ open_billings }}</p>
+      <p class="stat-meta">Months awaiting collection</p>
+    </a>
+  </div>
+
+  <!-- ══ My recent collections ══ -->
+  <div class="panel overflow-hidden">
+    <div class="panel-header">
+      <div>
+        <h3 class="panel-title">My Recent Collections</h3>
+        <p class="panel-subtitle">Latest receipts you issued • tap to view or reprint</p>
+      </div>
+      <a href="{% url 'payment_list' %}" class="btn btn-ghost btn-sm">View all</a>
+    </div>
+    <div class="divide-y divide-emerald-900/5">
+      {% for payment in recent_payments %}
+      <a href="{% url 'payment_view' payment.pk %}" class="flex items-center gap-3 px-5 py-3 transition hover:bg-emerald-900/5">
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-900/5 text-xs font-bold text-emerald-700 ring-1 ring-emerald-900/5">{{ payment.receipt_number|slice:":2"|upper }}</span>
+        <div class="flex-1 min-w-0">
+          <p class="truncate text-sm font-semibold text-ink">{{ payment.tenant.full_name }} <span class="font-normal text-ink-muted">• {{ payment.stall.stall_number|default:"—" }}</span></p>
+          <p class="text-xs text-ink-muted">{{ payment.receipt_number }} • {{ payment.payment_date|date:"M d, Y" }} • {{ payment.payment_method }}</p>
+        </div>
+        <div class="text-right">
+          <p class="text-sm font-bold text-ink num">&#8369;{{ payment.amount_paid|floatformat:2|intcomma }}</p>
+          <p class="text-xs text-ink-muted">{{ payment.status }}</p>
+        </div>
+      </a>
+      {% empty %}
+      <div class="empty-state">
+        <span class="empty-icon">
+          <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+        </span>
+        <p class="mt-4 text-sm font-semibold text-ink">No collections recorded yet</p>
+        <p class="mt-1 text-xs text-ink-muted">Open the collection queue and tap Collect to issue your first receipt.</p>
+        <a href="{% url 'billing_list' %}" class="btn btn-primary btn-sm mt-4">Go to Collection Queue</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% else %}
 <div class="space-y-6">
 
   <!-- ══ Welcome hero ══ -->
@@ -217,4 +326,5 @@
     </div>
   </div>
 </div>
+{% endif %}
 {% endblock %}

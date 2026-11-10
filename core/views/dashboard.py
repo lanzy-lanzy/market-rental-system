@@ -9,6 +9,35 @@ from core.permissions import get_user_role
 from core.helpers import maybe_apply_overdue_penalties
 
 
+def _collector_dashboard(request, today):
+    """Collector home: only this collector's own collections plus the open queue.
+
+    A collector must not see market-wide tenants/stalls/report figures; the
+    dashboard is limited to what they personally collected and how many months
+    are still waiting to be collected.
+    """
+    own_payments = Payment.objects.filter(
+        collected_by=request.user, status__in=['Paid', 'Partial']
+    ).select_related('tenant', 'stall', 'billing')
+
+    today_payments = own_payments.filter(payment_date=today)
+    month_payments = own_payments.filter(
+        payment_date__month=today.month, payment_date__year=today.year
+    )
+
+    context = {
+        'collected_today': today_payments.aggregate(total=Sum('amount_paid'))['total'] or Decimal('0.00'),
+        'collected_today_count': today_payments.count(),
+        'collected_month': month_payments.aggregate(total=Sum('amount_paid'))['total'] or Decimal('0.00'),
+        'collected_month_count': month_payments.count(),
+        'receipts_issued': own_payments.count(),
+        'open_billings': Billing.objects.filter(balance__gt=0).exclude(status='Paid').count(),
+        'recent_payments': own_payments.order_by('-payment_date', '-created_at', '-id')[:8],
+        'today': today,
+    }
+    return render(request, 'dashboard.html', context)
+
+
 @login_required
 def dashboard_view(request):
     today = date.today()
@@ -20,6 +49,15 @@ def dashboard_view(request):
     # Tenants are routed to their dedicated self-service portal.
     if role == 'tenant' and not request.user.is_superuser:
         return redirect('tenant_portal')
+
+    # Collectors get a collection-only workspace — no market-wide administration
+    # figures, no links to billing generation/tenant/stall management.
+    if role == 'collector' and not request.user.is_superuser:
+        try:
+            maybe_apply_overdue_penalties()
+        except Exception:
+            pass
+        return _collector_dashboard(request, today)
 
     # Tenant isolated view: show only own data
     if role == 'tenant':

@@ -56,7 +56,11 @@
             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
           </span>
           <div class="min-w-0">
+            {% if can_manage_records %}
             <a href="{% url 'tenant_view' group.tenant.id %}" class="block truncate text-base font-extrabold text-ink transition hover:text-emerald-700" title="{{ group.tenant.full_name }}">{{ group.tenant.full_name }}</a>
+            {% else %}
+            <span class="block truncate text-base font-extrabold text-ink" title="{{ group.tenant.full_name }}">{{ group.tenant.full_name }}</span>
+            {% endif %}
             <p class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted">
               <span class="mono font-bold text-ink-soft">{{ group.tenant.tenant_id }}</span>
               <span aria-hidden="true">•</span>
@@ -156,7 +160,9 @@
         </span>
         <p class="mt-4 text-sm font-semibold text-ink">No billings match this filter</p>
         <p class="mt-1 text-xs text-ink-muted">Billings appear automatically when a contract is created — no manual generation needed.</p>
+        {% if can_manage_records %}
         <a href="{% url 'contract_add' %}" class="btn btn-primary btn-sm mt-4">Create Contract</a>
+        {% endif %}
       </div>
     </div>
     {% endfor %}

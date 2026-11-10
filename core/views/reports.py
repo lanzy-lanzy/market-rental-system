@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from core.permissions import staff_required, admin_required
+from core.permissions import management_required, admin_required
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Sum, Count, Q
@@ -37,7 +37,7 @@ def get_month_year(request):
     return month, year
 
 
-@staff_required
+@management_required
 def report_dashboard(request):
     today = date.today()
     month, year = get_month_year(request)
@@ -77,7 +77,7 @@ def report_dashboard(request):
     return render(request, 'reports/dashboard.html', context)
 
 
-@staff_required
+@management_required
 def report_daily(request):
     date_from, date_to = get_date_range(request)
     payments = Payment.objects.filter(
@@ -103,7 +103,7 @@ def report_daily(request):
     return render(request, 'reports/daily.html', context)
 
 
-@staff_required
+@management_required
 def report_weekly(request):
     today = date.today()
     weekday = today.weekday()
@@ -136,7 +136,7 @@ def report_weekly(request):
     return render(request, 'reports/weekly.html', context)
 
 
-@staff_required
+@management_required
 def report_monthly(request):
     month, year = get_month_year(request)
     _, last_day = calendar.monthrange(year, month)
@@ -171,7 +171,7 @@ def report_monthly(request):
     return render(request, 'reports/monthly.html', context)
 
 
-@staff_required
+@management_required
 def report_annual(request):
     year = request.GET.get('year', date.today().year)
     try:
@@ -208,7 +208,7 @@ def report_annual(request):
     return render(request, 'reports/annual.html', context)
 
 
-@staff_required
+@management_required
 def report_section(request):
     month, year = get_month_year(request)
 
@@ -250,7 +250,7 @@ def report_section(request):
     return render(request, 'reports/section.html', context)
 
 
-@staff_required
+@management_required
 def report_collector(request):
     date_from, date_to = get_date_range(request)
 
@@ -287,7 +287,7 @@ def report_collector(request):
     return render(request, 'reports/collector.html', context)
 
 
-@staff_required
+@management_required
 def report_paid_tenants(request):
     month, year = get_month_year(request)
     billings = Billing.objects.filter(
@@ -314,7 +314,7 @@ def report_paid_tenants(request):
     return render(request, 'reports/paid_tenants.html', context)
 
 
-@staff_required
+@management_required
 def report_unpaid_tenants(request):
     month, year = get_month_year(request)
     billings = Billing.objects.filter(
@@ -342,7 +342,7 @@ def report_unpaid_tenants(request):
     return render(request, 'reports/unpaid_tenants.html', context)
 
 
-@staff_required
+@management_required
 def report_overdue(request):
     billings = Billing.objects.filter(
         status='Overdue'
@@ -363,7 +363,7 @@ def report_overdue(request):
     return render(request, 'reports/overdue.html', context)
 
 
-@staff_required
+@management_required
 def report_ledger(request):
     tenant_id = request.GET.get('tenant')
     date_from, date_to = get_date_range(request)
@@ -394,7 +394,7 @@ def report_ledger(request):
     return render(request, 'reports/ledger.html', context)
 
 
-@staff_required
+@management_required
 def report_occupancy(request):
     stalls = Stall.objects.select_related('section', 'stall_type').all().order_by('section__name', 'stall_number')
 
@@ -428,7 +428,7 @@ def report_occupancy(request):
     return render(request, 'reports/occupancy.html', context)
 
 
-@staff_required
+@management_required
 def report_vacant(request):
     stalls = Stall.objects.filter(status='Vacant').select_related('section', 'stall_type').order_by('stall_number')
     section_filter = request.GET.get('section')
@@ -448,7 +448,7 @@ def report_vacant(request):
     return render(request, 'reports/vacant.html', context)
 
 
-@staff_required
+@management_required
 def report_export_pdf(request):
     report_type = request.GET.get('report', 'monthly')
     month, year = get_month_year(request)
@@ -563,7 +563,7 @@ def report_export_pdf(request):
     return response
 
 
-@staff_required
+@management_required
 def report_export_excel(request):
     report_type = request.GET.get('report', 'monthly')
     month, year = get_month_year(request)

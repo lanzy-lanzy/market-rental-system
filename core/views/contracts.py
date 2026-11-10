@@ -8,7 +8,7 @@ from datetime import date
 
 from core.models import RentalContract, Tenant, Stall, Billing, AuditLog
 from core.forms import RentalContractForm, BulkAssignStallsForm
-from core.permissions import staff_required
+from core.permissions import management_required
 from core.helpers import ensure_initial_billing, render_to_pdf_response
 from django.contrib.auth.decorators import login_required
 
@@ -42,7 +42,7 @@ def describe_contracts(contracts):
     return first.tenant.full_name, ', '.join(c.stall.stall_number for c in contracts)
 
 
-@staff_required
+@management_required
 def contract_list(request):
     contracts = RentalContract.objects.select_related(
         'tenant', 'stall', 'stall__section'
@@ -85,7 +85,7 @@ def contract_list(request):
     return render(request, 'contracts/list.html', context)
 
 
-@staff_required
+@management_required
 def contract_add(request):
     if request.method == 'POST':
         form = RentalContractForm(request.POST)
@@ -135,7 +135,7 @@ def contract_add(request):
     return render(request, 'contracts/form.html', {'form': form, 'is_add': True})
 
 
-@staff_required
+@management_required
 def contract_edit(request, pk):
     contract = get_object_or_404(RentalContract, pk=pk)
     old_stall = contract.stall
@@ -183,7 +183,7 @@ def contract_edit(request, pk):
     return render(request, 'contracts/form.html', {'form': form, 'is_add': False, 'contract': contract})
 
 
-@staff_required
+@management_required
 def contract_delete(request, pk):
     contract = get_object_or_404(RentalContract, pk=pk)
     if request.method == 'POST':
@@ -208,7 +208,7 @@ def contract_delete(request, pk):
     return redirect('contract_list')
 
 
-@staff_required
+@management_required
 def contract_view(request, pk):
     contract = get_object_or_404(
         RentalContract.objects.select_related('tenant', 'stall', 'stall__section'),
@@ -222,7 +222,7 @@ def contract_view(request, pk):
     return render(request, 'contracts/view.html', context)
 
 
-@staff_required
+@management_required
 def contract_terminate(request, pk):
     contract = get_object_or_404(RentalContract, pk=pk)
     if request.method == 'POST':
@@ -246,7 +246,7 @@ def contract_terminate(request, pk):
     return redirect('contract_list')
 
 
-@staff_required
+@management_required
 def contract_add_modal(request):
     if request.method == 'POST':
         form = RentalContractForm(request.POST)
@@ -294,7 +294,7 @@ def contract_add_modal(request):
     return render(request, 'contracts/_modal_form.html', {'form': form, 'is_add': True})
 
 
-@staff_required
+@management_required
 def contract_edit_modal(request, pk):
     contract = get_object_or_404(RentalContract, pk=pk)
     old_stall = contract.stall
@@ -344,7 +344,7 @@ def contract_edit_modal(request, pk):
     return render(request, 'contracts/_modal_form.html', {'form': form, 'is_add': False, 'contract': contract})
 
 
-@staff_required
+@management_required
 def contract_list_print(request):
     contracts = RentalContract.objects.select_related('tenant', 'stall', 'stall__section').all().order_by('-start_date', '-created_at', '-id')
     status_filter = request.GET.get('status')
@@ -370,7 +370,7 @@ def contract_list_print(request):
     return render(request, 'contracts/print_list.html', context)
 
 
-@staff_required
+@management_required
 def contract_list_export_pdf(request):
     contracts = RentalContract.objects.select_related('tenant', 'stall', 'stall__section').all().order_by('-start_date', '-created_at', '-id')
     status_filter = request.GET.get('status')
@@ -397,7 +397,7 @@ def contract_list_export_pdf(request):
     return render_to_pdf_response(request, 'contracts/print_list.html', context, filename=filename)
 
 
-@staff_required
+@management_required
 def contract_view_print(request, pk):
     contract = get_object_or_404(RentalContract.objects.select_related('tenant', 'stall', 'stall__section'), pk=pk)
     billings = Billing.objects.filter(contract=contract).order_by('-billing_year', '-billing_month', '-created_at', '-id')
@@ -412,7 +412,7 @@ def contract_view_print(request, pk):
     return render(request, 'contracts/print_view.html', context)
 
 
-@staff_required
+@management_required
 def contract_view_export_pdf(request, pk):
     contract = get_object_or_404(RentalContract.objects.select_related('tenant', 'stall', 'stall__section'), pk=pk)
     billings = Billing.objects.filter(contract=contract).order_by('-billing_year', '-billing_month', '-created_at', '-id')
@@ -428,7 +428,7 @@ def contract_view_export_pdf(request, pk):
     return render_to_pdf_response(request, 'contracts/print_view.html', context, filename=filename)
 
 
-@staff_required
+@management_required
 def contract_bulk_assign(request):
     """Assign one Tenant to multiple Vacant Stalls in a single operation.
 

@@ -3,7 +3,10 @@ from decimal import Decimal
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from core.permissions import staff_required, admin_required, get_user_role, collector_required
+from core.permissions import (
+    management_required, management_or_tenant_required, admin_required,
+    get_user_role, collector_required,
+)
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum
@@ -168,7 +171,7 @@ def billing_list(request):
     return render(request, 'billing/list.html', context)
 
 
-@staff_required
+@management_required
 def billing_generate(request):
     if request.method == 'POST':
         tenant_id = request.POST.get('tenant')
@@ -243,7 +246,7 @@ def billing_generate(request):
     return render(request, 'billing/generate.html', context)
 
 
-@staff_required
+@management_required
 def billing_generate_all(request):
     if request.method == 'POST':
         now = date.today()
@@ -329,7 +332,7 @@ def billing_view(request, pk):
     return render(request, 'billing/view.html', context)
 
 
-@staff_required
+@management_required
 def billing_add_modal(request):
     if request.method == 'POST':
         form = BillingForm(request.POST)
@@ -367,7 +370,7 @@ def billing_add_modal(request):
     return render(request, 'billing/_modal_form.html', {'form': form, 'is_add': True})
 
 
-@staff_required
+@management_required
 def billing_edit_modal(request, pk):
     billing = get_object_or_404(Billing, pk=pk)
     if request.method == 'POST':
@@ -631,7 +634,7 @@ def billing_tenant_collect(request, tenant_pk):
     return render(request, 'billing/collect_grouped.html', context)
 
 
-@login_required
+@management_or_tenant_required
 def billing_list_print(request):
     try:
         if get_user_role(request.user) in {'admin', 'collector', 'cashier', 'supervisor', 'treasurer'} or request.user.is_superuser:
@@ -677,7 +680,7 @@ def billing_list_print(request):
     return render(request, 'billing/print_list.html', context)
 
 
-@login_required
+@management_or_tenant_required
 def billing_list_export_pdf(request):
     try:
         if get_user_role(request.user) in {'admin', 'collector', 'cashier', 'supervisor', 'treasurer'} or request.user.is_superuser:

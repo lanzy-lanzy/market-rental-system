@@ -3,11 +3,30 @@
 from django.conf import settings
 
 from .models import SystemSetting
+from .permissions import MANAGEMENT_ROLES, get_user_role
 
 
 def system_settings(request):
     settings = SystemSetting.objects.first()
     return {'system_settings': settings}
+
+
+def user_roles(request):
+    """Expose the current role so templates can hide out-of-scope navigation.
+
+    ``is_collector`` drives the restricted collector menu (collection queue,
+    own payment history and receipts only) while ``can_manage_records`` keeps
+    the administrative entries visible for admin/cashier/supervisor/treasurer.
+    """
+    user = getattr(request, 'user', None)
+    if user is None or not user.is_authenticated:
+        return {'user_role': None, 'is_collector': False, 'can_manage_records': False}
+    role = get_user_role(user)
+    return {
+        'user_role': role,
+        'is_collector': role == 'collector' and not user.is_superuser,
+        'can_manage_records': role in MANAGEMENT_ROLES or user.is_superuser,
+    }
 
 
 def static_version(request):

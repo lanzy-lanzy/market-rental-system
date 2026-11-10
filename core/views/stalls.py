@@ -6,7 +6,7 @@ from django.db.models import Q
 
 from core.models import Stall, MarketSection, StallType, RentalContract, AuditLog
 from core.forms import StallForm
-from core.permissions import staff_required
+from core.permissions import management_required
 from core.helpers import render_to_pdf_response
 
 
@@ -14,7 +14,7 @@ def is_htmx(request):
     return getattr(request, 'htmx', None) or request.headers.get('HX-Request') == 'true'
 
 
-@login_required
+@management_required
 def stall_list(request):
     stalls = Stall.objects.select_related('section', 'stall_type').all().order_by('-created_at', '-id')
     section_filter = request.GET.get('section')
@@ -52,7 +52,7 @@ def stall_list(request):
     return render(request, 'stalls/list.html', context)
 
 
-@staff_required
+@management_required
 def stall_add(request):
     if request.method == 'POST':
         form = StallForm(request.POST)
@@ -74,7 +74,7 @@ def stall_add(request):
     return render(request, 'stalls/form.html', {'form': form, 'is_add': True})
 
 
-@staff_required
+@management_required
 def stall_edit(request, pk):
     stall = get_object_or_404(Stall, pk=pk)
     if request.method == 'POST':
@@ -97,7 +97,7 @@ def stall_edit(request, pk):
     return render(request, 'stalls/form.html', {'form': form, 'is_add': False, 'stall': stall})
 
 
-@staff_required
+@management_required
 def stall_delete(request, pk):
     stall = get_object_or_404(Stall, pk=pk)
     if request.method == 'POST':
@@ -114,7 +114,7 @@ def stall_delete(request, pk):
     return redirect('stall_list')
 
 
-@login_required
+@management_required
 def stall_view(request, pk):
     stall = get_object_or_404(Stall.objects.select_related('section', 'stall_type'), pk=pk)
     contracts = RentalContract.objects.filter(stall=stall).select_related('tenant').order_by('-start_date', '-created_at', '-id')
@@ -125,7 +125,7 @@ def stall_view(request, pk):
     return render(request, 'stalls/view.html', context)
 
 
-@staff_required
+@management_required
 def stall_add_modal(request):
     if request.method == 'POST':
         form = StallForm(request.POST)
@@ -154,7 +154,7 @@ def stall_add_modal(request):
     return render(request, 'stalls/_modal_form.html', {'form': form, 'is_add': True})
 
 
-@staff_required
+@management_required
 def stall_edit_modal(request, pk):
     stall = get_object_or_404(Stall, pk=pk)
     if request.method == 'POST':
@@ -184,7 +184,7 @@ def stall_edit_modal(request, pk):
     return render(request, 'stalls/_modal_form.html', {'form': form, 'is_add': False, 'stall': stall})
 
 
-@staff_required
+@management_required
 def stall_list_print(request):
     stalls = Stall.objects.select_related('section', 'stall_type').all().order_by('-created_at', '-id')
     section_filter = request.GET.get('section')
@@ -213,7 +213,7 @@ def stall_list_print(request):
     return render(request, 'stalls/print_list.html', context)
 
 
-@staff_required
+@management_required
 def stall_list_export_pdf(request):
     stalls = Stall.objects.select_related('section', 'stall_type').all().order_by('-created_at', '-id')
     section_filter = request.GET.get('section')

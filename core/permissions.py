@@ -5,10 +5,20 @@ from django.contrib.auth.decorators import login_required
 
 # Canonical role groups
 ADMIN_ROLES = {'admin'}
-STAFF_ROLES = {'admin', 'collector', 'cashier', 'supervisor', 'treasurer'}
+
+# Office / administrative staff. The field 'collector' role is deliberately
+# NOT part of this group: a collector may only record and collect payments,
+# never generate billings, administer tenants/stalls/contracts, read the
+# ledger/notices/reports or change system settings.
+MANAGEMENT_ROLES = {'admin', 'cashier', 'supervisor', 'treasurer'}
+
+# Roles allowed to record a collection and issue its official receipt.
 COLLECTOR_ROLES = {'admin', 'collector', 'cashier'}
 SUPERVISOR_ROLES = {'admin', 'supervisor', 'treasurer'}
-ALL_ROLES = {'admin', 'collector', 'cashier', 'supervisor', 'treasurer', 'tenant'}
+
+# Every non-tenant account, collectors included (broad checks only).
+STAFF_ROLES = MANAGEMENT_ROLES | {'collector'}
+ALL_ROLES = STAFF_ROLES | {'tenant'}
 
 ROLE_LABELS = {
     'admin': 'Administrator',
@@ -36,6 +46,18 @@ def is_staff_role(user):
     role = get_user_role(user)
     return role in STAFF_ROLES
 
+def is_collector(user):
+    """True for a field collector (never a superuser)."""
+    if user.is_superuser:
+        return False
+    return get_user_role(user) == 'collector'
+
+def is_management(user):
+    """True for roles that administer records (admin/cashier/supervisor/treasurer)."""
+    if user.is_superuser:
+        return True
+    return get_user_role(user) in MANAGEMENT_ROLES
+
 def role_required(allowed_roles):
     allowed = set(allowed_roles)
     def decorator(view_func):
@@ -55,6 +77,11 @@ def role_required(allowed_roles):
 
 # Convenience decorators
 admin_required = role_required(ADMIN_ROLES)
+# Records administration — billing generation, tenants, stalls, contracts,
+# lookups, reports, ledger, notices. Payment collectors are excluded.
+management_required = role_required(MANAGEMENT_ROLES)
+# Management screens that tenants may also open (always scoped to own records).
+management_or_tenant_required = role_required(MANAGEMENT_ROLES | {'tenant'})
 staff_required = role_required(STAFF_ROLES)
 collector_required = role_required(COLLECTOR_ROLES)
 supervisor_required = role_required(SUPERVISOR_ROLES)

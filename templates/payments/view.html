@@ -85,7 +85,7 @@
         <dl class="space-y-3 text-sm">
           <div class="flex items-center justify-between gap-4 border-b border-emerald-900/5 pb-2">
             <dt class="text-ink-muted">Tenant</dt>
-            <dd class="font-bold text-ink"><a href="{% url 'tenant_view' payment.tenant.id %}" class="link-emerald">{{ payment.tenant.full_name }}</a> <span class="mono text-xs text-ink-muted">({{ payment.tenant.tenant_id }})</span></dd>
+            <dd class="font-bold text-ink">{% if can_manage_records or user.profile.role == 'tenant' %}<a href="{% url 'tenant_view' payment.tenant.id %}" class="link-emerald">{{ payment.tenant.full_name }}</a>{% else %}{{ payment.tenant.full_name }}{% endif %} <span class="mono text-xs text-ink-muted">({{ payment.tenant.tenant_id }})</span></dd>
           </div>
           <div class="flex items-center justify-between gap-4 border-b border-emerald-900/5 pb-2">
             <dt class="text-ink-muted">Stall</dt>

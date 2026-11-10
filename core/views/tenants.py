@@ -8,7 +8,10 @@ from django.contrib.auth.models import User as AuthUser
 
 from core.models import Tenant, Stall, RentalContract, Billing, Payment, AuditLog
 from core.forms import TenantForm
-from core.permissions import staff_required, admin_required, get_user_role, is_admin
+from core.permissions import (
+    management_required, management_or_tenant_required, admin_required,
+    get_user_role, is_admin,
+)
 from django.contrib.auth.decorators import login_required
 from core.helpers import render_to_pdf_response, create_tenant_login
 
@@ -17,7 +20,7 @@ def is_htmx(request):
     return getattr(request, 'htmx', None) or request.headers.get('HX-Request') == 'true'
 
 
-@staff_required
+@management_required
 def tenant_list(request):
     tenants = Tenant.objects.all().order_by('-created_at', '-id')
     status_filter = request.GET.get('status')
@@ -48,7 +51,7 @@ def tenant_list(request):
     return render(request, 'tenants/list.html', context)
 
 
-@staff_required
+@management_required
 def tenant_add(request):
     if request.method == 'POST':
         form = TenantForm(request.POST, request.FILES)
@@ -78,7 +81,7 @@ def tenant_add(request):
     return render(request, 'tenants/form.html', {'form': form, 'is_add': True})
 
 
-@staff_required
+@management_required
 def tenant_edit(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
     if request.method == 'POST':
@@ -260,7 +263,7 @@ def tenant_bulk_delete(request):
     return redirect('tenant_list')
 
 
-@login_required
+@management_or_tenant_required
 def tenant_view(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
     # Tenant isolation: tenants can only view own profile
@@ -284,7 +287,7 @@ def tenant_view(request, pk):
     return render(request, 'tenants/view.html', context)
 
 
-@staff_required
+@management_required
 def tenant_search(request):
     q = request.GET.get('q', '')
     tenants = Tenant.objects.filter(
@@ -299,7 +302,7 @@ def tenant_search(request):
     return JsonResponse(data, safe=False)
 
 
-@staff_required
+@management_required
 def tenant_add_modal(request):
     if request.method == 'POST':
         form = TenantForm(request.POST, request.FILES)
@@ -330,7 +333,7 @@ def tenant_add_modal(request):
     return render(request, 'tenants/_modal_form.html', {'form': form, 'is_add': True})
 
 
-@staff_required
+@management_required
 def tenant_edit_modal(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
     if request.method == 'POST':
@@ -360,7 +363,7 @@ def tenant_edit_modal(request, pk):
     return render(request, 'tenants/_modal_form.html', {'form': form, 'is_add': False, 'tenant': tenant})
 
 
-@staff_required
+@management_required
 def tenant_list_print(request):
     """Print preview for tenants — respects same search/status filters as list, shows all matching records."""
     tenants = Tenant.objects.all().order_by('-created_at', '-id')
@@ -386,7 +389,7 @@ def tenant_list_print(request):
     return render(request, 'tenants/print_list.html', context)
 
 
-@staff_required
+@management_required
 def tenant_list_export_pdf(request):
     """Export tenants list as PDF — same filtered queryset as print preview."""
     tenants = Tenant.objects.all().order_by('-created_at', '-id')
@@ -413,7 +416,7 @@ def tenant_list_export_pdf(request):
     return render_to_pdf_response(request, 'tenants/print_list.html', context, filename=filename)
 
 
-@staff_required
+@management_required
 def tenant_view_print(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
     role = get_user_role(request.user)
@@ -438,7 +441,7 @@ def tenant_view_print(request, pk):
     return render(request, 'tenants/print_view.html', context)
 
 
-@staff_required
+@management_required
 def tenant_view_export_pdf(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
     role = get_user_role(request.user)

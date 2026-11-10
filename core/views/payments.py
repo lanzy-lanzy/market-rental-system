@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from core.permissions import staff_required, admin_required, get_user_role
+from core.permissions import management_required, collector_required, get_user_role
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum
@@ -154,15 +154,40 @@ def is_htmx(request):
     return getattr(request, 'htmx', None) or request.headers.get('HX-Request') == 'true'
 
 
+def _payment_access_denied(request, payment):
+    """Return a redirect response when ``request.user`` may not see ``payment``.
+
+    Tenants are limited to their own billing records; collectors are limited to
+    the collections they personally processed so a receipt can never be used to
+    browse another collector's work. Management roles see everything.
+    """
+    role = get_user_role(request.user)
+    if request.user.is_superuser:
+        return None
+    if role == 'tenant' and payment.tenant.user != request.user:
+        messages.error(request, 'You can only view your own payments.')
+        return redirect('dashboard')
+    if role == 'collector' and payment.collected_by_id != request.user.id:
+        messages.error(request, 'You can only view receipts for payments you recorded.')
+        return redirect('payment_list')
+    return None
+
+
+def _apply_payment_scope(request, payments):
+    """Limit a payment queryset to what the current role is allowed to see."""
+    role = get_user_role(request.user)
+    if role == 'tenant':
+        return payments.filter(tenant__user=request.user)
+    if role == 'collector' and not request.user.is_superuser:
+        return payments.filter(collected_by=request.user)
+    return payments
+
+
 @login_required
 def payment_list(request):
-    payments = Payment.objects.select_related(
+    payments = _apply_payment_scope(request, Payment.objects.select_related(
         'tenant', 'stall', 'collected_by'
-    ).all().order_by('-payment_date', '-created_at', '-id')
-
-    # Tenant isolation: tenants see only own payments
-    if get_user_role(request.user) == 'tenant':
-        payments = payments.filter(tenant__user=request.user)
+    ).all().order_by('-payment_date', '-created_at', '-id'))
 
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
@@ -222,7 +247,7 @@ def payment_list(request):
     return render(request, template, context)
 
 
-@staff_required
+@collector_required
 @transaction.atomic
 def payment_add(request):
     if request.method == 'POST':
@@ -275,9 +300,9 @@ def payment_view(request, pk):
         Payment.objects.select_related('tenant', 'stall', 'stall__section', 'billing', 'collected_by'),
         pk=pk
     )
-    if get_user_role(request.user) == 'tenant' and payment.tenant.user != request.user:
-        messages.error(request, 'You can only view your own payments.')
-        return redirect('dashboard')
+    denied = _payment_access_denied(request, payment)
+    if denied:
+        return denied
     ledger_entries = TenantLedger.objects.filter(payment=payment).order_by('-transaction_date', '-created_at', '-id')
     context = {
         'payment': payment,
@@ -292,11 +317,9 @@ def payment_receipt(request, pk):
         Payment.objects.select_related('tenant', 'stall', 'stall__section', 'collected_by'),
         pk=pk
     )
-    if get_user_role(request.user) == 'tenant' and payment.tenant.user != request.user:
-        from django.contrib import messages
-        from django.shortcuts import redirect
-        messages.error(request, 'You can only view your own payment receipt.')
-        return redirect('dashboard')
+    denied = _payment_access_denied(request, payment)
+    if denied:
+        return denied
     settings = SystemSetting.objects.first()
     context = {
         'payment': payment,
@@ -311,9 +334,9 @@ def payment_print_receipt(request, pk):
         Payment.objects.select_related('tenant', 'stall', 'stall__section', 'collected_by'),
         pk=pk
     )
-    if get_user_role(request.user) == 'tenant' and payment.tenant.user != request.user:
-        messages.error(request, 'You can only view your own payment receipt.')
-        return redirect('dashboard')
+    denied = _payment_access_denied(request, payment)
+    if denied:
+        return denied
     settings = SystemSetting.objects.first()
     is_tenant = get_user_role(request.user) == 'tenant'
     context = {
@@ -338,12 +361,15 @@ def payment_batch_receipt(request):
     if not payments:
         messages.info(request, 'No batch receipts available. Perform a batch collection first.')
         return redirect('billing_list')
-    # Tenants may only view receipts for their own record.
-    if get_user_role(request.user) == 'tenant':
-        owner = payments[0].tenant
-        if owner.user != request.user:
-            messages.error(request, 'You can only view your own receipts.')
-            return redirect('dashboard')
+    # Tenants and collectors may only view receipts that belong to them.
+    owner = payments[0].tenant
+    if get_user_role(request.user) == 'tenant' and owner.user != request.user:
+        messages.error(request, 'You can only view your own receipts.')
+        return redirect('dashboard')
+    if (get_user_role(request.user) == 'collector' and not request.user.is_superuser
+            and any(p.collected_by_id != request.user.id for p in payments)):
+        messages.error(request, 'You can only view receipts for payments you recorded.')
+        return redirect('payment_list')
     return render(request, 'payments/print_batch.html', _batch_context(request, payments))
 
 
@@ -356,6 +382,10 @@ def payment_batch_export_pdf(request):
     if get_user_role(request.user) == 'tenant' and payments[0].tenant.user != request.user:
         messages.error(request, 'You can only export your own receipts.')
         return redirect('dashboard')
+    if (get_user_role(request.user) == 'collector' and not request.user.is_superuser
+            and any(p.collected_by_id != request.user.id for p in payments)):
+        messages.error(request, 'You can only export receipts for payments you recorded.')
+        return redirect('payment_list')
     context = _batch_context(request, payments)
     context['auto_print'] = False
     filename = (
@@ -372,9 +402,9 @@ def payment_receipt_export_pdf(request, pk):
         Payment.objects.select_related('tenant', 'stall', 'stall__section', 'collected_by'),
         pk=pk
     )
-    if get_user_role(request.user) == 'tenant' and payment.tenant.user != request.user:
-        messages.error(request, 'You can only view your own payment receipt.')
-        return redirect('dashboard')
+    denied = _payment_access_denied(request, payment)
+    if denied:
+        return denied
     from core.models import SystemSetting
     context = {
         'payment': payment,
@@ -386,7 +416,7 @@ def payment_receipt_export_pdf(request, pk):
     return render_to_pdf_response(request, 'payments/print_receipt.html', context, filename=filename)
 
 
-@staff_required
+@collector_required
 @transaction.atomic
 def payment_add_modal(request):
     if request.method == 'POST':
@@ -427,7 +457,7 @@ def payment_add_modal(request):
     return render(request, 'payments/_modal_form.html', {'form': form, 'is_add': True})
 
 
-@staff_required
+@management_required
 @transaction.atomic
 def payment_edit_modal(request, pk):
     payment = get_object_or_404(Payment, pk=pk)
@@ -488,7 +518,7 @@ def payment_edit_modal(request, pk):
     return render(request, 'payments/_modal_form.html', {'form': form, 'is_add': False, 'payment': payment})
 
 
-@staff_required
+@management_required
 @transaction.atomic
 def payment_void(request, pk):
     payment = get_object_or_404(Payment, pk=pk)
@@ -522,9 +552,7 @@ def payment_void(request, pk):
 
 @login_required
 def payment_list_print(request):
-    payments = Payment.objects.select_related('tenant', 'stall', 'collected_by').all().order_by('-payment_date', '-created_at', '-id')
-    if get_user_role(request.user) == 'tenant':
-        payments = payments.filter(tenant__user=request.user)
+    payments = _apply_payment_scope(request, Payment.objects.select_related('tenant', 'stall', 'collected_by').all().order_by('-payment_date', '-created_at', '-id'))
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
     tenant_filter = request.GET.get('tenant')
@@ -576,9 +604,7 @@ def payment_list_print(request):
 
 @login_required
 def payment_list_export_pdf(request):
-    payments = Payment.objects.select_related('tenant', 'stall', 'collected_by').all().order_by('-payment_date', '-created_at', '-id')
-    if get_user_role(request.user) == 'tenant':
-        payments = payments.filter(tenant__user=request.user)
+    payments = _apply_payment_scope(request, Payment.objects.select_related('tenant', 'stall', 'collected_by').all().order_by('-payment_date', '-created_at', '-id'))
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
     tenant_filter = request.GET.get('tenant')

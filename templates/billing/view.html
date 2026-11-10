@@ -101,15 +101,17 @@
       </div>
       <div class="panel-body">
         <dl class="space-y-3 text-sm">
-          <div class="flex justify-between gap-3"><dt class="text-ink-muted">Tenant</dt><dd class="font-bold text-ink text-right"><a href="{% url 'tenant_view' billing.tenant.id %}" class="link-emerald">{{ billing.tenant.full_name }}</a> <span class="mono text-ink-muted">({{ billing.tenant.tenant_id }})</span></dd></div>
+          <div class="flex justify-between gap-3"><dt class="text-ink-muted">Tenant</dt><dd class="font-bold text-ink text-right">{% if can_manage_records or user.profile.role == 'tenant' %}<a href="{% url 'tenant_view' billing.tenant.id %}" class="link-emerald">{{ billing.tenant.full_name }}</a>{% else %}{{ billing.tenant.full_name }}{% endif %} <span class="mono text-ink-muted">({{ billing.tenant.tenant_id }})</span></dd></div>
           <div class="flex justify-between gap-3"><dt class="text-ink-muted">Stall</dt><dd class="mono font-bold text-ink text-right">{{ billing.stall.stall_number }} • {{ billing.stall.section.name }}</dd></div>
-          <div class="flex justify-between gap-3"><dt class="text-ink-muted">Contract</dt><dd class="text-right"><a href="{% url 'contract_view' billing.contract.id %}" class="mono link-emerald">#{{ billing.contract.id }}</a> • &#8369;{{ billing.contract.monthly_rent }}</dd></div>
+          <div class="flex justify-between gap-3"><dt class="text-ink-muted">Contract</dt><dd class="text-right">{% if can_manage_records %}<a href="{% url 'contract_view' billing.contract.id %}" class="mono link-emerald">#{{ billing.contract.id }}</a>{% else %}<span class="mono">#{{ billing.contract.id }}</span>{% endif %} • &#8369;{{ billing.contract.monthly_rent }}</dd></div>
           <div class="flex justify-between gap-3"><dt class="text-ink-muted">Period</dt><dd class="font-bold text-ink tabular-nums">{{ billing.billing_month|stringformat:"02d" }}/{{ billing.billing_year }}</dd></div>
           <div class="flex justify-between gap-3"><dt class="text-ink-muted">Due Date</dt><dd class="font-medium text-ink">{{ billing.due_date|date:"F d, Y" }}</dd></div>
           <div class="flex justify-between gap-3"><dt class="text-ink-muted">Status</dt><dd class="text-right">{% include 'includes/status_badge.html' with status=billing.status %}</dd></div>
         </dl>
         <div class="mt-5 flex flex-wrap gap-2">
+          {% if not is_collector %}
           <a href="{% url 'ledger_view' billing.tenant.id %}" class="btn btn-primary btn-sm">View Ledger →</a>
+          {% endif %}
           <a href="{% url 'payment_list' %}?tenant={{ billing.tenant.id }}" class="btn btn-ghost btn-sm">Payments</a>
         </div>
       </div>

@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from core.permissions import staff_required, admin_required, get_user_role
+from core.permissions import management_or_tenant_required, get_user_role
 from django.core.paginator import Paginator
 from django.db.models import Sum, Q
 
@@ -13,7 +13,7 @@ def is_htmx(request):
     return getattr(request, 'htmx', None) or request.headers.get('HX-Request') == 'true'
 
 
-@login_required
+@management_or_tenant_required
 def ledger_list(request):
     role = get_user_role(request.user)
     if role == 'tenant':
@@ -48,7 +48,7 @@ def ledger_list(request):
     return render(request, 'ledger/list.html', context)
 
 
-@login_required
+@management_or_tenant_required
 def ledger_view(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
     role = get_user_role(request.user)
@@ -82,7 +82,7 @@ def ledger_view(request, pk):
     return render(request, 'ledger/view.html', context)
 
 
-@login_required
+@management_or_tenant_required
 def ledger_print(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
     role = get_user_role(request.user)
@@ -109,7 +109,7 @@ def ledger_print(request, pk):
     return render(request, 'ledger/print.html', context)
 
 
-@login_required
+@management_or_tenant_required
 def ledger_view_export_pdf(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
     role = get_user_role(request.user)
@@ -133,7 +133,7 @@ def ledger_view_export_pdf(request, pk):
     return render_to_pdf_response(request, 'ledger/print.html', context, filename=filename)
 
 
-@login_required
+@management_or_tenant_required
 def ledger_list_print(request):
     role = get_user_role(request.user)
     if role == 'tenant':
@@ -157,7 +157,7 @@ def ledger_list_print(request):
     return render(request, 'ledger/print_list.html', context)
 
 
-@login_required
+@management_or_tenant_required
 def ledger_list_export_pdf(request):
     role = get_user_role(request.user)
     if role == 'tenant':

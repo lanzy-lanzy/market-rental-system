@@ -3,9 +3,10 @@
 
 Design notes
 ------------
-*   Staff can view and manage both lists — this intentionally mirrors the
-    ``staff_required`` gate on the stall views so a market clerk adding a
-    new stall can also add a missing section in one trip.
+*   Records-management staff can view and manage both lists — this
+    intentionally mirrors the ``management_required`` gate on the stall
+    views so a market clerk adding a new stall can also add a missing
+    section in one trip. Payment collectors are excluded from both.
 *   Deleting a ``MarketSection`` is refused when any Stall still points at
     it, because ``Stall.section`` is a ``CASCADE`` FK and would silently
     destroy live stalls. ``StallType`` is ``SET_NULL`` so a delete is
@@ -24,12 +25,12 @@ from django.views.decorators.http import require_POST
 
 from core.forms import MarketSectionForm, StallTypeForm
 from core.models import AuditLog, MarketSection, Stall, StallType
-from core.permissions import staff_required
+from core.permissions import management_required
 
 
 # ─────────────────────────────── MarketSection ───────────────────────────────
 
-@staff_required
+@management_required
 def market_section_list(request):
     """Full-page manager: list existing sections + inline add/edit/delete."""
     from django.db.models import Count
@@ -48,7 +49,7 @@ def market_section_list(request):
     return render(request, 'stalls/sections.html', context)
 
 
-@staff_required
+@management_required
 @require_POST
 def market_section_create(request):
     form = MarketSectionForm(request.POST)
@@ -65,7 +66,7 @@ def market_section_create(request):
     return redirect(request.POST.get('next') or 'market_section_list')
 
 
-@staff_required
+@management_required
 @require_POST
 def market_section_update(request, pk):
     section = get_object_or_404(MarketSection, pk=pk)
@@ -83,7 +84,7 @@ def market_section_update(request, pk):
     return redirect(request.POST.get('next') or 'market_section_list')
 
 
-@staff_required
+@management_required
 @require_POST
 def market_section_delete(request, pk):
     section = get_object_or_404(MarketSection, pk=pk)
@@ -110,7 +111,7 @@ def market_section_delete(request, pk):
     return redirect('market_section_list')
 
 
-@staff_required
+@management_required
 @require_POST
 def market_section_quick_add(request):
     """HTMX endpoint hit from the Stall form.
@@ -141,7 +142,7 @@ def market_section_quick_add(request):
 
 # ──────────────────────────────── StallType ──────────────────────────────────
 
-@staff_required
+@management_required
 def stall_type_list(request):
     from django.db.models import Count
     types = (
@@ -157,7 +158,7 @@ def stall_type_list(request):
     return render(request, 'stalls/stall_types.html', context)
 
 
-@staff_required
+@management_required
 @require_POST
 def stall_type_create(request):
     form = StallTypeForm(request.POST)
@@ -174,7 +175,7 @@ def stall_type_create(request):
     return redirect(request.POST.get('next') or 'stall_type_list')
 
 
-@staff_required
+@management_required
 @require_POST
 def stall_type_update(request, pk):
     obj = get_object_or_404(StallType, pk=pk)
@@ -192,7 +193,7 @@ def stall_type_update(request, pk):
     return redirect(request.POST.get('next') or 'stall_type_list')
 
 
-@staff_required
+@management_required
 @require_POST
 def stall_type_delete(request, pk):
     obj = get_object_or_404(StallType, pk=pk)
@@ -218,7 +219,7 @@ def stall_type_delete(request, pk):
     return redirect('stall_type_list')
 
 
-@staff_required
+@management_required
 @require_POST
 def stall_type_quick_add(request):
     name = (request.POST.get('name') or '').strip()

@@ -1,6 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from core.permissions import staff_required, admin_required, get_user_role
+from core.permissions import (
+    management_required, management_or_tenant_required, admin_required,
+    get_user_role,
+)
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -15,7 +18,7 @@ def is_htmx(request):
     return getattr(request, 'htmx', None) or request.headers.get('HX-Request') == 'true'
 
 
-@login_required
+@management_or_tenant_required
 def notice_list(request):
     notices = Notice.objects.select_related('tenant').all().order_by('-date_issued', '-created_at', '-id')
     # Tenant isolation: only own notices
@@ -63,7 +66,7 @@ def notice_list(request):
     return render(request, template, context)
 
 
-@staff_required
+@management_required
 def notice_add(request):
     if request.method == 'POST':
         form = NoticeForm(request.POST)
@@ -85,7 +88,7 @@ def notice_add(request):
     return render(request, 'notices/form.html', {'form': form, 'is_add': True})
 
 
-@login_required
+@management_or_tenant_required
 def notice_print(request, pk):
     notice = get_object_or_404(Notice.objects.select_related('tenant'), pk=pk)
     if get_user_role(request.user) == 'tenant' and notice.tenant.user != request.user:
@@ -97,7 +100,7 @@ def notice_print(request, pk):
     return render(request, 'notices/print.html', context)
 
 
-@staff_required
+@management_required
 def notice_mark_served(request, pk):
     notice = get_object_or_404(Notice, pk=pk)
     if request.method == 'POST':
@@ -115,7 +118,7 @@ def notice_mark_served(request, pk):
     return redirect('notice_list')
 
 
-@login_required
+@management_or_tenant_required
 def notice_list_print(request):
     notices = Notice.objects.select_related('tenant').all().order_by('-date_issued', '-created_at', '-id')
     if get_user_role(request.user) == 'tenant':
@@ -150,7 +153,7 @@ def notice_list_print(request):
     return render(request, 'notices/print_list.html', context)
 
 
-@login_required
+@management_or_tenant_required
 def notice_list_export_pdf(request):
     notices = Notice.objects.select_related('tenant').all().order_by('-date_issued', '-created_at', '-id')
     if get_user_role(request.user) == 'tenant':
@@ -186,7 +189,7 @@ def notice_list_export_pdf(request):
     return render_to_pdf_response(request, 'notices/print_list.html', context, filename=filename)
 
 
-@login_required
+@management_or_tenant_required
 def notice_export_pdf(request, pk):
     notice = get_object_or_404(Notice.objects.select_related('tenant'), pk=pk)
     if get_user_role(request.user) == 'tenant' and notice.tenant.user != request.user:
