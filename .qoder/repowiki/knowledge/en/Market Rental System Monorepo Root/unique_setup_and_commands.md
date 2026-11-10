@@ -1,0 +1,1 @@
+Production build runs `npm run build:css` then `python manage.py collectstatic --noinput`; development CSS can be watched with `npm run watch:css`. All HTTP traffic is rewritten to `/api/index` by Vercel.

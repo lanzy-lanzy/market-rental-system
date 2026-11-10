@@ -1,0 +1,1 @@
+Django project configured for multiple deployment targets: SQLite (local default), XAMPP MySQL/MariaDB via PyMySQL (local dev), or any managed DB via `dj_database_url` (production). Static assets served through WhiteNoise with compressed manifest storage in production. Environment-driven configuration via `python-dotenv` and OS env vars, tuned for Vercel hosting.

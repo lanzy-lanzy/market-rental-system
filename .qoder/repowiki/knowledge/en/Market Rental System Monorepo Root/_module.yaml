@@ -1,0 +1,20 @@
+schema_version: 1
+module_path: ""
+title: Market Rental System Monorepo Root
+scope:
+    - README.MD
+    - PENALTY_GUIDE.md
+    - credentials.md
+    - .gitignore
+    - .vercelignore
+    - manage.py
+    - pyproject.toml
+    - requirements.txt
+    - uv.lock
+    - package.json
+    - package-lock.json
+    - vercel.json
+    - .env.example
+source_files: []
+depends_on: []
+related_to: []

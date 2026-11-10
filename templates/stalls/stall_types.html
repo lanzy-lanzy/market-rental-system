@@ -70,7 +70,15 @@
           </thead>
           <tbody>
             {% for t in types %}
-            <tr x-data="{ editing: false }">
+            {% comment %}
+              One <tr> per type: the row toggles between read mode and an inline
+              editor. The form lives inside a <td> because a form element placed
+              directly between <tr> and <td> is discarded by the HTML parser,
+              which previously left the edit form empty and broke "Save".
+            {% endcomment %}
+            <tr x-data="{ editing: {% if editing_pk == t.pk %}true{% else %}false{% endif %} }"
+                :class="editing ? 'bg-emerald-50' : ''"
+                @keydown.escape="editing = false">
               <td class="font-semibold text-ink" x-show="!editing">{{ t.name }}</td>
               <td class="text-ink-soft" x-show="!editing">{{ t.description|default:"—" }}</td>
               <td class="text-center" x-show="!editing">
@@ -80,7 +88,7 @@
               </td>
               <td class="text-right" x-show="!editing">
                 <div class="flex items-center justify-end gap-2">
-                  <button @click="editing = true" class="btn btn-ghost btn-sm">Edit</button>
+                  <button type="button" @click="editing = true; $nextTick(() => $refs.nameInput.focus())" class="btn btn-ghost btn-sm">Edit</button>
                   <form method="post" action="{% url 'stall_type_delete' t.id %}" class="inline"
                         onsubmit="return window.confirm('Delete this stall type?{% if t.stall_count %} {{ t.stall_count }} stall(s) will have their type cleared.{% endif %}');">
                     {% csrf_token %}
@@ -88,20 +96,33 @@
                   </form>
                 </div>
               </td>
-            </tr>
-            <tr x-show="editing" class="bg-emerald-900/5">
-              <form method="post" action="{% url 'stall_type_update' t.id %}" class="contents">
-                {% csrf_token %}
-                <td><input name="name" value="{{ t.name }}" class="field w-full"></td>
-                <td><input name="description" value="{{ t.description }}" class="field w-full"></td>
-                <td></td>
-                <td class="text-right">
+
+              {% comment %}Read/edit toggle: full-width cell holding the update form{% endcomment %}
+              <td colspan="4" x-show="editing" x-cloak>
+                <form method="post" action="{% url 'stall_type_update' t.id %}" class="form-grid">
+                  {% csrf_token %}
+                  <div>
+                    <label class="field-label" for="stall-type-name-{{ t.pk }}">Name <span class="text-red-600">*</span></label>
+                    <input id="stall-type-name-{{ t.pk }}" type="text" name="name" x-ref="nameInput"
+                           required maxlength="100" class="field w-full"
+                           value="{% if editing_pk == t.pk %}{{ edit_form.data.name|default:t.name }}{% else %}{{ t.name }}{% endif %}">
+                    {% if editing_pk == t.pk and edit_form.errors.name %}
+                    <p class="field-error">{{ edit_form.errors.name.0 }}</p>
+                    {% endif %}
+                  </div>
+                  <div>
+                    <label class="field-label" for="stall-type-description-{{ t.pk }}">Description</label>
+                    <textarea id="stall-type-description-{{ t.pk }}" name="description" rows="2" class="field w-full">{% if editing_pk == t.pk %}{{ edit_form.data.description|default:t.description }}{% else %}{{ t.description }}{% endif %}</textarea>
+                    {% if editing_pk == t.pk and edit_form.errors.description %}
+                    <p class="field-error">{{ edit_form.errors.description.0 }}</p>
+                    {% endif %}
+                  </div>
                   <div class="flex items-center justify-end gap-2">
                     <button type="button" @click="editing = false" class="btn btn-ghost btn-sm">Cancel</button>
                     <button type="submit" class="btn btn-primary btn-sm">Save</button>
                   </div>
-                </td>
-              </form>
+                </form>
+              </td>
             </tr>
             {% endfor %}
           </tbody>

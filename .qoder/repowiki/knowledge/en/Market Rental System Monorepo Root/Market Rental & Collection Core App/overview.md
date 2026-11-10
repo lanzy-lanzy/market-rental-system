@@ -1,0 +1,1 @@
+Django app providing the market rental system's domain models, RBAC, views, templates, management commands, and migrations for tenants, stalls, contracts, billing, payments, ledger, notices, reports, and audit.

@@ -1,0 +1,2 @@
+- Configuration values are read exclusively from environment variables with sensible defaults, loaded via `os.environ.get` and `dotenv.load_dotenv` rather than hard-coded secrets.
+- Database backend selection is centralized in `settings.py` with a clear precedence chain: `DATABASE_URL` > `DB_ENGINE=mysql` > SQLite fallback, keeping deployment-specific choices out of code.

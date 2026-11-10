@@ -1,0 +1,59 @@
+# 知识卡导出索引文件
+schema_version: 1
+locale: en-US
+branch: master
+nodes_managed: true
+exported_at: "2026-11-10T07:58:13Z"
+modules:
+    "":
+        dir_name: Market Rental System Monorepo Root
+        title: Market Rental System Monorepo Root
+        scope:
+            - README.MD
+            - PENALTY_GUIDE.md
+            - credentials.md
+            - .gitignore
+            - .vercelignore
+            - manage.py
+            - pyproject.toml
+            - requirements.txt
+            - uv.lock
+            - package.json
+            - package-lock.json
+            - vercel.json
+            - .env.example
+        source_files: []
+        children:
+            - accounts_app
+            - core_app
+            - market_rental_project
+        depends_on: []
+        related_to: []
+    accounts_app:
+        dir_name: Accounts Django App (Placeholder)
+        title: Accounts Django App (Placeholder)
+        scope:
+            - accounts/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    core_app:
+        dir_name: Market Rental & Collection Core App
+        title: Market Rental & Collection Core App
+        scope:
+            - core/
+            - templates/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    market_rental_project:
+        dir_name: Django Project Configuration & WSGI_ASGI Entry Points
+        title: Django Project Configuration & WSGI/ASGI Entry Points
+        scope:
+            - market_rental/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []

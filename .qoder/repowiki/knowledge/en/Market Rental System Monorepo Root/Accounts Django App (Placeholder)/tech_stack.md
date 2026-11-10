@@ -1,0 +1,1 @@
+Django app skeleton using `BigAutoField` as the default primary key type.

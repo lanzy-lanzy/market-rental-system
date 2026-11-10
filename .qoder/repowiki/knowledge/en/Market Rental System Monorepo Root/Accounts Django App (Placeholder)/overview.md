@@ -1,0 +1,1 @@
+Django app scaffold for the accounts domain, currently a placeholder whose user profile models live in core.models.UserProfile.

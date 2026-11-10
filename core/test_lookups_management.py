@@ -15,6 +15,7 @@ rather than by seeding. The implementation adds:
 """
 
 from decimal import Decimal
+from html.parser import HTMLParser
 
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -178,3 +179,78 @@ class StallTypeManagementTests(_LookupTestBase):
         html = resp.content.decode()
         self.assertIn(reverse('market_section_list'), html)
         self.assertIn(reverse('stall_type_list'), html)
+
+
+class _FormInsideRowParser(HTMLParser):
+    """Collect ``<form>`` elements whose parent element is a ``<tr>``.
+
+    A form placed directly between ``<tr>`` and ``<td>`` is thrown away by
+    the HTML parser (the element is inserted and immediately popped), so the
+    row's inputs end up outside the form and Save posts nothing. That was the
+    cause of the broken inline "Edit" action.
+    """
+
+    VOID = {
+        'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+        'link', 'meta', 'param', 'source', 'track', 'wbr',
+    }
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.stack = []
+        self.bad_actions = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'form' and self.stack[-1:] == ['tr']:
+            self.bad_actions.append(dict(attrs).get('action'))
+        if tag not in self.VOID:
+            self.stack.append(tag)
+
+    def handle_endtag(self, tag):
+        if tag in self.stack:
+            while self.stack and self.stack.pop() != tag:
+                pass
+
+
+class InlineEditMarkupTests(_LookupTestBase):
+    """Guard the row-level edit markup on both lookup management pages."""
+
+    def test_stall_type_edit_form_is_nested_in_a_table_cell(self):
+        StallType.objects.create(name='Kiosk')
+        html = self.client.get(reverse('stall_type_list')).content.decode()
+        parser = _FormInsideRowParser()
+        parser.feed(html)
+        self.assertEqual(parser.bad_actions, [])
+        self.assertIn(reverse('stall_type_update', args=[1]), html)
+
+    def test_section_edit_form_is_nested_in_a_table_cell(self):
+        MarketSection.objects.create(name='Dry Goods')
+        html = self.client.get(reverse('market_section_list')).content.decode()
+        parser = _FormInsideRowParser()
+        parser.feed(html)
+        self.assertEqual(parser.bad_actions, [])
+        self.assertIn(reverse('market_section_update', args=[1]), html)
+
+    def test_each_type_row_shares_one_alpine_scope(self):
+        """View and edit cells must live in the same <tr> so `editing` toggles."""
+        StallType.objects.create(name='Kiosk')
+        MarketSection.objects.create(name='Dry Goods')
+        for url in (reverse('stall_type_list'), reverse('market_section_list')):
+            html = self.client.get(url).content.decode()
+            self.assertEqual(html.count('x-data="{ editing:'), html.count('<tbody>'), url)
+
+    def test_invalid_update_reopens_the_row_with_the_typed_values(self):
+        StallType.objects.create(name='Kiosk')
+        other = StallType.objects.create(name='Table Space')
+        resp = self.client.post(
+            reverse('stall_type_update', args=[other.pk]),
+            {'name': 'Kiosk', 'description': 'duplicate name'},
+        )
+        # No redirect: the operator keeps what they typed and sees the error.
+        self.assertEqual(resp.status_code, 200)
+        html = resp.content.decode()
+        self.assertIn('editing: true', html)
+        self.assertIn('value="Kiosk"', html)
+        self.assertIn('already exists', html)
+        other.refresh_from_db()
+        self.assertEqual(other.name, 'Table Space')

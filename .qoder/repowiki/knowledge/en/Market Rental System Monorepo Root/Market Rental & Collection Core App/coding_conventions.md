@@ -1,0 +1,6 @@
+- Each feature area gets its own file under `core/views/` and a matching directory under `templates/<feature>/`, keeping URLs, views, and templates co-located by domain.
+- RBAC is enforced through decorators from `core.permissions` (`@admin_required`, `@management_required`, `@collector_required`, `@tenant_required`, `@role_required({...})`) rather than ad-hoc role checks inside views.
+- Tenant-scoped queries use `tenant_isolation_queryset(request, queryset, 'tenant__user')` so tenant-role users automatically see only their own records.
+- Views follow a uniform CRUD surface per resource: list, add, edit, delete, view, plus paired `<resource>_list_print`, `<resource>_list_export_pdf`, `<resource>_view_print`, `<resource>_view_export_pdf`, `<resource>_add_modal`, `<resource>_edit_modal` endpoints.
+- Print/export variants render the same data as HTML templates named `print_list.html` / `print_view.html` / `print_receipt.html` instead of generating PDFs server-side.
+- Business rules (penalty calculation, billing idempotency, tenant ID/password generation, receipt rendering) are delegated to functions in `core/helpers.py` and imported by views rather than implemented inline.

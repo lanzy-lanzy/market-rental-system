@@ -1,0 +1,2 @@
+- Django apps are discovered via setuptools `find` include patterns `core*` and `accounts*` declared in `pyproject.toml` rather than explicit listing.
+- Static assets (CSS) are authored as Tailwind input at `./static/css/input.css` and compiled to `output.css` by the npm scripts consumed by `collectstatic`.

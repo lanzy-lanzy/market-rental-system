@@ -1,0 +1,6 @@
+This is a standard Django project package (`market_rental`) with no business logic of its own — it configures and bootstraps the runtime.
+- `settings.py` centralizes all configuration: app registry (`INSTALLED_APPS` includes `core`, `accounts`), middleware stack (SecurityMiddleware, WhiteNoise, Session, CSRF, Auth, Messages, XFrameOptions), template context processors (including custom `core.context_processors.*`), static/media roots, auth redirects, and database selection. Database backends are chosen at import time via environment variables: `DATABASE_URL` (via `dj_database_url` for production/hosted DBs) takes precedence; otherwise `DB_ENGINE=mysql` connects to local XAMPP MySQL/MariaDB (with an idempotent `CREATE DATABASE IF NOT EXISTS` helper using PyMySQL); otherwise SQLite is used as the zero-config fallback.
+- `urls.py` mounts the admin site, delegates all non-auth routes to `core.urls`, and exposes `/login` and `/logout` directly from `core.views.auth`.
+- `__init__.py` registers PyMySQL as a drop-in `MySQLdb` shim before Django's MySQL backend loads.
+- `wsgi.py` / `asgi.py` are the standard ASGI/WSGI entry points consumed by Vercel and other servers.
+Dependency direction is one-way: this package depends on `core` and `accounts` apps but they do not depend back on it.

@@ -1,0 +1,1 @@
+Django 5+ with psycopg3 + PyMySQL (multi-DB), Tailwind CSS v4 via `@tailwindcss/cli`, ReportLab + xhtml2pdf + openpyxl for PDF/Excel reports, Whitenoise for static files, deployed on Vercel via serverless rewrites.

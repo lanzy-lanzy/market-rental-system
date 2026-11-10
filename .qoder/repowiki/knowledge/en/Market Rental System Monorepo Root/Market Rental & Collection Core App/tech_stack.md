@@ -1,0 +1,1 @@
+Django app using BigAutoField primary keys; Tailwind CSS built to `static/css/output.css` with mtime-based cache busting via `static_version` context processor; PDF/excel report exports served from `templates/reports/pdf/` Jinja-style templates rendered by report views.

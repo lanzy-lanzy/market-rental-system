@@ -1,0 +1,1 @@
+Run `python manage.py apply_penalties` to compute overdue penalties, `link_tenant_logins` to create tenant accounts, `reset_market_data` to wipe state, and `seed_data` to populate initial data — all registered under `core.management.commands`.

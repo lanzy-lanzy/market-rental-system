@@ -1,0 +1,1 @@
+Top-level project root that configures the Django-based market rental system, wires the `core` and `accounts` apps, and provides build/deploy hooks for Vercel.

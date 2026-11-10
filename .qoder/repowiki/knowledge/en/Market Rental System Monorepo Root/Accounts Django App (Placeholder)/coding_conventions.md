@@ -1,0 +1,1 @@
+- App-level files that are not yet implemented retain only the standard Django stub comments (`# Create your views here`, `# Register your models here`) instead of being removed.

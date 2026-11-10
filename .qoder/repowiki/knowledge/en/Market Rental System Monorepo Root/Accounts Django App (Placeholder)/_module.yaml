@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: accounts_app
+title: Accounts Django App (Placeholder)
+scope:
+    - accounts/
+source_files: []
+depends_on: []
+related_to: []

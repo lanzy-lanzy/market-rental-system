@@ -1,0 +1,1 @@
+Django project root that wires settings, URL routing, and WSGI/ASGI entry points for the market rental system, delegating application logic to the `core` and `accounts` apps.

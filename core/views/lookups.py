@@ -16,10 +16,14 @@ Design notes
     append a new option to an open dropdown without leaving the page.
     They return only the re-rendered ``<select>`` HTML so HTMX can swap
     it in place.
+*   When a create/update form fails validation the list page is
+    re-rendered (HTTP 200) with the bound form instead of redirecting,
+    so the inline row editor can show field errors and keep whatever the
+    operator typed. Successful writes still redirect (POST/redirect/GET).
 """
 
 from django.contrib import messages
-from django.db.models import ProtectedError
+from django.db.models import Count, ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -28,12 +32,30 @@ from core.models import AuditLog, MarketSection, Stall, StallType
 from core.permissions import management_required
 
 
+def _first_field_error(form):
+    """Return a human-readable summary of the first validation error.
+
+    Used for the flash message that accompanies the re-rendered form so the
+    operator sees *why* the save was refused without scanning the row.
+    """
+    for field_name, errors in form.errors.items():
+        if not errors:
+            continue
+        field = form.fields.get(field_name)
+        label = field.label if field and field.label else 'Form'
+        return f'{label}: {errors[0]}'
+    return ''
+
+
 # ─────────────────────────────── MarketSection ───────────────────────────────
 
 @management_required
 def market_section_list(request):
     """Full-page manager: list existing sections + inline add/edit/delete."""
-    from django.db.models import Count
+    return render(request, 'stalls/sections.html', _market_section_context())
+
+
+def _market_section_context(*, add_form=None, edit_form=None, editing_pk=None):
     # Annotate each section with the number of stalls using it so the
     # template can disable Delete without extra queries.
     sections = (
@@ -41,12 +63,13 @@ def market_section_list(request):
         .annotate(stall_count=Count('stalls'))
         .order_by('name')
     )
-    context = {
+    return {
         'sections': sections,
-        'add_form': MarketSectionForm(),
+        'add_form': add_form or MarketSectionForm(),
+        'edit_form': edit_form,
+        'editing_pk': editing_pk,
         'active_nav': 'market_section_list',
     }
-    return render(request, 'stalls/sections.html', context)
 
 
 @management_required
@@ -62,8 +85,13 @@ def market_section_create(request):
         )
         messages.success(request, f'Section "{section.name}" added.')
         return redirect(request.POST.get('next') or 'market_section_list')
-    messages.error(request, 'Please correct the errors in the section form.')
-    return redirect(request.POST.get('next') or 'market_section_list')
+    messages.error(
+        request,
+        f'Could not add the section — {_first_field_error(form)}'
+        if form.errors else 'Please correct the errors in the section form.',
+    )
+    return render(request, 'stalls/sections.html',
+                  _market_section_context(add_form=form))
 
 
 @management_required
@@ -79,9 +107,14 @@ def market_section_update(request, pk):
             ip_address=request.META.get('REMOTE_ADDR'),
         )
         messages.success(request, f'Section "{updated.name}" updated.')
-    else:
-        messages.error(request, 'Could not update the section. Check the name is unique.')
-    return redirect(request.POST.get('next') or 'market_section_list')
+        return redirect(request.POST.get('next') or 'market_section_list')
+    messages.error(
+        request,
+        f'Could not update the section — {_first_field_error(form)}'
+        if form.errors else 'Could not update the section.',
+    )
+    return render(request, 'stalls/sections.html',
+                  _market_section_context(edit_form=form, editing_pk=section.pk))
 
 
 @management_required
@@ -144,18 +177,22 @@ def market_section_quick_add(request):
 
 @management_required
 def stall_type_list(request):
-    from django.db.models import Count
+    return render(request, 'stalls/stall_types.html', _stall_type_context())
+
+
+def _stall_type_context(*, add_form=None, edit_form=None, editing_pk=None):
     types = (
         StallType.objects
         .annotate(stall_count=Count('stalls'))
         .order_by('name')
     )
-    context = {
+    return {
         'types': types,
-        'add_form': StallTypeForm(),
+        'add_form': add_form or StallTypeForm(),
+        'edit_form': edit_form,
+        'editing_pk': editing_pk,
         'active_nav': 'stall_type_list',
     }
-    return render(request, 'stalls/stall_types.html', context)
 
 
 @management_required
@@ -170,9 +207,14 @@ def stall_type_create(request):
             ip_address=request.META.get('REMOTE_ADDR'),
         )
         messages.success(request, f'Stall type "{created.name}" added.')
-    else:
-        messages.error(request, 'Please correct the errors in the stall type form.')
-    return redirect(request.POST.get('next') or 'stall_type_list')
+        return redirect(request.POST.get('next') or 'stall_type_list')
+    messages.error(
+        request,
+        f'Could not add the stall type — {_first_field_error(form)}'
+        if form.errors else 'Please correct the errors in the stall type form.',
+    )
+    return render(request, 'stalls/stall_types.html',
+                  _stall_type_context(add_form=form))
 
 
 @management_required
@@ -188,9 +230,16 @@ def stall_type_update(request, pk):
             ip_address=request.META.get('REMOTE_ADDR'),
         )
         messages.success(request, f'Stall type "{updated.name}" updated.')
-    else:
-        messages.error(request, 'Could not update the stall type. Check the name is unique.')
-    return redirect(request.POST.get('next') or 'stall_type_list')
+        return redirect(request.POST.get('next') or 'stall_type_list')
+    messages.error(
+        request,
+        f'Could not update the stall type — {_first_field_error(form)}'
+        if form.errors else 'Could not update the stall type.',
+    )
+    # Re-render the list with this row already open in edit mode so the
+    # operator keeps their input and sees the field-level error inline.
+    return render(request, 'stalls/stall_types.html',
+                  _stall_type_context(edit_form=form, editing_pk=obj.pk))
 
 
 @management_required

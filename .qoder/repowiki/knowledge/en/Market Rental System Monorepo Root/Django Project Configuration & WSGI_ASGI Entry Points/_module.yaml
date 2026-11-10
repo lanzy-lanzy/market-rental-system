@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: market_rental_project
+title: Django Project Configuration & WSGI/ASGI Entry Points
+scope:
+    - market_rental/
+source_files: []
+depends_on: []
+related_to: []
