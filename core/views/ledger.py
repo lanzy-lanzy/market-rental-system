@@ -1,12 +1,12 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from core.permissions import management_or_tenant_required, get_user_role
 from django.core.paginator import Paginator
-from django.db.models import Sum, Q
+from django.db.models import Q
 
-from core.models import Tenant, TenantLedger, AuditLog, SystemSetting
+from core.models import Tenant, SystemSetting
 from core.helpers import render_to_pdf_response
+from core.ledger_statement import tenant_statement
 
 
 def is_htmx(request):
@@ -55,29 +55,14 @@ def ledger_view(request, pk):
     if role == 'tenant' and tenant.user != request.user:
         messages.error(request, 'You can only view your own ledger.')
         return redirect('ledger_list')
-    entries = TenantLedger.objects.filter(tenant=tenant).select_related(
-        'billing', 'payment'
-    ).order_by('-transaction_date', '-created_at', '-id')
-
-    paginator = Paginator(entries, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    total_debits = entries.aggregate(total=Sum('debit'))['total'] or 0
-    total_credits = entries.aggregate(total=Sum('credit'))['total'] or 0
-    running_balance = total_debits - total_credits
-
-    # For descending order, running balance prev calc not needed for top display; keep simple
-    prev_balance = 0
+    statement = tenant_statement(tenant)
+    page_obj = Paginator(statement['entries'], 20).get_page(request.GET.get('page'))
 
     context = {
         'tenant': tenant,
         'page_obj': page_obj,
-        'total_debits': total_debits,
-        'total_credits': total_credits,
-        'running_balance': running_balance,
-        'prev_balance': prev_balance,
-        'pagination_target': 'ledger-entries-wrapper',
+        **statement,
+        'pagination_target': '',
     }
     return render(request, 'ledger/view.html', context)
 
@@ -89,20 +74,11 @@ def ledger_print(request, pk):
     if role == 'tenant' and tenant.user != request.user:
         messages.error(request, 'You can only print your own ledger.')
         return redirect('ledger_list')
-    entries = TenantLedger.objects.filter(tenant=tenant).select_related(
-        'billing', 'payment'
-    ).order_by('-transaction_date', '-created_at', '-id')
-
-    total_debits = entries.aggregate(total=Sum('debit'))['total'] or 0
-    total_credits = entries.aggregate(total=Sum('credit'))['total'] or 0
-    running_balance = total_debits - total_credits
+    statement = tenant_statement(tenant)
 
     context = {
         'tenant': tenant,
-        'entries': entries,
-        'total_debits': total_debits,
-        'total_credits': total_credits,
-        'running_balance': running_balance,
+        **statement,
         'system_settings': SystemSetting.objects.first(),
         'user': request.user,
     }
@@ -116,16 +92,11 @@ def ledger_view_export_pdf(request, pk):
     if role == 'tenant' and tenant.user != request.user:
         messages.error(request, 'You can only print your own ledger.')
         return redirect('ledger_list')
-    entries = TenantLedger.objects.filter(tenant=tenant).select_related('billing', 'payment').order_by('-transaction_date', '-created_at', '-id')
-    total_debits = entries.aggregate(total=Sum('debit'))['total'] or 0
-    total_credits = entries.aggregate(total=Sum('credit'))['total'] or 0
-    running_balance = total_debits - total_credits
+    statement = tenant_statement(tenant)
+
     context = {
         'tenant': tenant,
-        'entries': entries,
-        'total_debits': total_debits,
-        'total_credits': total_credits,
-        'running_balance': running_balance,
+        **statement,
         'system_settings': SystemSetting.objects.first(),
         'user': request.user,
     }

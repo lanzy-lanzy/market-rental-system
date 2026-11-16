@@ -7,7 +7,7 @@
   <title>Ledger - {{ tenant.full_name }}</title>
   <link rel="stylesheet" href="{% static 'css/output.css' %}?v={{ STATIC_VERSION }}">
   <style>
-    @media print { body { background: white; font-size: 9pt; } .no-print { display: none !important; } @page { margin: 0.5in; } table { page-break-inside: auto; } tr { page-break-inside: avoid; page-break-after: auto; } thead { display: table-header-group; } }
+    @media print { body { background: white; font-size: 9pt; } .no-print { display: none !important; } @page { margin: 0.4in; size: A4 landscape; } table { page-break-inside: auto; } tr { page-break-inside: avoid; page-break-after: auto; } thead { display: table-header-group; } }
   </style>
 </head>
 <body class="bg-white p-6 font-sans text-gray-800">
@@ -37,7 +37,7 @@
         <p class="mono mt-1 text-lg font-bold tabular-nums text-red-700">&#8369;{{ total_debits|floatformat:2|intcomma }}</p>
       </div>
       <div class="border border-gray-400 p-3 text-center">
-        <p class="text-xs font-medium uppercase tracking-wider text-gray-600">Total Paid</p>
+        <p class="text-xs font-medium uppercase tracking-wider text-gray-600">Payments Applied</p>
         <p class="mono mt-1 text-lg font-bold tabular-nums text-emerald-800">&#8369;{{ total_credits|floatformat:2|intcomma }}</p>
       </div>
       <div class="border p-3 text-center {% if running_balance > 0 %}border-red-600{% else %}border-emerald-800{% endif %}">
@@ -46,6 +46,7 @@
       </div>
     </div>
 
+<p class="my-4 text-xs text-gray-600">{{ paid_bills }} paid bill(s) · {{ unpaid_bills }} bill(s) with an unpaid balance. Newest entries first. Account balances are historical; bill status and remaining due are current. Charges include current penalties and discounts.{% if unapplied_amount > 0 %} Excess receipts: &#8369;{{ unapplied_amount|floatformat:2|intcomma }} (not applied to other bills).{% endif %}</p>
     <table class="w-full border-collapse text-xs">
       <thead>
         <tr>
@@ -57,9 +58,9 @@
           <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-right font-bold uppercase text-gray-700">Penalty</th>
           <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-right font-bold uppercase text-gray-700">Debit</th>
           <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-right font-bold uppercase text-gray-700">Credit</th>
-          <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-right font-bold uppercase text-gray-700">Balance</th>
+          <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-right font-bold uppercase text-gray-700">Account Balance After Entry</th>
           <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-left font-bold uppercase text-gray-700">Receipt / OR</th>
-          <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-left font-bold uppercase text-gray-700">Status</th>
+          <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-left font-bold uppercase text-gray-700">Bill Status / Remaining Due</th>
         </tr>
       </thead>
       <tbody>
@@ -75,7 +76,7 @@
           <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums text-emerald-800">{% if entry.credit %}{{ entry.credit|floatformat:2 }}{% else %}--{% endif %}</td>
           <td class="border border-gray-300 px-2 py-1.5 text-right font-bold tabular-nums {% if entry.balance > 0 %}text-red-700{% else %}text-emerald-800{% endif %}">{{ entry.balance|floatformat:2 }}</td>
           <td class="mono border border-gray-300 px-2 py-1.5 text-[10px] text-gray-800">{% if entry.payment %}{{ entry.payment.receipt_number }}{% if entry.payment.official_receipt_no and entry.payment.official_receipt_no != entry.payment.receipt_number %}<br><span class="text-gray-600">OR: {{ entry.payment.official_receipt_no }}</span>{% endif %}{% else %}--{% endif %}</td>
-          <td class="border border-gray-300 px-2 py-1.5 text-gray-800">{% if entry.payment %}{{ entry.payment.status }}{% elif entry.billing %}{{ entry.billing.status }}{% else %}--{% endif %}</td>
+          <td class="border border-gray-300 px-2 py-1.5 text-gray-800">{% if entry.payment %}{{ entry.billing.status }}{% elif entry.billing %}{{ entry.billing.status }}{% else %}--{% endif %}<br>Due: &#8369;{{ entry.billing.balance|floatformat:2|intcomma }}</td>
         </tr>
         {% empty %}
         <tr><td colspan="11" class="border border-gray-300 px-3 py-4 text-center text-sm text-gray-600">No ledger entries</td></tr>
