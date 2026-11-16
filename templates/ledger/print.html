@@ -23,7 +23,7 @@
       {% if system_settings.logo %}<img src="{{ system_settings.logo.url }}" alt="Logo" class="mx-auto mb-2 h-12 w-auto">{% endif %}
       <h1 class="text-sm font-bold uppercase tracking-wide text-emerald-800">{{ system_settings.municipality_name|default:"Municipality" }} — {{ system_settings.market_name|default:"Public Market" }}</h1>
       <p class="text-xs text-gray-600">{{ system_settings.office_name|default:"Market Administration Office" }}</p>
-      <h2 class="mt-3 text-lg font-bold uppercase text-gray-900">Tenant Ledger</h2>
+      <h2 class="mt-3 text-lg font-bold uppercase text-gray-900">Monthly Rental Collection</h2>
       <p class="text-sm text-gray-700">{{ tenant.full_name }} • {{ tenant.tenant_id }} • {{ tenant.business_name|default:"" }}</p>
       <p class="text-xs text-gray-600">{{ tenant.contact_number }} • {{ tenant.address|truncatechars:80 }}</p>
     </div>
@@ -33,7 +33,7 @@
     <!-- Summary -->
     <div class="mb-6 mt-5 grid grid-cols-3 gap-4">
       <div class="border border-gray-400 p-3 text-center">
-        <p class="text-xs font-medium uppercase tracking-wider text-gray-600">Total Billed</p>
+        <p class="text-xs font-medium uppercase tracking-wider text-gray-600">Total Rental Charges</p>
         <p class="mono mt-1 text-lg font-bold tabular-nums text-red-700">&#8369;{{ total_debits|floatformat:2|intcomma }}</p>
       </div>
       <div class="border border-gray-400 p-3 text-center">
@@ -56,8 +56,8 @@
           <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-left font-bold uppercase text-gray-700">Description</th>
           <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-right font-bold uppercase text-gray-700">Rental</th>
           <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-right font-bold uppercase text-gray-700">Penalty</th>
-          <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-right font-bold uppercase text-gray-700">Debit</th>
-          <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-right font-bold uppercase text-gray-700">Credit</th>
+          <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-right font-bold uppercase text-gray-700">Rental Charges</th>
+          <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-right font-bold uppercase text-gray-700">Payments Applied</th>
           <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-right font-bold uppercase text-gray-700">Account Balance After Entry</th>
           <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-left font-bold uppercase text-gray-700">Receipt / OR</th>
           <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-left font-bold uppercase text-gray-700">Bill Status / Remaining Due</th>
