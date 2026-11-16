@@ -35,6 +35,7 @@
         <div>
           <label class="field-label">Notice Number</label>
           {{ form.notice_number }}
+          {% if form.notice_number.help_text %}<p class="mt-1 text-xs text-ink-muted">{{ form.notice_number.help_text }}</p>{% endif %}
           {% if form.notice_number.errors %}
           <p class="field-error">{{ form.notice_number.errors.0 }}</p>
           {% endif %}

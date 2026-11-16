@@ -522,6 +522,32 @@ class PaymentForm(forms.ModelForm):
 
 
 class NoticeForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk:
+            from core.helpers import generate_notice_number
+            self.fields['notice_number'].disabled = True
+            self.fields['notice_number'].required = False
+            self.initial['notice_number'] = generate_notice_number()
+            self.fields['notice_number'].help_text = 'Assigned automatically when saved. Preview may change if another notice is created first.'
+
+    def clean_notice_number(self):
+        if not self.instance.pk:
+            return ''  # Allocate on save, so an old preview cannot cause a duplicate.
+        return self.cleaned_data['notice_number']
+
+    def save(self, commit=True):
+        is_new = not self.instance.pk
+        notice = super().save(commit=False)
+        if commit:
+            if is_new:
+                from core.helpers import save_numbered_notice
+                save_numbered_notice(notice)
+            else:
+                notice.save()
+            self.save_m2m()
+        return notice
+
     class Meta:
         model = Notice
         fields = ['tenant', 'notice_type', 'notice_number', 'date_issued', 'is_served', 'served_date', 'remarks', 'content']

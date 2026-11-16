@@ -592,3 +592,30 @@ def render_to_pdf_response(request, template_name, context, filename="document.p
     </div>
     """ + html_string
     return HttpResponse(html_with_warning)
+
+
+def generate_notice_number():
+    """Preview the next annual notice number; the final number is set on save."""
+    from django.utils import timezone
+    from core.models import Notice
+    prefix = f'N-{timezone.localdate().year}-'
+    numbers = Notice.objects.filter(notice_number__startswith=prefix).values_list('notice_number', flat=True)
+    highest = max((int(number[len(prefix):]) for number in numbers
+                   if number[len(prefix):].isdigit()), default=0)
+    return f'{prefix}{highest + 1:03d}'
+
+
+def save_numbered_notice(notice):
+    """Assign a fresh unique number, retrying if another creator wins the slot."""
+    from core.models import Notice
+    for attempt in range(5):
+        notice.notice_number = generate_notice_number()
+        try:
+            with transaction.atomic():
+                notice.save(force_insert=True)
+            return notice
+        except IntegrityError:
+            if attempt == 4 or not Notice.objects.filter(notice_number=notice.notice_number).exists():
+                raise
+            notice.pk = None
+            notice._state.adding = True
