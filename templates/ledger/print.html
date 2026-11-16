@@ -7,6 +7,7 @@
   <title>Ledger - {{ tenant.full_name }}</title>
   <link rel="stylesheet" href="{% static 'css/output.css' %}?v={{ STATIC_VERSION }}">
   <style>
+    .monthly-collection-table { border-collapse: collapse; font-size: 10px; } .monthly-collection-table th, .monthly-collection-table td { border: 1px solid #d1d5db; padding: 8px; vertical-align: top; } .monthly-collection-table .num { text-align: right; }
     @media print { body { background: white; font-size: 9pt; } .no-print { display: none !important; } @page { margin: 0.4in; size: A4 landscape; } table { page-break-inside: auto; } tr { page-break-inside: avoid; page-break-after: auto; } thead { display: table-header-group; } }
   </style>
 </head>
@@ -37,7 +38,7 @@
         <p class="mono mt-1 text-lg font-bold tabular-nums text-red-700">&#8369;{{ total_debits|floatformat:2|intcomma }}</p>
       </div>
       <div class="border border-gray-400 p-3 text-center">
-        <p class="text-xs font-medium uppercase tracking-wider text-gray-600">Payments Applied</p>
+        <p class="text-xs font-medium uppercase tracking-wider text-gray-600">Total Paid</p>
         <p class="mono mt-1 text-lg font-bold tabular-nums text-emerald-800">&#8369;{{ total_credits|floatformat:2|intcomma }}</p>
       </div>
       <div class="border p-3 text-center {% if running_balance > 0 %}border-red-600{% else %}border-emerald-800{% endif %}">
@@ -46,52 +47,8 @@
       </div>
     </div>
 
-<p class="my-4 text-xs text-gray-600">{{ paid_bills }} paid bill(s) · {{ unpaid_bills }} bill(s) with an unpaid balance. Newest entries first. Account balances are historical; bill status and remaining due are current. Charges include current penalties and discounts.{% if unapplied_amount > 0 %} Excess receipts: &#8369;{{ unapplied_amount|floatformat:2|intcomma }} (not applied to other bills).{% endif %}</p>
-    <table class="w-full border-collapse text-xs">
-      <thead>
-        <tr>
-          <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-left font-bold uppercase text-gray-700">Date</th>
-          <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-left font-bold uppercase text-gray-700">Period</th>
-          <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-left font-bold uppercase text-gray-700">Stall</th>
-          <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-left font-bold uppercase text-gray-700">Description</th>
-          <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-right font-bold uppercase text-gray-700">Rental</th>
-          <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-right font-bold uppercase text-gray-700">Penalty</th>
-          <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-right font-bold uppercase text-gray-700">Rental Charges</th>
-          <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-right font-bold uppercase text-gray-700">Payments Applied</th>
-          <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-right font-bold uppercase text-gray-700">Account Balance After Entry</th>
-          <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-left font-bold uppercase text-gray-700">Receipt / OR</th>
-          <th class="border border-gray-400 bg-gray-100 px-2 py-2 text-left font-bold uppercase text-gray-700">Bill Status / Remaining Due</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for entry in entries %}
-        <tr>
-          <td class="border border-gray-300 px-2 py-1.5 text-gray-800">{{ entry.transaction_date|date:"M d, Y" }}</td>
-          <td class="mono border border-gray-300 px-2 py-1.5 text-gray-800">{% if entry.billing %}{{ entry.billing.billing_month|stringformat:"02d" }}/{{ entry.billing.billing_year }}{% else %}--{% endif %}</td>
-          <td class="mono border border-gray-300 px-2 py-1.5 text-gray-800">{% if entry.billing %}{{ entry.billing.stall.stall_number }}{% elif entry.payment %}{{ entry.payment.stall.stall_number }}{% else %}--{% endif %}</td>
-          <td class="border border-gray-300 px-2 py-1.5 text-gray-800">{{ entry.description }}</td>
-          <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums text-gray-800">{% if entry.billing and entry.debit > 0 %}{{ entry.billing.rental_amount|floatformat:2 }}{% else %}--{% endif %}</td>
-          <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums text-red-700">{% if entry.billing and entry.billing.penalty_amount > 0 and entry.debit > 0 %}{{ entry.billing.penalty_amount|floatformat:2 }}{% else %}--{% endif %}</td>
-          <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums text-red-700">{% if entry.debit %}{{ entry.debit|floatformat:2 }}{% else %}--{% endif %}</td>
-          <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums text-emerald-800">{% if entry.credit %}{{ entry.credit|floatformat:2 }}{% else %}--{% endif %}</td>
-          <td class="border border-gray-300 px-2 py-1.5 text-right font-bold tabular-nums {% if entry.balance > 0 %}text-red-700{% else %}text-emerald-800{% endif %}">{{ entry.balance|floatformat:2 }}</td>
-          <td class="mono border border-gray-300 px-2 py-1.5 text-[10px] text-gray-800">{% if entry.payment %}{{ entry.payment.receipt_number }}{% if entry.payment.official_receipt_no and entry.payment.official_receipt_no != entry.payment.receipt_number %}<br><span class="text-gray-600">OR: {{ entry.payment.official_receipt_no }}</span>{% endif %}{% else %}--{% endif %}</td>
-          <td class="border border-gray-300 px-2 py-1.5 text-gray-800">{% if entry.payment %}{{ entry.billing.status }}{% elif entry.billing %}{{ entry.billing.status }}{% else %}--{% endif %}<br>Due: &#8369;{{ entry.billing.balance|floatformat:2|intcomma }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="11" class="border border-gray-300 px-3 py-4 text-center text-sm text-gray-600">No ledger entries</td></tr>
-        {% endfor %}
-      </tbody>
-      <tfoot>
-        <tr>
-          <td colspan="6" class="border border-gray-400 bg-gray-100 px-2 py-2 text-right font-semibold text-gray-900">Totals:</td>
-          <td class="border border-gray-400 bg-gray-100 px-2 py-2 text-right font-semibold tabular-nums text-red-700">{{ total_debits|floatformat:2 }}</td>
-          <td class="border border-gray-400 bg-gray-100 px-2 py-2 text-right font-semibold tabular-nums text-emerald-800">{{ total_credits|floatformat:2 }}</td>
-          <td class="border border-gray-400 bg-gray-100 px-2 py-2 text-right font-semibold tabular-nums {% if running_balance > 0 %}text-red-700{% else %}text-emerald-800{% endif %}">{{ running_balance|floatformat:2 }}</td>
-          <td colspan="2" class="border border-gray-400 bg-gray-100"></td>
-        </tr>
-      </tfoot>
-    </table>
+<p class="my-4 text-xs text-gray-600">{{ paid_bills }} paid bill(s) · {{ unpaid_bills }} bill(s) with an unpaid balance. One row per month and stall, newest month first. Remaining = total due minus payments applied.{% if unapplied_amount > 0 %} Excess receipts: &#8369;{{ unapplied_amount|floatformat:2|intcomma }} (not applied to other bills).{% endif %}</p>
+    {% include 'ledger/_monthly_table.html' with collection_rows=entries %}
 
     <div class="mt-10 grid grid-cols-2 gap-8 text-center text-xs">
       <div><div class="mt-16 border-t border-gray-400 pt-2"><p class="font-semibold text-gray-900">Prepared by</p><p class="text-gray-600">{{ user.get_full_name|default:user.username }} • {% now "M d, Y" %}</p></div></div>

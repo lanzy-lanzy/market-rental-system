@@ -39,7 +39,8 @@ class LedgerStatementTests(BillingFixtureMixin, TestCase):
         self.assertEqual(statement['total_credits'], Decimal('40'))
         self.assertEqual(statement['running_balance'], Decimal('60'))
         self.assertEqual(statement['unpaid_bills'], 1)
-        self.assertEqual(len(statement['entries']), 2)
+        self.assertEqual(len(statement['entries']), 1)
+        self.assertEqual(len(statement['entries'][0].payments), 1)
         self.assertEqual(statement['entries'][0].billing.status, 'Partial')
 
     def test_excess_is_separate_and_never_negative_due(self):
@@ -58,8 +59,10 @@ class LedgerStatementTests(BillingFixtureMixin, TestCase):
             response = self.client.get(reverse(route, args=[self.tenant.pk]))
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.context['running_balance'], 0)
-            self.assertContains(response, 'Account Balance After Entry')
-            self.assertContains(response, 'Due: &#8369;0.00')
+            self.assertContains(response, 'Remaining')
+            self.assertNotContains(response, 'Account Balance After Entry')
+            self.assertEqual(len(response.context['entries']), 1)
+            self.assertContains(response, '&#8369;0.00')
         with patch('core.views.ledger.render_to_pdf_response') as render:
             from django.http import HttpResponse
             render.return_value = HttpResponse('pdf')
