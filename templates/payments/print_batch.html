@@ -48,9 +48,7 @@
 
       <!-- Letterhead -->
       <div class="text-center">
-        {% if settings.logo %}
-        <img src="{{ settings.logo.url }}" alt="Logo" class="mx-auto mb-3 h-16 w-auto">
-        {% endif %}
+        {% include 'includes/document_logo.html' %}
         <h1 class="text-xl font-bold uppercase text-emerald-800">{{ settings.municipality_name|default:"Republic of the Philippines" }}</h1>
         <h2 class="text-lg font-semibold text-emerald-700">{{ settings.market_name|default:"Public Market" }}</h2>
         <p class="text-sm text-gray-600">{{ settings.office_name|default:"Market Administration Office" }}</p>

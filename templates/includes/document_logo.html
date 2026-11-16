@@ -1,0 +1,4 @@
+{% load document_branding %}{% document_logo_src as logo_src %}{% if logo_src %}
+{% firstof system_settings.municipality_name settings.municipality_name 'Municipality' as logo_name %}
+<img src="{{ logo_src }}" alt="{{ logo_name }} logo" width="64" height="64" style="display:block; width:64px; height:64px; object-fit:contain; margin:0 auto 10px;" class="document-logo">
+{% endif %}

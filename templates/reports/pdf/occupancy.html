@@ -17,6 +17,7 @@
 </style>
 </head>
 <body>
+  {% include 'includes/document_logo.html' %}
   <p class="org">{{ system_settings.municipality_name|default:"Local Government Unit" }} • {{ system_settings.market_name|default:"Public Market" }}</p>
   <h1>{{ report_type|default:"Occupancy Report" }}</h1>
   <div class="rule"></div>

@@ -31,9 +31,7 @@
       <div class="pointer-events-none absolute -top-16 -right-12 h-56 w-56 rounded-full bg-gold-400/20 blur-2xl"></div>
       <div class="pointer-events-none absolute -bottom-24 -left-10 h-56 w-56 rounded-full bg-emerald-400/20 blur-2xl"></div>
       <div class="relative flex flex-col items-center text-center">
-        {% if settings.logo %}
-        <img src="{{ settings.logo.url }}" alt="Logo" class="mb-3 h-16 w-auto rounded-xl bg-white/90 p-1 shadow-sm">
-        {% endif %}
+        {% include 'includes/document_logo.html' %}
         <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-gold-300">{{ settings.municipality_name|default:"Republic of the Philippines" }}</p>
         <h1 class="mt-1 font-display text-xl font-extrabold uppercase">{{ settings.market_name|default:"Public Market" }}</h1>
         <p class="mt-1 text-xs font-medium text-emerald-100/80">{{ settings.office_name|default:"Market Administration Office" }}</p>
