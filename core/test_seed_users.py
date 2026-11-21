@@ -1,0 +1,29 @@
+from django.contrib.auth.models import User
+from django.core.management import call_command
+from django.test import TestCase
+
+from core.models import SystemSetting, Tenant
+
+
+class SeedUsersCommandTests(TestCase):
+    def test_seed_users_creates_admin_collector_and_tenant_idempotently(self):
+        call_command("seed_users")
+        call_command("seed_users")
+
+        admin = User.objects.get(username="admin")
+        self.assertTrue(admin.is_superuser)
+        self.assertTrue(admin.is_staff)
+        self.assertTrue(admin.check_password("admin123"))
+        self.assertEqual(admin.profile.role, "admin")
+
+        collector = User.objects.get(username="collector")
+        self.assertTrue(collector.is_active)
+        self.assertTrue(collector.check_password("collector123"))
+        self.assertEqual(collector.profile.role, "collector")
+
+        tenant_user = User.objects.get(username="tenant")
+        self.assertTrue(tenant_user.is_active)
+        self.assertTrue(tenant_user.check_password("tenant123"))
+        self.assertEqual(tenant_user.profile.role, "tenant")
+        self.assertTrue(Tenant.objects.filter(user=tenant_user).exists())
+        self.assertTrue(SystemSetting.objects.exists())

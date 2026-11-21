@@ -1,8 +1,7 @@
 django>=5.0
-dj-database-url>=2.3
-psycopg[binary]>=3.2
-PyMySQL>=1.1
+gunicorn>=23.0
 whitenoise>=6.8
+python-dotenv>=1.0
 openpyxl
 weasyprint
 reportlab>=4.0
