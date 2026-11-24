@@ -1,10 +1,9 @@
-"""Sidebar state for the Stalls group.
+"""Streamlined Operations sidebar and unified Stalls workspace navigation tests.
 
-The group used to decide its open/active state with substring matching on the
-URL name, which misfired in both directions: ``market_section_list`` does not
-contain "stall" (group stayed collapsed and un-highlighted) while
-``stall_type_list`` does (the "List" entry lit up alongside "Stall Types").
-``stall_navigation`` now maps URL names to an explicit sidebar tab.
+The Operations sidebar uses single direct links for Tenants, Stalls, and
+Contracts instead of multi-item accordions (List / Add / Lookups / Sections /
+Stall Types). Inside the Stalls workspace, an in-page tab bar switches cleanly
+between Stalls, Sections, and Stall Types with a 1-click Add Stall action.
 """
 
 from django.contrib.auth.models import User
@@ -24,45 +23,71 @@ class StallSidebarNavigationTests(TestCase):
         UserProfile.objects.create(user=self.admin, role='admin')
         self.client.force_login(self.admin)
 
-    def _nav(self, url):
-        return self.client.get(url).content.decode()
+    def _html(self, url):
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200, url)
+        return resp.content.decode()
 
-    def test_stall_list_page_opens_group_and_highlights_list(self):
-        html = self._nav(reverse('stall_list'))
-        self.assertIn('nav-sub-link is-active">List<', html)
-        self.assertIn('x-data="{ open: true }"', html)
+    def _sidebar(self, html):
+        start = html.index('<aside')
+        end = html.index('</aside>') + len('</aside>')
+        return html[start:end]
 
-    def test_stall_types_page_highlights_only_stall_types(self):
-        StallType.objects.create(name='Kiosk')
-        html = self._nav(reverse('stall_type_list'))
-        self.assertIn('nav-sub-link is-active">Stall Types<', html)
-        self.assertNotIn('nav-sub-link is-active">List<', html)
-        self.assertIn('x-data="{ open: true }"', html)
+    def test_operations_sidebar_has_direct_links_without_creation_sublinks(self):
+        html = self._html(reverse('stall_list'))
+        sidebar = self._sidebar(html)
+        self.assertIn(f'href="{reverse("tenant_list")}"', sidebar)
+        self.assertIn(f'href="{reverse("stall_list")}"', sidebar)
+        self.assertIn(f'href="{reverse("contract_list")}"', sidebar)
+        # No accordion clutter in the sidebar for Tenants, Stalls, or Contracts
+        for clutter in (
+            'Add Stall',
+            'Sections',
+            'Stall Types',
+            'Lookups',
+            'Add Tenant',
+            'New Contract',
+            'Bulk Assign',
+        ):
+            self.assertNotIn(clutter, sidebar)
 
-    def test_sections_page_opens_group_and_highlights_sections(self):
-        MarketSection.objects.create(name='Dry Goods')
-        html = self._nav(reverse('market_section_list'))
-        self.assertIn('nav-sub-link is-active">Sections<', html)
-        self.assertIn('x-data="{ open: true }"', html)
-
-    def test_add_stall_page_highlights_add_stall(self):
-        html = self._nav(reverse('stall_add'))
-        self.assertIn('nav-sub-link is-active">Add Stall<', html)
-        self.assertNotIn('nav-sub-link is-active">List<', html)
-
-    def test_exactly_one_stall_sub_link_is_active_per_page(self):
+    def test_single_stalls_sidebar_link_is_active_across_all_stall_pages(self):
         StallType.objects.create(name='Kiosk')
         MarketSection.objects.create(name='Dry Goods')
         for url in (
             reverse('stall_list'),
             reverse('stall_add'),
-            reverse('stall_type_list'),
             reverse('market_section_list'),
+            reverse('stall_type_list'),
         ):
-            html = self._nav(url)
-            self.assertEqual(html.count('nav-sub-link is-active'), 1, url)
+            sidebar = self._sidebar(self._html(url))
+            self.assertIn(f'href="{reverse("stall_list")}" class="nav-link is-active"', sidebar, url)
 
-    def test_unrelated_pages_leave_the_group_closed(self):
-        html = self._nav(reverse('dashboard'))
-        self.assertNotIn('nav-sub-link is-active">Stall Types<', html)
-        self.assertNotIn('nav-sub-link is-active">Sections<', html)
+    def test_workspace_tabs_highlight_active_tab_per_page(self):
+        StallType.objects.create(name='Kiosk')
+        MarketSection.objects.create(name='Dry Goods')
+
+        cases = [
+            (reverse('stall_list'), 'list'),
+            (reverse('stall_add'), 'list'),
+            (reverse('market_section_list'), 'sections'),
+            (reverse('stall_type_list'), 'types'),
+        ]
+        for url, expected_tab in cases:
+            html = self._html(url)
+            self.assertIn('data-stalls-workspace-tabs', html, url)
+            self.assertEqual(html.count('workspace-tab inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold transition is-active'), 1, url)
+            self.assertIn(f'data-workspace-tab="{expected_tab}"\n         aria-current="page"', html, url)
+
+    def test_workspace_tabs_include_one_click_add_stall_modal_trigger(self):
+        for url in (
+            reverse('stall_list'),
+            reverse('market_section_list'),
+            reverse('stall_type_list'),
+        ):
+            html = self._html(url)
+            self.assertIn(reverse('stall_add_modal'), html, url)
+
+    def test_unrelated_pages_leave_stalls_sidebar_link_inactive(self):
+        sidebar = self._sidebar(self._html(reverse('dashboard')))
+        self.assertNotIn(f'href="{reverse("stall_list")}" class="nav-link is-active"', sidebar)

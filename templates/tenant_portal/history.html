@@ -8,9 +8,9 @@
 {% block content %}
 <div class="space-y-5">
 
-  <!-- ══════════ Page head ══════════ -->
+  <!-- ══════════ Page Head ══════════ -->
   <div class="page-head">
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-3.5">
       <span class="stat-icon">
         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       </span>
@@ -25,14 +25,14 @@
     </a>
   </div>
 
-  <!-- ══════════ Filters ══════════ -->
+  <!-- ══════════ Filter Bar ══════════ -->
   <div class="filter-bar">
     <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
       <div class="relative flex-1">
         <svg class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
         <input type="text" name="search" value="{{ search_query|default:'' }}" placeholder="Search description, receipt no, stall..." hx-get="{% url 'tenant_portal_history' %}" hx-target="#portal-history-wrapper" hx-trigger="keyup changed delay:400ms" hx-include="[name='type'],[name='year'],[name='month'],[name='status']" hx-push-url="true" class="field w-full pl-10">
       </div>
-      <div class="flex flex-wrap items-center gap-3">
+      <div class="flex flex-wrap items-center gap-2.5">
         <select name="type" hx-get="{% url 'tenant_portal_history' %}" hx-target="#portal-history-wrapper" hx-trigger="change" hx-include="[name='search'],[name='year'],[name='month'],[name='status']" hx-push-url="true" class="field w-full sm:w-auto sm:min-w-[9.5rem]">
           <option value="">All Types</option>
           <option value="billing" {% if type_filter == 'billing' %}selected{% endif %}>Billing / Charges</option>

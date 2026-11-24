@@ -164,7 +164,7 @@
       <div class="flex min-w-0 items-start gap-4">
         {% include 'includes/document_logo.html' %}
         <div class="min-w-0">
-          <p class="text-[10px] font-extrabold uppercase tracking-[0.18em] text-emerald-700">{{ system_settings.municipality_name|default:"Local Government Unit" }}</p>
+          <p class="text-[10px] font-extrabold uppercase tracking-[0.18em] brand-text">{{ system_settings.municipality_name|default:"Local Government Unit" }}</p>
           <p class="text-xs font-semibold text-ink-muted">{{ system_settings.market_name|default:"Public Market" }}</p>
           <h1 class="mt-2 font-display text-xl font-extrabold uppercase tracking-wide text-ink">{% block report_title_display %}Collection Report{% endblock %}</h1>
           <div class="divider-gold mt-3"></div>

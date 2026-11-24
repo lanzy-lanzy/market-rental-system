@@ -1,9 +1,16 @@
 {% load static %}<!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en" class="h-full" data-theme="civic-emerald">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Public Market — Rental & Collection System{% endblock %}</title>
+  <script>
+    (function () {
+      var saved = localStorage.getItem('mrs-theme') || 'civic-emerald';
+      var valid = ['civic-emerald', 'royal-navy', 'slate-graphite', 'burgundy-civic', 'midnight-dark'];
+      document.documentElement.dataset.theme = valid.indexOf(saved) !== -1 ? saved : 'civic-emerald';
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -20,28 +27,28 @@
 <div x-data="{ sidebarOpen: window.innerWidth >= 1024 }" @resize.window="sidebarOpen = window.innerWidth >= 1024 ? true : sidebarOpen" class="flex h-full overflow-hidden">
 
   <!-- Mobile scrim -->
-  <div x-show="sidebarOpen && window.innerWidth < 1024" x-transition.opacity @click="sidebarOpen=false" class="fixed inset-0 z-30 bg-emerald-950/40 backdrop-blur-md lg:hidden" x-cloak></div>
+  <div x-show="sidebarOpen && window.innerWidth < 1024" x-transition.opacity @click="sidebarOpen=false" class="fixed inset-0 z-30 bg-slate-950/50 backdrop-blur-sm lg:hidden" x-cloak></div>
 
-  <!-- ══════════ Sidebar — deep emerald liquid glass ══════════ -->
+  <!-- ══════════ Sidebar — Formal Institutional Navigation ══════════ -->
   <aside x-show="sidebarOpen" x-cloak
          x-transition:enter="transition duration-200" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0"
          x-transition:leave="transition duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full"
-         class="glass-deep fixed inset-y-0 left-0 z-40 flex w-[272px] flex-col lg:static lg:translate-x-0 shrink-0">
+         class="glass-deep fixed inset-y-0 left-0 z-40 flex w-[268px] flex-col lg:static lg:translate-x-0 shrink-0">
 
-    <!-- Brand -->
+    <!-- Brand / Official LGU Crest -->
     <div class="shrink-0 px-5 pt-5 pb-4">
       <div class="flex items-start justify-between gap-2">
         <a href="{% url 'landing' %}" class="flex items-center gap-3">
-          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md ring-1 ring-white/20">
+          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20">
             <img src="{% static 'images/lgu_dumingag_logo.png' %}" alt="Municipal Seal" class="h-8 w-8 object-contain">
           </span>
-          <div class="leading-tight">
-            <span class="block text-[9px] font-semibold uppercase tracking-[0.18em] text-gold-300/80">Republic of the Philippines</span>
-            <span class="block text-sm font-extrabold uppercase text-white">{{ system_settings.municipality_name|default:"LGU Dumingag" }}</span>
-            <span class="block text-[11px] font-semibold text-emerald-100/70">{{ system_settings.market_name|default:"Public Market" }}</span>
+          <div class="leading-tight min-w-0">
+            <span class="block text-[9px] font-semibold uppercase tracking-[0.16em] text-amber-300/85">Republic of the Philippines</span>
+            <span class="block truncate text-sm font-extrabold uppercase text-white">{{ system_settings.municipality_name|default:"LGU Dumingag" }}</span>
+            <span class="block truncate text-[11px] font-medium text-white/70">{{ system_settings.market_name|default:"Public Market" }}</span>
           </div>
         </a>
-        <button @click="sidebarOpen=false" class="lg:hidden inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/5 text-emerald-100 hover:bg-white/15">
+        <button @click="sidebarOpen=false" class="lg:hidden inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-white/80 hover:bg-white/15">
           <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
@@ -56,7 +63,7 @@
         <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
         <span>My Portal</span>
       </a>
-      <div class="pt-4 pb-2"><p class="nav-section">My Account</p></div>
+      <div class="pt-4 pb-1.5"><p class="nav-section">My Account</p></div>
       <a href="{% url 'tenant_portal_history' %}" class="nav-link {% if url_name == 'tenant_portal_history' %}is-active{% endif %}">
         <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         <span>Transaction History</span>
@@ -81,50 +88,23 @@
         <span>Dashboard</span>
       </a>
 
-      <div class="pt-4 pb-2"><p class="nav-section">Operations</p></div>
+      <div class="pt-4 pb-1.5"><p class="nav-section">Operations</p></div>
 
       {% if can_manage_records %}
-      <div x-data="{ open: {% if 'tenant' in url_name %}true{% else %}false{% endif %} }">
-        <button @click="open=!open" class="nav-link w-full {% if 'tenant' in url_name %}is-muted-active{% endif %}">
-          <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-          <span class="flex-1 text-left">Tenants</span>
-          <svg class="h-3.5 w-3.5 transition" :class="open?'rotate-180':''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-        </button>
-        <div x-show="open" x-cloak class="ml-4 mt-1 space-y-0.5 border-l border-white/15 pl-3">
-          <a href="{% url 'tenant_list' %}" class="nav-sub-link {% if 'tenant' in url_name and url_name != 'tenant_add' %}is-active{% endif %}">List</a>
-          <a href="{% url 'tenant_add' %}" class="nav-sub-link {% if url_name == 'tenant_add' %}is-active{% endif %}">Add Tenant</a>
-        </div>
-      </div>
+      <a href="{% url 'tenant_list' %}" class="nav-link {% if 'tenant' in url_name %}is-active{% endif %}">
+        <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span>Tenants</span>
+      </a>
 
-      {% with stall_tab=stall_nav_tab %}
-      <div x-data="{ open: {% if stall_tab %}true{% else %}false{% endif %} }">
-        <button @click="open=!open" class="nav-link w-full {% if stall_tab %}is-muted-active{% endif %}">
-          <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-          <span class="flex-1 text-left">Stalls</span>
-          <svg class="h-3.5 w-3.5 transition" :class="open?'rotate-180':''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-        </button>
-        <div x-show="open" x-cloak class="ml-4 mt-1 space-y-0.5 border-l border-white/15 pl-3">
-          <a href="{% url 'stall_list' %}" class="nav-sub-link {% if stall_tab == 'list' %}is-active{% endif %}">List</a>
-          <a href="{% url 'stall_add' %}" class="nav-sub-link {% if stall_tab == 'add' %}is-active{% endif %}">Add Stall</a>
-          <div class="pt-2 pb-1"><p class="nav-section">Lookups</p></div>
-          <a href="{% url 'market_section_list' %}" class="nav-sub-link {% if stall_tab == 'sections' %}is-active{% endif %}">Sections</a>
-          <a href="{% url 'stall_type_list' %}" class="nav-sub-link {% if stall_tab == 'types' %}is-active{% endif %}">Stall Types</a>
-        </div>
-      </div>
-      {% endwith %}
+      <a href="{% url 'stall_list' %}" class="nav-link {% if stall_nav_tab %}is-active{% endif %}">
+        <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+        <span>Stalls</span>
+      </a>
 
-      <div x-data="{ open: {% if 'contract' in url_name %}true{% else %}false{% endif %} }">
-        <button @click="open=!open" class="nav-link w-full {% if 'contract' in url_name %}is-muted-active{% endif %}">
-          <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          <span class="flex-1 text-left">Contracts</span>
-          <svg class="h-3.5 w-3.5 transition" :class="open?'rotate-180':''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-        </button>
-        <div x-show="open" x-cloak class="ml-4 mt-1 space-y-0.5 border-l border-white/15 pl-3">
-          <a href="{% url 'contract_list' %}" class="nav-sub-link {% if 'contract' in url_name and url_name != 'contract_add' and url_name != 'contract_bulk_assign' %}is-active{% endif %}">List</a>
-          <a href="{% url 'contract_add' %}" class="nav-sub-link {% if url_name == 'contract_add' %}is-active{% endif %}">New Contract</a>
-          <a href="{% url 'contract_bulk_assign' %}" class="nav-sub-link {% if url_name == 'contract_bulk_assign' %}is-active{% endif %}">Bulk Assign</a>
-        </div>
-      </div>
+      <a href="{% url 'contract_list' %}" class="nav-link {% if 'contract' in url_name %}is-active{% endif %}">
+        <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        <span>Contracts</span>
+      </a>
       {% endif %}
 
       <div x-data="{ open: {% if 'billing' in url_name %}true{% else %}false{% endif %} }">
@@ -134,7 +114,8 @@
           <svg class="h-3.5 w-3.5 transition" :class="open?'rotate-180':''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
         </button>
         <div x-show="open" x-cloak class="ml-4 mt-1 space-y-0.5 border-l border-white/15 pl-3">
-          <a href="{% url 'billing_list' %}" class="nav-sub-link {% if 'billing' in url_name and url_name != 'billing_generate' and url_name != 'billing_generate_all' %}is-active{% endif %}">{% if is_collector %}Collection Queue{% else %}Records{% endif %}</a>
+          <a href="{% url 'billing_list' %}" class="nav-sub-link {% if 'billing' in url_name and url_name != 'billing_generate' and url_name != 'billing_generate_all' and url_name != 'billing_collection_sheet' and url_name != 'billing_collection_sheet_print' %}is-active{% endif %}">{% if is_collector %}Collection Queue{% else %}Records{% endif %}</a>
+          <a href="{% url 'billing_collection_sheet' %}" class="nav-sub-link {% if url_name == 'billing_collection_sheet' or url_name == 'billing_collection_sheet_print' %}is-active{% endif %}">Collection Sheet</a>
           {% if can_manage_records %}
           <a href="{% url 'billing_generate' %}" class="nav-sub-link {% if url_name == 'billing_generate' or url_name == 'billing_generate_all' %}is-active{% endif %}">Generate</a>
           {% endif %}
@@ -146,10 +127,14 @@
         <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
         <span>My Collections</span>
       </a>
+      <a href="{% url 'collector_remittance' %}" class="nav-link {% if url_name == 'collector_remittance' or url_name == 'report_remittance' or url_name == 'report_remittance_print' %}is-muted-active{% endif %}">
+        <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        <span>Daily Remittance</span>
+      </a>
       {% endif %}
 
       {% if can_manage_records %}
-      <div class="pt-4 pb-2"><p class="nav-section">Reports</p></div>
+      <div class="pt-4 pb-1.5"><p class="nav-section">Reports</p></div>
       <div x-data="{ open: {% if 'report' in url_name %}true{% else %}false{% endif %} }">
         <button @click="open=!open" class="nav-link w-full {% if 'report' in url_name %}is-muted-active{% endif %}">
           <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
@@ -158,6 +143,7 @@
         </button>
         <div x-show="open" x-cloak class="ml-4 mt-1 space-y-0.5 border-l border-white/15 pl-3">
           <a href="{% url 'report_dashboard' %}" class="nav-sub-link {% if url_name == 'report_dashboard' %}is-active{% endif %}">Dashboard</a>
+          <a href="{% url 'report_remittance' %}" class="nav-sub-link {% if url_name == 'report_remittance' or url_name == 'report_remittance_print' %}is-active{% endif %}">Remittance (AF 51)</a>
           <a href="{% url 'report_daily' %}" class="nav-sub-link {% if url_name == 'report_daily' %}is-active{% endif %}">Daily</a>
           <a href="{% url 'report_monthly' %}" class="nav-sub-link {% if url_name == 'report_monthly' %}is-active{% endif %}">Monthly</a>
           <a href="{% url 'report_annual' %}" class="nav-sub-link {% if url_name == 'report_annual' %}is-active{% endif %}">Annual</a>
@@ -165,11 +151,11 @@
         </div>
       </div>
 
-      <a href="{% url 'ledger_list' %}" class="nav-link {% if url_name == 'ledger_list' or url_name == 'ledger_view' or url_name == 'ledger_print' %}is-muted-active{% endif %}">
+      <a href="{% url 'ledger_list' %}" class="nav-link {% if url_name == 'ledger_list' or url_name == 'ledger_view' or url_name == 'ledger_print' %}is-active{% endif %}">
         <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
         <span>Ledger</span>
       </a>
-      <a href="{% url 'notice_list' %}" class="nav-link {% if 'notice' in url_name %}is-muted-active{% endif %}">
+      <a href="{% url 'notice_list' %}" class="nav-link {% if 'notice' in url_name %}is-active{% endif %}">
         <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
         <span>Notices</span>
       </a>
@@ -177,11 +163,11 @@
       {% endif %}
 
       {% if user.profile.role == 'admin' or user.is_superuser %}
-      <div class="pt-5 mt-4 border-t border-white/10">
-        <p class="nav-section pb-2">Administration</p>
-        <a href="{% url 'user_list' %}" class="nav-link {% if 'user' in url_name %}is-muted-active{% endif %}"><svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg> Users</a>
-        <a href="{% url 'audit_log_list' %}" class="nav-link {% if 'audit' in url_name %}is-muted-active{% endif %}"><svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Audit Logs</a>
-        <a href="{% url 'settings_view' %}" class="nav-link {% if 'settings' in url_name %}is-muted-active{% endif %}"><svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066 2.573c.94 1.543-.826 3.31 2.37 2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg> Settings</a>
+      <div class="pt-4 mt-3 border-t border-white/10">
+        <p class="nav-section pb-1.5">Administration</p>
+        <a href="{% url 'user_list' %}" class="nav-link {% if 'user' in url_name %}is-active{% endif %}"><svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg> Users</a>
+        <a href="{% url 'audit_log_list' %}" class="nav-link {% if 'audit' in url_name %}is-active{% endif %}"><svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Audit Logs</a>
+        <a href="{% url 'settings_view' %}" class="nav-link {% if 'settings' in url_name %}is-active{% endif %}"><svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg> Settings</a>
       </div>
       {% endif %}
       {% endwith %}
@@ -189,13 +175,13 @@
 
     <!-- User card -->
     <div class="border-t border-white/10 p-4">
-      <div class="flex items-center gap-3">
-        <span class="avatar avatar-gold h-9 w-9 text-sm">{{ user.first_name|first|default:user.username|first|upper }}{{ user.last_name|first|upper }}</span>
+      <div class="flex items-center gap-3 rounded-xl bg-white/5 p-2.5 ring-1 ring-white/10">
+        <span class="avatar avatar-gold h-9 w-9 text-xs">{{ user.first_name|first|default:user.username|first|upper }}{{ user.last_name|first|upper }}</span>
         <div class="flex-1 min-w-0">
-          <p class="truncate text-sm font-bold text-white">{{ user.get_full_name|default:user.username }}</p>
-          <p class="truncate text-[11px] font-medium text-emerald-100/60">{{ user.profile.get_role_display|default:"Staff" }} • {{ system_settings.municipality_name|default:"LGU" }}</p>
+          <p class="truncate text-sm font-semibold text-white">{{ user.get_full_name|default:user.username }}</p>
+          <p class="truncate text-[11px] font-medium text-white/60">{{ user.profile.get_role_display|default:"Staff" }} • {{ system_settings.municipality_name|default:"LGU" }}</p>
         </div>
-        <a href="{% url 'logout' %}" class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-white/20 bg-white/5 text-emerald-100 transition hover:bg-red-500 hover:border-red-400 hover:text-white" title="Logout">
+        <a href="{% url 'logout' %}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-white/80 transition hover:bg-red-600 hover:border-red-500 hover:text-white" title="Logout">
           <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
         </a>
       </div>
@@ -205,41 +191,76 @@
   <!-- ══════════ Main column ══════════ -->
   <div class="flex flex-1 flex-col overflow-hidden min-w-0">
 
-    <!-- Header — glass bar -->
-    <header class="sticky top-0 z-20 flex h-16 shrink-0 items-center border-b border-emerald-900/10 bg-white/75 shadow-[0_1px_12px_-6px_rgb(6_78_59_/_0.35)] backdrop-blur-xl backdrop-saturate-150">
+    <!-- Header — Crisp Formal Top Bar -->
+    <header class="theme-header sticky top-0 z-20 flex h-16 shrink-0 items-center">
       <div class="flex flex-1 items-center justify-between gap-3 px-4 lg:px-6">
         <div class="flex items-center gap-3 min-w-0">
-          <button @click="sidebarOpen=!sidebarOpen" class="btn-icon lg:hidden">
+          <button @click="sidebarOpen=!sidebarOpen" class="btn-icon lg:hidden" aria-label="Toggle sidebar">
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
           </button>
-          <div class="hidden sm:block h-7 w-px bg-emerald-900/10"></div>
           <div class="min-w-0">
             <h1 class="truncate font-display text-base font-extrabold text-ink">{% block page_title %}Dashboard{% endblock %}</h1>
             <p class="hidden sm:block truncate text-xs text-ink-muted">{% block page_subtitle %}{{ system_settings.market_name|default:"Public Market" }} • {{ system_settings.municipality_name|default:"Municipality" }}{% endblock %}</p>
           </div>
         </div>
+
         <div class="flex items-center gap-2">
-          <span class="hidden md:inline-flex items-center gap-1.5 rounded-full bg-emerald-900/5 px-3 py-1.5 text-[11px] font-semibold text-ink-soft ring-1 ring-emerald-900/10">
-            <svg class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M3.5 9.5h17M4 20h16a1 1 0 001-1V10a1 1 0 00-1-1H4a1 1 0 00-1 1v9a1 1 0 001 1z"/></svg>
+          <span class="hidden xl:inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-subtle)] px-3 py-1.5 text-[11px] font-semibold text-ink-soft">
+            <svg class="h-3.5 w-3.5 brand-text" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M3.5 9.5h17M4 20h16a1 1 0 001-1V10a1 1 0 00-1-1H4a1 1 0 00-1 1v9a1 1 0 001 1z"/></svg>
             {% now "l, F d, Y" %}
           </span>
-          <a href="{% url 'landing' %}" class="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/60 px-3 py-1.5 text-xs font-semibold text-ink-soft shadow-[var(--neu-shadow-sm)] transition hover:text-emerald-700">Landing</a>
+
+          <!-- Theme Switcher Dropdown -->
+          <div x-data="mrsThemeSwitcher()" class="relative">
+            <button type="button" @click="open=!open"
+                    class="inline-flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2.5 py-1.5 text-xs font-semibold text-ink-soft transition hover:bg-[var(--bg-surface-subtle)] hover:text-ink"
+                    title="Switch Theme" aria-label="Switch Theme">
+              <svg class="h-4 w-4 brand-text shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+              </svg>
+              <span class="hidden md:inline" x-text="currentLabel()">Civic Emerald</span>
+              <svg class="h-3 w-3 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+
+            <div x-show="open" @click.outside="open=false" x-transition x-cloak
+                 class="theme-popover absolute right-0 mt-2 w-60 origin-top-right rounded-xl p-1.5 z-40">
+              <p class="px-2.5 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-ink-muted">Appearance Theme</p>
+              <div class="space-y-0.5">
+                <template x-for="t in themes" :key="t.id">
+                  <button type="button" @click="select(t.id)" class="theme-option" :class="current === t.id ? 'is-active' : ''">
+                    <span class="inline-flex h-5 w-5 shrink-0 overflow-hidden rounded-full ring-1 ring-black/15">
+                      <span class="h-full w-1/2" :style="'background:' + t.primary"></span>
+                      <span class="h-full w-1/2" :style="'background:' + t.accent"></span>
+                    </span>
+                    <span class="flex-1 truncate" x-text="t.name"></span>
+                    <svg x-show="current === t.id" class="h-4 w-4 brand-text shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                  </button>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <a href="{% url 'landing' %}" class="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs font-semibold text-ink-soft transition hover:bg-[var(--bg-surface-subtle)] hover:text-ink">Portal</a>
+
+          <!-- User Menu -->
           <div x-data="{ open:false }" class="relative">
-            <button @click="open=!open" class="flex items-center gap-2 rounded-full border border-white/70 bg-white/60 py-1 pl-1 pr-3 shadow-[var(--neu-shadow-sm)] transition hover:bg-white/85">
+            <button @click="open=!open" class="flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] py-1 pl-1.5 pr-2.5 transition hover:bg-[var(--bg-surface-subtle)]">
               <span class="avatar h-7 w-7 text-[11px]">{{ user.first_name|first|default:user.username|first|upper }}</span>
-              <span class="hidden sm:block text-sm font-semibold text-ink">{{ user.get_short_name|default:user.username }}</span>
+              <span class="hidden sm:block text-xs font-semibold text-ink">{{ user.get_short_name|default:user.username }}</span>
               <svg class="h-3.5 w-3.5 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
             </button>
-            <div x-show="open" @click.outside="open=false" x-transition x-cloak class="absolute right-0 mt-2 w-56 origin-top-right rounded-2xl border border-white/70 bg-white/80 p-1.5 shadow-[var(--glass-shadow-lg)] backdrop-blur-xl backdrop-saturate-150">
-              <div class="rounded-xl px-3 py-2.5">
+            <div x-show="open" @click.outside="open=false" x-transition x-cloak class="theme-popover absolute right-0 mt-2 w-56 origin-top-right rounded-xl p-1.5 z-40">
+              <div class="rounded-lg px-3 py-2">
                 <p class="text-sm font-bold text-ink">{{ user.get_full_name|default:user.username }}</p>
                 <p class="text-xs text-ink-muted">{{ user.email|default:user.username }} • {{ user.profile.get_role_display|default:"Staff" }}</p>
               </div>
-              <div class="mt-1 space-y-1 border-t border-emerald-900/10 pt-1">
+              <div class="mt-1 space-y-1 border-t border-[var(--border-subtle)] pt-1.5">
                 {% if user.profile.role == 'admin' or user.is_superuser %}
-                <a href="{% url 'settings_view' %}" class="block rounded-xl px-3 py-2 text-sm font-medium text-ink-soft transition hover:bg-emerald-900/5 hover:text-emerald-800">Settings</a>
+                <a href="{% url 'settings_view' %}" class="block rounded-lg px-3 py-2 text-xs font-semibold text-ink-soft transition hover:bg-[var(--brand-tint)] hover:text-ink">Settings</a>
                 {% endif %}
-                <a href="{% url 'logout' %}" class="block rounded-xl bg-emerald-700 px-3 py-2 text-center text-sm font-semibold text-white transition hover:bg-emerald-800">Logout</a>
+                <a href="{% url 'logout' %}" class="btn btn-primary btn-sm w-full">Logout</a>
               </div>
             </div>
           </div>
@@ -254,7 +275,7 @@
         <div class="mb-6 space-y-2">
           {% for message in messages %}
           <div x-data="{ show:true }" x-show="show" x-transition class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-error{% elif message.tags == 'warning' %}alert-warning{% else %}alert-neutral{% endif %}">
-            <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/70 text-xs font-bold ring-1 ring-emerald-900/10">{% if message.tags == 'success' %}✓{% elif message.tags == 'error' %}✕{% else %}!{% endif %}</span>
+            <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-current/10 text-xs font-bold">{% if message.tags == 'success' %}✓{% elif message.tags == 'error' %}✕{% else %}!{% endif %}</span>
             <p class="flex-1 font-medium">{{ message }}</p>
             <button @click="show=false" class="opacity-60 transition hover:opacity-100"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
           </div>
@@ -264,7 +285,7 @@
 
         {% block content %}{% endblock %}
 
-        <p class="mt-8 text-center text-xs text-ink-muted">© {% now "Y" %} {{ system_settings.municipality_name|default:"LGU" }} • Public Market System • <a href="{% url 'landing' %}" class="link-emerald">Landing</a></p>
+        <p class="mt-8 text-center text-xs text-ink-muted">© {% now "Y" %} {{ system_settings.municipality_name|default:"LGU" }} • Public Market Rental &amp; Collection System • <a href="{% url 'landing' %}" class="link-emerald">Portal</a></p>
       </div>
     </main>
   </div>
@@ -274,14 +295,14 @@
 <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2 pointer-events-none"></div>
 <div id="modal-container" class="fixed inset-0 z-50 hidden">
   <div class="flex min-h-full items-center justify-center p-4">
-    <div class="fixed inset-0 bg-emerald-950/45 backdrop-blur-md" onclick="closeModal()"></div>
-    <div id="modal-content" class="glass-strong relative w-full max-w-lg max-h-[90vh] overflow-auto rounded-2xl shadow-[var(--glass-shadow-lg)]"></div>
+    <div class="fixed inset-0 bg-slate-950/55 backdrop-blur-sm" onclick="closeModal()"></div>
+    <div id="modal-content" class="glass-strong relative w-full max-w-lg max-h-[90vh] overflow-auto rounded-2xl"></div>
   </div>
 </div>
 <div id="confirm-dialog" class="fixed inset-0 z-50 hidden">
   <div class="flex min-h-full items-center justify-center p-4">
-    <div class="fixed inset-0 bg-emerald-950/45 backdrop-blur-md" onclick="closeConfirm()"></div>
-    <div class="glass-strong relative w-full max-w-sm rounded-2xl p-6 shadow-[var(--glass-shadow-lg)]">
+    <div class="fixed inset-0 bg-slate-950/55 backdrop-blur-sm" onclick="closeConfirm()"></div>
+    <div class="glass-strong relative w-full max-w-sm rounded-2xl p-6">
       <h3 id="confirm-title" class="font-display text-base font-extrabold text-ink">Are you sure?</h3>
       <p id="confirm-message" class="mt-1 text-sm text-ink-soft">This action cannot be undone.</p>
       <div class="mt-5 flex justify-end gap-3">
@@ -293,12 +314,47 @@
 </div>
 
 <script>
+window.MRS_THEMES = [
+  { id: 'civic-emerald', name: 'Civic Emerald', primary: '#064e3b', accent: '#d97706' },
+  { id: 'royal-navy', name: 'Royal Navy', primary: '#0f2942', accent: '#1d4ed8' },
+  { id: 'slate-graphite', name: 'Slate Graphite', primary: '#18181b', accent: '#4f46e5' },
+  { id: 'burgundy-civic', name: 'Burgundy Civic', primary: '#4c1d24', accent: '#b45309' },
+  { id: 'midnight-dark', name: 'Midnight Dark', primary: '#0b1120', accent: '#10b981' }
+];
+window.setMrsTheme = function (themeId) {
+  var valid = window.MRS_THEMES.map(function (t) { return t.id; });
+  var next = valid.indexOf(themeId) !== -1 ? themeId : 'civic-emerald';
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem('mrs-theme', next);
+  window.dispatchEvent(new CustomEvent('mrs-theme-changed', { detail: { theme: next } }));
+};
+function mrsThemeSwitcher() {
+  return {
+    open: false,
+    themes: window.MRS_THEMES,
+    current: document.documentElement.dataset.theme || 'civic-emerald',
+    init() {
+      window.addEventListener('mrs-theme-changed', (e) => {
+        if (e.detail && e.detail.theme) this.current = e.detail.theme;
+      });
+    },
+    currentLabel() {
+      var found = this.themes.find(t => t.id === this.current);
+      return found ? found.name : 'Civic Emerald';
+    },
+    select(id) {
+      window.setMrsTheme(id);
+      this.current = id;
+      this.open = false;
+    }
+  };
+}
 function showToast(message, type='success'){
   const c=document.getElementById('toast-container');
-  const map={success:'bg-emerald-700',error:'bg-red-600',warning:'bg-amber-500',info:'bg-ink-soft'};
+  const map={success:'bg-emerald-700',error:'bg-red-600',warning:'bg-amber-600',info:'bg-slate-700'};
   const el=document.createElement('div');
-  el.className=`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl shadow-[var(--glass-shadow-lg)] text-white text-sm font-semibold ${map[type]||map.info}`;
-  el.innerHTML=`<span class="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs">${type==='success'?'✓':type==='error'?'✕':'!'}</span><span class="flex-1">${message}</span><button onclick="this.parentElement.remove()" class="opacity-70 hover:opacity-100">✕</button>`;
+  el.className=`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-white text-sm font-semibold ${map[type]||map.info}`;
+  el.innerHTML=`<span class="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-xs">${type==='success'?'✓':type==='error'?'✕':'!'}</span><span class="flex-1">${message}</span><button onclick="this.parentElement.remove()" class="opacity-70 hover:opacity-100">✕</button>`;
   c.appendChild(el);
   setTimeout(()=>{el.style.opacity='0';el.style.transform='translateY(-4px)';setTimeout(()=>el.remove(),300)},4000);
 }

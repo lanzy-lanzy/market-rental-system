@@ -7,15 +7,27 @@
 {% block content %}
 <div class="space-y-5">
 
-  <!-- Back + tenant header -->
+  <!-- Back + tenant header actions -->
   <div class="flex flex-wrap items-center justify-between gap-3">
     <a href="{% url 'billing_list' %}" class="btn btn-ghost btn-sm">
       <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
       Back to grouped list
     </a>
-    {% if can_manage_records %}
-    <a href="{% url 'tenant_view' tenant.id %}" class="btn btn-ghost btn-sm">Tenant profile</a>
-    {% endif %}
+    <div class="flex flex-wrap items-center gap-2">
+      <a href="{% url 'billing_tenant_soa' tenant.id %}" target="_blank" class="btn btn-gold btn-sm">
+        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Statement of Account (SOA)
+      </a>
+      {% if overdue_count > 0 %}
+      <a href="{% url 'notice_add' %}?tenant={{ tenant.id }}" class="btn btn-ghost btn-sm text-red-600 border-red-500/30 hover:bg-red-500/10">
+        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"/></svg>
+        Issue Overdue Notice ({{ overdue_count }})
+      </a>
+      {% endif %}
+      {% if can_manage_records %}
+      <a href="{% url 'tenant_view' tenant.id %}" class="btn btn-ghost btn-sm">Tenant profile</a>
+      {% endif %}
+    </div>
   </div>
 
   <section class="panel overflow-hidden">
@@ -34,16 +46,24 @@
           </p>
         </div>
       </div>
-      <div class="grid grid-cols-3 gap-3 text-right">
+      <div class="grid grid-cols-2 gap-2 sm:grid-cols-5 text-right">
         <div class="neu-inset-sm rounded-xl px-3 py-2">
           <p class="stat-label">Months</p>
           <p class="text-sm font-extrabold tabular-nums text-ink">{{ billings|length }}</p>
         </div>
         <div class="neu-inset-sm rounded-xl px-3 py-2">
           <p class="stat-label">Unpaid</p>
-          <p class="text-sm font-extrabold tabular-nums text-amber-700">{{ outstanding|length }}</p>
+          <p class="text-sm font-extrabold tabular-nums text-[var(--accent-text)]">{{ outstanding|length }}</p>
         </div>
         <div class="neu-inset-sm rounded-xl px-3 py-2">
+          <p class="stat-label">Rent</p>
+          <p class="text-sm font-extrabold tabular-nums text-ink">₱{{ total_rent|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="neu-inset-sm rounded-xl px-3 py-2">
+          <p class="stat-label">Penalty</p>
+          <p class="text-sm font-extrabold tabular-nums text-red-600">₱{{ total_penalty|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="neu-inset-sm rounded-xl px-3 py-2 col-span-2 sm:col-span-1">
           <p class="stat-label">Balance</p>
           <p class="text-sm font-extrabold tabular-nums text-red-600">₱{{ total_outstanding|floatformat:2|intcomma }}</p>
         </div>
@@ -68,7 +88,7 @@
           <div>
             <p class="section-title">Step 1 — Review</p>
             <h3 class="mt-1 text-sm font-extrabold text-ink">Month-by-month breakdown</h3>
-            <p class="text-xs text-ink-muted">Verify each amount and due date, then tick the rows to settle in step 2.</p>
+            <p class="text-xs text-ink-muted">Verify rent, surcharge/penalty, and due dates, then settle by ticked months or Arrears-First (FIFO) cash entry.</p>
           </div>
           <div class="flex items-center gap-2">
             <button type="button" id="select-all" class="btn btn-ghost btn-sm">Select all outstanding</button>
@@ -78,25 +98,17 @@
       </div>
 
       <div class="mt-4 overflow-x-auto">
-        <table class="table min-w-[900px] table-fixed">
-          <colgroup>
-            <col class="w-[46px]">
-            <col class="w-[110px]">
-            <col class="w-[110px]">
-            <col class="w-[130px]">
-            <col class="w-[130px]">
-            <col class="w-[130px]">
-            <col class="w-[130px]">
-            <col class="w-[110px]">
-          </colgroup>
+        <table class="table min-w-[1040px]">
           <thead>
             <tr>
-              <th class="text-center">
-                <input type="checkbox" id="header-toggle" class="h-4 w-4 rounded border-emerald-900/20 text-emerald-600 focus:ring-emerald-500/20" title="Toggle all outstanding rows">
+              <th class="w-[46px] text-center">
+                <input type="checkbox" id="header-toggle" class="h-4 w-4 rounded border-[var(--border-strong)] accent-[var(--brand-700)]" title="Toggle all outstanding rows">
               </th>
               <th>Month</th>
               <th>Stall</th>
-              <th class="text-right">Due</th>
+              <th class="text-right">Monthly Rent</th>
+              <th class="text-right">Penalty / Surcharge</th>
+              <th class="text-right">Total Due</th>
               <th class="text-right">Paid</th>
               <th class="text-right">Balance</th>
               <th>Due Date</th>
@@ -108,36 +120,87 @@
             <tr>
               <td class="text-center">
                 {% if billing.balance > 0 and billing.status != 'Paid' %}
-                <input type="checkbox" name="billing_ids" value="{{ billing.id }}" data-balance="{{ billing.balance|floatformat:2 }}" class="row-select h-4 w-4 rounded border-emerald-900/20 text-emerald-600 focus:ring-emerald-500/20">
+                <input type="checkbox" name="billing_ids" value="{{ billing.id }}" data-balance="{{ billing.balance|floatformat:2 }}" data-period="{{ billing.billing_month|stringformat:'02d' }}/{{ billing.billing_year }}" data-stall="{{ billing.stall.stall_number }}" class="row-select h-4 w-4 rounded border-[var(--border-strong)] accent-[var(--brand-700)]">
                 {% else %}
-                <span class="inline-flex h-4 w-4 items-center justify-center rounded bg-emerald-100 text-emerald-700"><svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span>
+                <span class="inline-flex h-4 w-4 items-center justify-center rounded bg-[var(--brand-tint-strong)] brand-text"><svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span>
                 {% endif %}
               </td>
               <td class="whitespace-nowrap">
                 <span class="badge badge-gold tabular-nums">{{ billing.billing_month|stringformat:"02d" }}/{{ billing.billing_year }}</span>
               </td>
               <td class="whitespace-nowrap"><span class="badge badge-muted mono">{{ billing.stall.stall_number }}</span></td>
+              <td class="whitespace-nowrap text-sm font-medium text-ink num">₱{{ billing.rental_amount|floatformat:2|intcomma }}</td>
+              <td class="whitespace-nowrap text-sm font-semibold num {% if billing.penalty_amount > 0 %}text-red-600{% else %}text-ink-muted{% endif %}">₱{{ billing.penalty_amount|floatformat:2|intcomma }}</td>
               <td class="whitespace-nowrap text-sm font-semibold text-ink num">₱{{ billing.total_due|floatformat:2|intcomma }}</td>
-              <td class="whitespace-nowrap text-sm font-semibold text-emerald-700 num">₱{{ billing.amount_paid|floatformat:2|intcomma }}</td>
-              <td class="whitespace-nowrap text-sm font-extrabold num {% if billing.balance > 0 %}text-red-600{% else %}text-emerald-700{% endif %}">₱{{ billing.balance|floatformat:2|intcomma }}</td>
+              <td class="whitespace-nowrap text-sm font-semibold brand-text num">₱{{ billing.amount_paid|floatformat:2|intcomma }}</td>
+              <td class="whitespace-nowrap text-sm font-extrabold num {% if billing.balance > 0 %}text-red-600{% else %}brand-text{% endif %}">₱{{ billing.balance|floatformat:2|intcomma }}</td>
               <td class="whitespace-nowrap text-xs text-ink-soft tabular-nums">{{ billing.due_date|date:"M d, Y" }}</td>
               <td class="whitespace-nowrap">{% include 'includes/status_badge.html' with status=billing.status %}</td>
             </tr>
             {% endfor %}
           </tbody>
+          <tfoot>
+            <tr class="font-bold">
+              <td colspan="3" class="text-right text-xs uppercase tracking-wider text-ink-soft">Totals</td>
+              <td class="whitespace-nowrap text-sm num text-ink">₱{{ total_rent|floatformat:2|intcomma }}</td>
+              <td class="whitespace-nowrap text-sm num text-red-600">₱{{ total_penalty|floatformat:2|intcomma }}</td>
+              <td class="whitespace-nowrap text-sm num text-ink">₱{{ total_due|floatformat:2|intcomma }}</td>
+              <td class="whitespace-nowrap text-sm num brand-text">₱{{ total_paid|floatformat:2|intcomma }}</td>
+              <td class="whitespace-nowrap text-sm num {% if total_outstanding > 0 %}text-red-600{% else %}brand-text{% endif %}">₱{{ total_outstanding|floatformat:2|intcomma }}</td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
         </table>
       </div>
 
-      <!-- Step 2: batch action -->
-      <div class="mt-5 border-t border-emerald-900/10 bg-white/40 px-5 py-5">
-        <div class="mb-3 flex items-center gap-2">
-          <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-700 text-[11px] font-extrabold text-white">2</span>
-          <div>
-            <p class="section-title">Step 2 — Batch Collect</p>
-            <h3 class="mt-1 text-sm font-extrabold text-ink">Settle every ticked month in one action</h3>
+      <!-- Step 2: collection action -->
+      <div class="mt-5 border-t border-[var(--border-subtle)] bg-[var(--bg-surface-subtle)] px-5 py-5">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--brand-700)] text-[11px] font-extrabold text-white">2</span>
+            <div>
+              <p class="section-title">Step 2 — Collect Payment</p>
+              <h3 class="mt-1 text-sm font-extrabold text-ink">Choose Selected Months or Arrears-First (FIFO) Cash Entry</h3>
+            </div>
+          </div>
+
+          <!-- Mode Toggle -->
+          <div class="inline-flex rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] p-1" role="radiogroup" aria-label="Collection Mode">
+            <label class="cursor-pointer">
+              <input type="radio" name="collection_mode" value="selected" checked class="sr-only mode-radio">
+              <span class="mode-tab inline-block rounded-lg px-3 py-1.5 text-xs font-bold transition bg-[var(--brand-700)] text-white" data-mode-tab="selected">Selected Months</span>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="collection_mode" value="fifo" class="sr-only mode-radio">
+              <span class="mode-tab inline-block rounded-lg px-3 py-1.5 text-xs font-bold transition text-ink-soft" data-mode-tab="fifo">Arrears-First (FIFO) Cash</span>
+            </label>
           </div>
         </div>
-        <p class="mb-4 text-xs text-ink-soft">Each selected month is paid in full at its current balance and issues its own official receipt — matching the per-month flow so the ledger stays consistent.</p>
+
+        <!-- FIFO Cash Entry Panel -->
+        <div id="fifo-panel" class="mb-4 hidden rounded-2xl border border-[var(--brand-ring)] bg-[var(--brand-tint)] p-4">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div class="flex-1 max-w-sm">
+              <label for="amount-tendered" class="field-label">Cash Tendered (₱) — Applied Oldest Arrears First</label>
+              <input type="number" id="amount-tendered" name="amount_tendered" step="0.01" min="0.01" placeholder="e.g., 1500.00" class="field w-full font-bold tabular-nums">
+            </div>
+            {% if total_outstanding > 0 %}
+            <button type="button" id="fill-exact-outstanding" data-amount="{{ total_outstanding|floatformat:2 }}" class="btn btn-ghost btn-sm">
+              Exact Outstanding (₱{{ total_outstanding|floatformat:2|intcomma }})
+            </button>
+            {% endif %}
+          </div>
+          <div id="fifo-preview" class="mt-3 hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3 text-xs">
+            <p class="font-bold uppercase tracking-wider text-ink-soft mb-2">FIFO Allocation Preview (Oldest First)</p>
+            <ul id="fifo-preview-list" class="space-y-1.5"></ul>
+            <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--border-subtle)] pt-2 font-bold">
+              <span>Total Applied: <span id="fifo-applied-total" class="brand-text tabular-nums">₱0.00</span></span>
+              <span id="fifo-change-wrap" class="hidden badge badge-gold">Change Due: <span id="fifo-change-due" class="tabular-nums">₱0.00</span></span>
+            </div>
+          </div>
+        </div>
+
+        <p id="mode-helper-text" class="mb-4 text-xs text-ink-soft">Each selected month is paid in full at its current balance under one consolidated official receipt.</p>
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
@@ -158,16 +221,19 @@
           </div>
         </div>
 
-        <div class="mt-5 flex flex-col items-stretch justify-between gap-3 border-t border-emerald-900/10 pt-4 sm:flex-row sm:items-center">
-          <p class="text-xs font-semibold text-ink-soft">
-            <span id="selected-count" class="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-emerald-700 px-2 text-[11px] font-extrabold text-white">0</span>
+        <div class="mt-5 flex flex-col items-stretch justify-between gap-3 border-t border-[var(--border-subtle)] pt-4 sm:flex-row sm:items-center">
+          <p id="selected-summary" class="text-xs font-semibold text-ink-soft">
+            <span id="selected-count" class="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--brand-700)] px-2 text-[11px] font-extrabold text-white">0</span>
             <span class="ml-2">selected • total <span id="selected-total" class="font-extrabold text-ink tabular-nums">₱0.00</span></span>
+          </p>
+          <p id="fifo-summary" class="hidden text-xs font-semibold text-ink-soft">
+            Arrears-First (FIFO) • applying <span id="fifo-summary-applied" class="font-extrabold brand-text tabular-nums">₱0.00</span>
           </p>
           <div class="flex items-center gap-2">
             <a href="{% url 'billing_list' %}" class="btn btn-ghost btn-sm">Cancel</a>
             <button type="submit" id="batch-submit" disabled class="btn btn-primary">
               <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-              Collect Selected
+              <span id="submit-label">Collect Selected</span>
             </button>
           </div>
         </div>
@@ -183,11 +249,98 @@
     const countEl = document.getElementById('selected-count');
     const totalEl = document.getElementById('selected-total');
     const submitBtn = document.getElementById('batch-submit');
+    const submitLabel = document.getElementById('submit-label');
+    const modeRadios = Array.from(document.querySelectorAll('input.mode-radio'));
+    const modeTabs = Array.from(document.querySelectorAll('[data-mode-tab]'));
+    const fifoPanel = document.getElementById('fifo-panel');
+    const fifoInput = document.getElementById('amount-tendered');
+    const fifoPreview = document.getElementById('fifo-preview');
+    const fifoPreviewList = document.getElementById('fifo-preview-list');
+    const fifoAppliedTotal = document.getElementById('fifo-applied-total');
+    const fifoChangeWrap = document.getElementById('fifo-change-wrap');
+    const fifoChangeDue = document.getElementById('fifo-change-due');
+    const selectedSummary = document.getElementById('selected-summary');
+    const fifoSummary = document.getElementById('fifo-summary');
+    const fifoSummaryApplied = document.getElementById('fifo-summary-applied');
+    const helperText = document.getElementById('mode-helper-text');
+    const fillExactBtn = document.getElementById('fill-exact-outstanding');
     if (!checkboxes.length) return;
 
     const peso = n => '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+    function activeMode() {
+      const checked = modeRadios.find(r => r.checked);
+      return checked ? checked.value : 'selected';
+    }
+
+    function refreshFifo() {
+      const tendered = parseFloat(fifoInput ? fifoInput.value : '') || 0;
+      let remaining = Math.round(tendered * 100) / 100;
+      let totalApplied = 0;
+      const items = [];
+
+      checkboxes.forEach(cb => {
+        if (remaining <= 0) return;
+        const bal = Math.round((parseFloat(cb.dataset.balance) || 0) * 100) / 100;
+        if (bal <= 0) return;
+        const apply = Math.min(remaining, bal);
+        const isFull = Math.abs(apply - bal) < 0.005;
+        items.push({
+          period: cb.dataset.period,
+          stall: cb.dataset.stall,
+          apply: apply,
+          leftover: Math.max(0, Math.round((bal - apply) * 100) / 100),
+          isFull: isFull
+        });
+        totalApplied = Math.round((totalApplied + apply) * 100) / 100;
+        remaining = Math.max(0, Math.round((remaining - apply) * 100) / 100);
+      });
+
+      const change = Math.max(0, Math.round((tendered - totalApplied) * 100) / 100);
+      if (fifoPreviewList) {
+        fifoPreviewList.innerHTML = items.map(it =>
+          '<li class="flex items-center justify-between gap-2">' +
+            '<span><strong>' + it.period + '</strong> (' + it.stall + ') — ' +
+            '<span class="inline-block rounded px-1.5 py-0.5 text-[10px] font-bold ' +
+            (it.isFull ? 'bg-emerald-100 text-emerald-800">Full' : 'bg-amber-100 text-amber-800">Partial') +
+            '</span></span>' +
+            '<span class="tabular-nums font-bold text-ink">' + peso(it.apply) +
+            (it.isFull ? '' : ' <span class="font-normal text-ink-muted">(bal ' + peso(it.leftover) + ')</span>') +
+            '</span>' +
+          '</li>'
+        ).join('');
+      }
+      if (fifoPreview) fifoPreview.classList.toggle('hidden', tendered <= 0 || items.length === 0);
+      if (fifoAppliedTotal) fifoAppliedTotal.textContent = peso(totalApplied);
+      if (fifoSummaryApplied) fifoSummaryApplied.textContent = peso(totalApplied);
+      if (fifoChangeWrap) fifoChangeWrap.classList.toggle('hidden', change <= 0);
+      if (fifoChangeDue) fifoChangeDue.textContent = peso(change);
+      if (submitBtn && activeMode() === 'fifo') submitBtn.disabled = tendered <= 0 || items.length === 0;
+    }
+
     function refresh() {
+      const mode = activeMode();
+      modeTabs.forEach(tab => {
+        const isCurrent = tab.dataset.modeTab === mode;
+        tab.classList.toggle('bg-[var(--brand-700)]', isCurrent);
+        tab.classList.toggle('text-white', isCurrent);
+        tab.classList.toggle('text-ink-soft', !isCurrent);
+      });
+      if (fifoPanel) fifoPanel.classList.toggle('hidden', mode !== 'fifo');
+      if (selectedSummary) selectedSummary.classList.toggle('hidden', mode === 'fifo');
+      if (fifoSummary) fifoSummary.classList.toggle('hidden', mode !== 'fifo');
+      if (helperText) {
+        helperText.textContent = mode === 'fifo'
+          ? 'Cash tendered is allocated strictly oldest unpaid/overdue month first, settling older months in full and applying any remainder as a partial payment.'
+          : 'Each selected month is paid in full at its current balance under one consolidated official receipt.';
+      }
+      if (submitLabel) submitLabel.textContent = mode === 'fifo' ? 'Apply Cash (FIFO)' : 'Collect Selected';
+
+      if (mode === 'fifo') {
+        refreshFifo();
+        return;
+      }
+
       let count = 0, total = 0;
       checkboxes.forEach(cb => {
         if (cb.checked) { count++; total += parseFloat(cb.dataset.balance) || 0; }
@@ -196,6 +349,15 @@
       if (totalEl) totalEl.textContent = peso(total);
       if (submitBtn) submitBtn.disabled = count === 0;
       if (header) header.checked = count === checkboxes.length && count > 0;
+    }
+
+    modeRadios.forEach(r => r.addEventListener('change', refresh));
+    if (fifoInput) fifoInput.addEventListener('input', refreshFifo);
+    if (fillExactBtn && fifoInput) {
+      fillExactBtn.addEventListener('click', () => {
+        fifoInput.value = fillExactBtn.dataset.amount;
+        refreshFifo();
+      });
     }
 
     checkboxes.forEach(cb => cb.addEventListener('change', refresh));
@@ -210,8 +372,13 @@
 
     const form = document.getElementById('batch-collect-form');
     form.addEventListener('submit', function (e) {
-      const any = checkboxes.some(cb => cb.checked);
-      if (!any) { e.preventDefault(); showToast('Tick at least one month to collect.', 'warning'); }
+      if (activeMode() === 'fifo') {
+        const val = parseFloat(fifoInput ? fifoInput.value : '') || 0;
+        if (val <= 0) { e.preventDefault(); showToast('Enter a cash tendered amount greater than zero.', 'warning'); }
+      } else {
+        const any = checkboxes.some(cb => cb.checked);
+        if (!any) { e.preventDefault(); showToast('Tick at least one month to collect.', 'warning'); }
+      }
     });
 
     refresh();

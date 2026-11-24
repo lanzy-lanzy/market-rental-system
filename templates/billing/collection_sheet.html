@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+{% block title %}Collection Sheet — Mercado{% endblock %}
+{% block page_title %}Field Collection Sheet{% endblock %}
+{% block page_subtitle %}Section-based collector route • Outstanding balances sorted by section &amp; stall{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+
+  <!-- ══ Page head ══ -->
+  <div class="page-head">
+    <div class="flex items-center gap-3">
+      <span class="stat-icon">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+      </span>
+      <div>
+        <h2 class="page-title">Field Collection Sheet</h2>
+        <p class="page-sub">Sorted by Market Section &amp; Stall Number • One-click collection &amp; printable field sheet</p>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <a id="collection-sheet-print-link"
+         href="{% url 'billing_collection_sheet_print' %}{% if filter_querystring %}?{{ filter_querystring }}{% endif %}"
+         target="_blank"
+         class="btn btn-primary btn-sm">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+        Print Field Sheet
+      </a>
+      <a href="{% url 'billing_list' %}" class="btn btn-ghost btn-sm">Billing Queue</a>
+    </div>
+  </div>
+
+  <!-- ══ Collected Today KPI Banner ══ -->
+  <div class="panel glass-sheen overflow-hidden border-l-4 border-[var(--brand-600)]">
+    <div class="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between lg:px-6">
+      <div class="flex items-center gap-3.5">
+        <span class="stat-icon stat-icon-gold h-12 w-12 rounded-2xl shrink-0">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </span>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider brand-text">Collected Today ({{ today|date:"M d, Y" }})</p>
+          <p class="text-xs text-ink-muted">Logged-in collector: <strong class="text-ink">{{ request.user.get_full_name|default:request.user.username }}</strong></p>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-6">
+        <div class="text-left sm:text-right">
+          <p class="stat-label">Receipts Issued</p>
+          <p class="font-display text-xl font-extrabold text-ink num">{{ collected_today_count|intcomma }}</p>
+        </div>
+        <div class="h-8 w-px bg-[var(--border-subtle)] hidden sm:block"></div>
+        <div class="text-left sm:text-right">
+          <p class="stat-label">Total Collected Today</p>
+          <p class="font-display text-2xl font-extrabold brand-text num">&#8369;{{ collected_today_total|floatformat:2|intcomma }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Filters ══ -->
+  <div class="filter-bar">
+    <form method="get" action="{% url 'billing_collection_sheet' %}" class="flex flex-col gap-3 lg:flex-row lg:items-center">
+      <div class="relative lg:min-w-0 lg:flex-1">
+        <svg class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input type="text"
+               name="search"
+               value="{{ search_query|default:'' }}"
+               placeholder="Search stall #, section, tenant name or ID..."
+               hx-get="{% url 'billing_collection_sheet' %}"
+               hx-target="#collection-sheet-wrapper"
+               hx-trigger="keyup changed delay:350ms"
+               hx-include="[name='section'],[name='status']"
+               hx-push-url="true"
+               class="field w-full pl-10">
+      </div>
+      <select name="section"
+              aria-label="Filter by market section"
+              hx-get="{% url 'billing_collection_sheet' %}"
+              hx-target="#collection-sheet-wrapper"
+              hx-trigger="change"
+              hx-include="[name='search'],[name='status']"
+              hx-push-url="true"
+              class="field w-full lg:w-52 lg:shrink-0">
+        <option value="">All Market Sections</option>
+        {% for section in sections %}
+        <option value="{{ section.id }}" {% if section_filter|stringformat:"s" == section.id|stringformat:"s" %}selected{% endif %}>{{ section.name }}</option>
+        {% endfor %}
+      </select>
+      <select name="status"
+              aria-label="Filter by billing status"
+              hx-get="{% url 'billing_collection_sheet' %}"
+              hx-target="#collection-sheet-wrapper"
+              hx-trigger="change"
+              hx-include="[name='search'],[name='section']"
+              hx-push-url="true"
+              class="field w-full lg:w-48 lg:shrink-0">
+        {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <div id="collection-sheet-filter-meta" class="flex items-center gap-2 lg:shrink-0">
+        <span class="chip chip-emerald"><span class="h-2 w-2 rounded-full bg-[var(--brand-600)]"></span> {{ summary.total_accounts }} stall{{ summary.total_accounts|pluralize }}</span>
+        {% if search_query or section_filter or status_filter %}
+        <a href="{% url 'billing_collection_sheet' %}" class="btn btn-ghost btn-sm">Clear ✕</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- ══ Route Table ══ -->
+  <div id="collection-sheet-wrapper" class="space-y-4">
+    {% include 'billing/_collection_sheet_table.html' %}
+  </div>
+
+</div>
+{% endblock %}

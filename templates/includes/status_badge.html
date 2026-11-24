@@ -1,5 +1,5 @@
 {% with status=status %}
-<span class="badge {% if status == 'Active' or status == 'Paid' or status == 'Occupied' %}badge-success{% elif status == 'Inactive' or status == 'Vacant' or status == 'Cancelled' %}badge-muted{% elif status == 'Suspended' or status == 'Reserved' or status == 'Partial' %}badge-warning{% elif status == 'Terminated' or status == 'Void' or status == 'Overdue' %}badge-danger{% elif status == 'Expired' or status == 'Maintenance' %}badge-warning{% elif status == 'Pending' %}badge-info{% elif status == 'Unpaid' %}badge-danger{% else %}badge-muted{% endif %}">
+<span class="badge {% if status == 'Active' or status == 'Paid' or status == 'Occupied' %}badge-success{% elif status == 'Inactive' or status == 'Vacant' or status == 'Cancelled' or status == 'No Bills' %}badge-muted{% elif status == 'Suspended' or status == 'Reserved' or status == 'Partial' or status == 'Expired' or status == 'Maintenance' %}badge-warning{% elif status == 'Terminated' or status == 'Void' or status == 'Overdue' or status == 'Unpaid' %}badge-danger{% elif status == 'Pending' %}badge-info{% else %}badge-muted{% endif %}">
   <span class="badge-dot"></span>
   {{ status }}
 </span>

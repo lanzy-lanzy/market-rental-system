@@ -4,7 +4,11 @@
 {% block page_title %}{% if is_add %}Add New Stall{% else %}Edit Stall: {{ stall.stall_number }}{% endif %}{% endblock %}
 
 {% block content %}
-<div class="mx-auto max-w-3xl">
+<div class="space-y-6">
+
+  {% include 'stalls/_workspace_tabs.html' %}
+
+  <div class="mx-auto max-w-3xl">
 
   <!-- ══ Form panel ══ -->
   <div class="panel overflow-hidden">
@@ -112,6 +116,7 @@
         <button type="submit" class="btn btn-primary">{% if is_add %}Create Stall{% else %}Update Stall{% endif %}</button>
       </div>
     </form>
+  </div>
   </div>
 </div>
 {% endblock %}

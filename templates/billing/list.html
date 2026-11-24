@@ -78,10 +78,10 @@
       </select>
       <select name="status" hx-get="{% url 'billing_list' %}" hx-target="#billing-table-wrapper" hx-trigger="change" hx-include="[name='search'],[name='month'],[name='year']" hx-push-url="true" class="field sm:w-auto">
         <option value="">All Status</option>
-        <option value="Unpaid">Unpaid</option>
-        <option value="Paid">Paid</option>
-        <option value="Partial">Partial</option>
-        <option value="Overdue">Overdue</option>
+        <option value="Unpaid" {% if status_filter == 'Unpaid' %}selected{% endif %}>Unpaid</option>
+        <option value="Paid" {% if status_filter == 'Paid' %}selected{% endif %}>Paid</option>
+        <option value="Partial" {% if status_filter == 'Partial' %}selected{% endif %}>Partial</option>
+        <option value="Overdue" {% if status_filter == 'Overdue' %}selected{% endif %}>Overdue</option>
       </select>
       {% if search_query or month_filter or year_filter or status_filter %}
       <a href="{% url 'billing_list' %}" class="btn btn-ghost btn-sm">Clear ✕</a>

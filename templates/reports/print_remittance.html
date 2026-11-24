@@ -1,0 +1,159 @@
+{% load static humanize %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Abstract of Collection / Remittance Slip (AF 51) — {{ remittance_date|date:"F d, Y" }}</title>
+  <link rel="stylesheet" href="{% static 'css/output.css' %}?v={{ STATIC_VERSION }}">
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      @page { margin: 0.45in; size: A4 landscape; }
+    }
+  </style>
+</head>
+<body class="bg-white p-6 font-sans text-gray-800">
+  <div class="mx-auto max-w-6xl">
+    <div class="no-print mb-4 flex justify-end gap-2">
+      <button type="button" onclick="window.print()" class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white">Print Remittance Slip</button>
+      <a href="{% url 'report_remittance' %}?date={{ remittance_date_iso }}{% if collector_id %}&collector={{ collector_id }}{% endif %}" class="rounded-lg border border-emerald-800 bg-white px-4 py-2 text-sm font-semibold text-emerald-800">Back to Report</a>
+      <button type="button" onclick="window.close()" class="rounded-lg border border-gray-400 bg-white px-4 py-2 text-sm font-medium text-gray-700">Close</button>
+    </div>
+
+    <!-- Official LGU Letterhead -->
+    <div class="text-center">
+      {% include 'includes/document_logo.html' %}
+      <p class="text-[10px] font-semibold uppercase tracking-widest text-gray-600">Republic of the Philippines</p>
+      <h1 class="text-sm font-bold uppercase text-emerald-800">{{ system_settings.municipality_name|default:"Local Government Unit" }} — {{ system_settings.market_name|default:"Public Market" }}</h1>
+      <p class="text-xs text-gray-600">{{ system_settings.office_name|default:"Office of the Market Administrator / Municipal Treasurer" }}</p>
+      <h2 class="mt-3 text-lg font-extrabold uppercase tracking-wide text-gray-900">Abstract of Collection &amp; Remittance Slip (AF 51)</h2>
+      <p class="text-xs text-gray-600">
+        Collection Date: <strong>{{ remittance_date|date:"F d, Y" }}</strong>
+        &bull; Collector: <strong>{% if selected_collector %}{{ selected_collector.get_full_name|default:selected_collector.username }}{% else %}All Collectors{% endif %}</strong>
+        &bull; Printed: {{ now|date:"F d, Y h:i A" }}
+      </p>
+    </div>
+    <div class="mt-3 border-b-2 border-amber-500"></div>
+
+    <!-- OR Series & Financial Summary -->
+    <div class="mt-4 grid grid-cols-4 gap-3 text-xs">
+      <div class="rounded border border-gray-300 bg-gray-50 p-2.5">
+        <p class="text-[10px] font-semibold uppercase text-gray-500">OR # Series Used</p>
+        <p class="mt-1 font-mono text-sm font-bold text-gray-900">{{ or_series_display }}</p>
+        <p class="text-[10px] text-gray-600">{{ transaction_count }} receipt{{ transaction_count|pluralize }} issued</p>
+      </div>
+      <div class="rounded border border-gray-300 bg-gray-50 p-2.5">
+        <p class="text-[10px] font-semibold uppercase text-gray-500">Total Rent Collected</p>
+        <p class="mt-1 text-sm font-bold tabular-nums text-gray-900">&#8369;{{ total_rent|floatformat:2|intcomma }}</p>
+        <p class="text-[10px] text-gray-600">Principal rental</p>
+      </div>
+      <div class="rounded border border-gray-300 bg-gray-50 p-2.5">
+        <p class="text-[10px] font-semibold uppercase text-gray-500">Total Penalty / Surcharge</p>
+        <p class="mt-1 text-sm font-bold tabular-nums text-amber-800">&#8369;{{ total_penalty|floatformat:2|intcomma }}</p>
+        <p class="text-[10px] text-gray-600">Surcharge collected</p>
+      </div>
+      <div class="rounded border border-emerald-700 bg-emerald-50 p-2.5">
+        <p class="text-[10px] font-semibold uppercase text-emerald-800">Grand Total for Remittance</p>
+        <p class="mt-1 text-base font-extrabold tabular-nums text-emerald-900">&#8369;{{ grand_total|floatformat:2|intcomma }}</p>
+        <p class="text-[10px] text-emerald-800">Amount remitted to Treasury</p>
+      </div>
+    </div>
+
+    <!-- Payment Method Breakdown -->
+    {% if payment_method_breakdown %}
+    <div class="mt-4">
+      <h3 class="mb-1.5 text-xs font-bold uppercase tracking-wider text-gray-700">Payment Method Breakdown</h3>
+      <table class="w-full border-collapse text-xs">
+        <thead>
+          <tr>
+            <th class="border border-gray-400 bg-gray-100 px-2 py-1.5 text-left font-bold uppercase text-gray-700">Payment Method</th>
+            <th class="border border-gray-400 bg-gray-100 px-2 py-1.5 text-right font-bold uppercase text-gray-700">Receipts</th>
+            <th class="border border-gray-400 bg-gray-100 px-2 py-1.5 text-right font-bold uppercase text-gray-700">Rent</th>
+            <th class="border border-gray-400 bg-gray-100 px-2 py-1.5 text-right font-bold uppercase text-gray-700">Penalty</th>
+            <th class="border border-gray-400 bg-gray-100 px-2 py-1.5 text-right font-bold uppercase text-gray-700">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in payment_method_breakdown %}
+          <tr>
+            <td class="border border-gray-300 px-2 py-1 font-semibold text-gray-900">{{ m.label }}</td>
+            <td class="border border-gray-300 px-2 py-1 text-right tabular-nums">{{ m.count }}</td>
+            <td class="border border-gray-300 px-2 py-1 text-right tabular-nums">&#8369;{{ m.rent_total|floatformat:2|intcomma }}</td>
+            <td class="border border-gray-300 px-2 py-1 text-right tabular-nums">&#8369;{{ m.penalty_total|floatformat:2|intcomma }}</td>
+            <td class="border border-gray-300 px-2 py-1 text-right font-bold tabular-nums text-emerald-900">&#8369;{{ m.amount_total|floatformat:2|intcomma }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    <!-- Itemized Transactions -->
+    <div class="mt-4">
+      <h3 class="mb-1.5 text-xs font-bold uppercase tracking-wider text-gray-700">Itemized Collections</h3>
+      <table class="w-full border-collapse text-xs">
+        <thead>
+          <tr>
+            <th class="border border-gray-400 bg-gray-100 px-2 py-1.5 text-left font-bold uppercase text-gray-700">OR #</th>
+            <th class="border border-gray-400 bg-gray-100 px-2 py-1.5 text-left font-bold uppercase text-gray-700">Date / Time</th>
+            <th class="border border-gray-400 bg-gray-100 px-2 py-1.5 text-left font-bold uppercase text-gray-700">Tenant</th>
+            <th class="border border-gray-400 bg-gray-100 px-2 py-1.5 text-left font-bold uppercase text-gray-700">Stall</th>
+            <th class="border border-gray-400 bg-gray-100 px-2 py-1.5 text-left font-bold uppercase text-gray-700">Period</th>
+            <th class="border border-gray-400 bg-gray-100 px-2 py-1.5 text-left font-bold uppercase text-gray-700">Method</th>
+            <th class="border border-gray-400 bg-gray-100 px-2 py-1.5 text-right font-bold uppercase text-gray-700">Rent</th>
+            <th class="border border-gray-400 bg-gray-100 px-2 py-1.5 text-right font-bold uppercase text-gray-700">Penalty</th>
+            <th class="border border-gray-400 bg-gray-100 px-2 py-1.5 text-right font-bold uppercase text-gray-700">Amount Paid</th>
+            <th class="border border-gray-400 bg-gray-100 px-2 py-1.5 text-left font-bold uppercase text-gray-700">Collector</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td class="mono border border-gray-300 px-2 py-1 font-bold text-gray-900">{{ row.or_number }}</td>
+            <td class="border border-gray-300 px-2 py-1 whitespace-nowrap">{{ row.payment.payment_date|date:"M d, Y" }} {{ row.payment.created_at|date:"h:i A" }}</td>
+            <td class="border border-gray-300 px-2 py-1 font-semibold text-gray-900">{{ row.payment.tenant.full_name }}</td>
+            <td class="mono border border-gray-300 px-2 py-1">{{ row.payment.stall.stall_number }}</td>
+            <td class="border border-gray-300 px-2 py-1 whitespace-nowrap">{{ row.period_label }}</td>
+            <td class="border border-gray-300 px-2 py-1">{{ row.payment.get_payment_method_display }}</td>
+            <td class="border border-gray-300 px-2 py-1 text-right tabular-nums">&#8369;{{ row.rent_portion|floatformat:2|intcomma }}</td>
+            <td class="border border-gray-300 px-2 py-1 text-right tabular-nums">&#8369;{{ row.penalty_portion|floatformat:2|intcomma }}</td>
+            <td class="border border-gray-300 px-2 py-1 text-right font-bold tabular-nums text-emerald-900">&#8369;{{ row.amount_paid|floatformat:2|intcomma }}</td>
+            <td class="border border-gray-300 px-2 py-1">{{ row.payment.collected_by.get_full_name|default:row.payment.collected_by.username|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="10" class="border border-gray-300 py-5 text-center text-gray-600">No collections recorded for {{ remittance_date|date:"F d, Y" }}.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="bg-amber-50 font-bold">
+            <td colspan="6" class="border border-gray-400 px-2 py-2 text-right uppercase text-gray-900">Grand Total for Remittance:</td>
+            <td class="border border-gray-400 px-2 py-2 text-right tabular-nums">&#8369;{{ total_rent|floatformat:2|intcomma }}</td>
+            <td class="border border-gray-400 px-2 py-2 text-right tabular-nums">&#8369;{{ total_penalty|floatformat:2|intcomma }}</td>
+            <td class="border border-gray-400 px-2 py-2 text-right tabular-nums text-emerald-900">&#8369;{{ grand_total|floatformat:2|intcomma }}</td>
+            <td class="border border-gray-400 px-2 py-2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- Certification & Signature Lines -->
+    <div class="mt-8 grid grid-cols-2 gap-12 text-center text-xs">
+      <div>
+        <p class="mb-10 text-left text-[11px] text-gray-600">I hereby certify that the above collections and Official Receipt series are true and correct and are hereby remitted in full.</p>
+        <div class="border-t border-gray-500 pt-2">
+          <p class="font-bold text-gray-900">{% if selected_collector %}{{ selected_collector.get_full_name|default:selected_collector.username }}{% else %}{{ user.get_full_name|default:user.username }}{% endif %}</p>
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-600">Prepared / Remitted By: Collector</p>
+        </div>
+      </div>
+      <div>
+        <p class="mb-10 text-left text-[11px] text-gray-600">Verified against Official Receipt stubs and received the above total remittance amount in full.</p>
+        <div class="border-t border-gray-500 pt-2">
+          <p class="font-bold text-gray-900">Municipal / Market Treasurer</p>
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-600">Verified / Received By: Municipal/Market Treasurer</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,9 +1,16 @@
 {% load static %}<!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en" class="scroll-smooth" data-theme="civic-emerald">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ system_settings.market_name|default:"Public Market" }} — {{ system_settings.municipality_name|default:"Municipality" }}</title>
+  <script>
+    (function () {
+      var saved = localStorage.getItem('mrs-theme') || 'civic-emerald';
+      var valid = ['civic-emerald', 'royal-navy', 'slate-graphite', 'burgundy-civic', 'midnight-dark'];
+      document.documentElement.dataset.theme = valid.indexOf(saved) !== -1 ? saved : 'civic-emerald';
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -11,51 +18,89 @@
   <script src="{% static 'js/alpine.min.js' %}?v={{ STATIC_VERSION }}" defer></script>
   <style>[x-cloak]{display:none!important}</style>
 </head>
-<body class="min-h-screen text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif">
+<body class="min-h-screen text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif; background:var(--bg-canvas)">
 
-<!-- Republic bar -->
-<div class="bg-emerald-950/90 text-emerald-100/70 backdrop-blur-md">
-  <div class="mx-auto flex h-8 max-w-6xl items-center justify-between px-4 text-[11px] font-medium tracking-wide sm:px-6">
-    <p>Republic of the Philippines</p>
-    <p class="hidden sm:block">Official Website of the {{ system_settings.municipality_name|default:"Municipality" }}</p>
+<!-- Republic Institutional Bar -->
+<div style="background:var(--sidebar-bg); border-bottom:1px solid var(--sidebar-border)">
+  <div class="mx-auto flex h-9 max-w-6xl items-center justify-between px-4 text-[11px] font-medium tracking-wide text-white/80 sm:px-6">
+    <p class="flex items-center gap-2">
+      <span class="inline-block h-1.5 w-1.5 rounded-full" style="background:var(--accent-500)"></span>
+      Republic of the Philippines
+    </p>
+    <p class="hidden sm:block text-white/65">Official Portal of the {{ system_settings.municipality_name|default:"Municipality" }}</p>
   </div>
 </div>
 
-<!-- Official header -->
-<header class="border-b border-emerald-900/10 bg-white/75 backdrop-blur-xl backdrop-saturate-150">
+<!-- Official LGU Header -->
+<header class="theme-header">
   <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-    <a href="{% url 'landing' %}" class="flex items-center gap-3">
-      <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/70 shadow-[var(--neu-shadow-sm)] ring-1 ring-white">
+    <a href="{% url 'landing' %}" class="flex items-center gap-3.5 min-w-0">
+      <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] shadow-[var(--shadow-card)]">
         <img src="{% static 'images/lgu_dumingag_logo.png' %}" alt="Official Seal of the Municipality of Dumingag" class="h-11 w-11 object-contain">
       </span>
-      <div>
-        <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-700">Republic of the Philippines</p>
-        <p class="font-display text-lg font-extrabold uppercase leading-tight text-emerald-900">{{ system_settings.municipality_name|default:"Municipality of Dumingag" }}</p>
-        <p class="text-xs font-medium text-ink-muted">{{ system_settings.market_name|default:"Dumingag Public Market" }} • {{ system_settings.office_name|default:"Market Office" }}</p>
+      <div class="min-w-0">
+        <p class="text-[10px] font-bold uppercase tracking-[0.18em] brand-text">Republic of the Philippines</p>
+        <p class="truncate font-display text-lg font-extrabold uppercase leading-tight text-ink sm:text-xl">{{ system_settings.municipality_name|default:"Municipality of Dumingag" }}</p>
+        <p class="truncate text-xs font-medium text-ink-muted">{{ system_settings.market_name|default:"Dumingag Public Market" }} • {{ system_settings.office_name|default:"Market Office" }}</p>
       </div>
     </a>
-    <div class="hidden text-right text-xs text-ink-muted md:block">
-      <p class="font-semibold text-ink">Philippine Standard Time</p>
-      <p>{% now "l, F d, Y" %}</p>
+
+    <div class="flex items-center gap-3 shrink-0">
+      <div class="hidden text-right text-xs text-ink-muted md:block">
+        <p class="font-semibold text-ink">Philippine Standard Time</p>
+        <p class="tabular-nums">{% now "l, F d, Y" %}</p>
+      </div>
+
+      <!-- Subtle Theme Selector Pill -->
+      <div x-data="mrsThemeSwitcher()" class="relative">
+        <button type="button" @click="open=!open"
+                class="inline-flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs font-semibold text-ink-soft shadow-xs transition hover:bg-[var(--bg-surface-subtle)] hover:text-ink"
+                title="Switch Appearance Theme" aria-label="Switch Appearance Theme">
+          <svg class="h-3.5 w-3.5 brand-text shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+          </svg>
+          <span class="hidden sm:inline" x-text="currentLabel()">Civic Emerald</span>
+          <svg class="h-3 w-3 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+
+        <div x-show="open" @click.outside="open=false" x-transition x-cloak
+             class="theme-popover absolute right-0 mt-2 w-60 origin-top-right rounded-xl p-1.5 z-50">
+          <p class="px-2.5 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-ink-muted">Appearance Theme</p>
+          <div class="space-y-0.5">
+            <template x-for="t in themes" :key="t.id">
+              <button type="button" @click="select(t.id)" class="theme-option" :class="current === t.id ? 'is-active' : ''">
+                <span class="inline-flex h-5 w-5 shrink-0 overflow-hidden rounded-full ring-1 ring-black/15">
+                  <span class="h-full w-1/2" :style="'background:' + t.primary"></span>
+                  <span class="h-full w-1/2" :style="'background:' + t.accent"></span>
+                </span>
+                <span class="flex-1 truncate" x-text="t.name"></span>
+                <svg x-show="current === t.id" class="h-4 w-4 brand-text shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                </svg>
+              </button>
+            </template>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </header>
 
-<!-- Navigation -->
-<nav x-data="{ open:false }" class="sticky top-0 z-50 border-b border-gold-400/20 bg-emerald-950/85 backdrop-blur-xl backdrop-saturate-150">
+<!-- Primary Navigation -->
+<nav x-data="{ open:false }" class="sticky top-0 z-40 backdrop-blur-xl" style="background:color-mix(in srgb, var(--sidebar-bg) 94%, transparent); border-bottom:1px solid var(--sidebar-border)">
   <div class="mx-auto max-w-6xl px-4 sm:px-6">
     <div class="flex h-12 items-center justify-between">
-      <div class="hidden items-center gap-1 text-sm font-semibold text-emerald-50/90 md:flex">
+      <div class="hidden items-center gap-1 text-sm font-semibold text-white/90 md:flex">
         <a href="#home" class="rounded-lg px-3 py-1.5 transition hover:bg-white/10">Home</a>
         <a href="#services" class="rounded-lg px-3 py-1.5 transition hover:bg-white/10">Services</a>
         <a href="#sections" class="rounded-lg px-3 py-1.5 transition hover:bg-white/10">Market Sections</a>
         <a href="#process" class="rounded-lg px-3 py-1.5 transition hover:bg-white/10">How to Apply</a>
         <a href="#contact" class="rounded-lg px-3 py-1.5 transition hover:bg-white/10">Contact</a>
       </div>
-      <span class="text-sm font-bold text-white md:hidden">Menu</span>
-      <div class="hidden md:block">
+      <span class="text-sm font-bold text-white md:hidden">Navigation</span>
+      <div class="hidden md:flex items-center gap-2">
         {% if user.is_authenticated %}
-        <a href="{% url 'dashboard' %}" class="btn btn-gold btn-sm">Dashboard</a>
+        <a href="{% url 'dashboard' %}" class="btn btn-gold btn-sm">Open Dashboard</a>
         {% else %}
         <a href="{% url 'login' %}" class="btn btn-gold btn-sm">Sign In</a>
         {% endif %}
@@ -65,14 +110,14 @@
         <svg x-show="open" x-cloak class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>
-    <div x-show="open" x-cloak class="border-t border-white/15 py-2 text-sm font-semibold text-white md:hidden">
-      <a href="#home" class="block rounded-lg px-2 py-2 hover:bg-white/10">Home</a>
-      <a href="#services" class="block rounded-lg px-2 py-2 hover:bg-white/10">Services</a>
-      <a href="#sections" class="block rounded-lg px-2 py-2 hover:bg-white/10">Market Sections</a>
-      <a href="#process" class="block rounded-lg px-2 py-2 hover:bg-white/10">How to Apply</a>
-      <a href="#contact" class="block rounded-lg px-2 py-2 hover:bg-white/10">Contact</a>
+    <div x-show="open" x-cloak class="border-t border-white/15 py-2.5 text-sm font-semibold text-white md:hidden">
+      <a href="#home" @click="open=false" class="block rounded-lg px-2.5 py-2 hover:bg-white/10">Home</a>
+      <a href="#services" @click="open=false" class="block rounded-lg px-2.5 py-2 hover:bg-white/10">Services</a>
+      <a href="#sections" @click="open=false" class="block rounded-lg px-2.5 py-2 hover:bg-white/10">Market Sections</a>
+      <a href="#process" @click="open=false" class="block rounded-lg px-2.5 py-2 hover:bg-white/10">How to Apply</a>
+      <a href="#contact" @click="open=false" class="block rounded-lg px-2.5 py-2 hover:bg-white/10">Contact</a>
       {% if user.is_authenticated %}
-      <a href="{% url 'dashboard' %}" class="btn btn-gold btn-sm mt-2 w-full">Dashboard</a>
+      <a href="{% url 'dashboard' %}" class="btn btn-gold btn-sm mt-2 w-full">Open Dashboard</a>
       {% else %}
       <a href="{% url 'login' %}" class="btn btn-gold btn-sm mt-2 w-full">Sign In</a>
       {% endif %}
@@ -81,140 +126,147 @@
   <div class="shimmer-line"></div>
 </nav>
 
-<!-- Banner -->
+<!-- Executive Hero Banner -->
 <section id="home" class="relative overflow-hidden">
   <div class="absolute inset-0 bg-cover bg-center" style="background-image:url('{% static 'images/dumingag_bg.jpg' %}')"></div>
-  <div class="absolute inset-0 bg-gradient-to-br from-emerald-950/92 via-emerald-900/78 to-emerald-950/92"></div>
-  <div class="absolute -left-24 top-10 h-72 w-72 rounded-full bg-emerald-400/20 blur-3xl"></div>
-  <div class="absolute -right-16 bottom-0 h-72 w-72 rounded-full bg-gold-400/20 blur-3xl"></div>
+  <div class="absolute inset-0" style="background:linear-gradient(135deg, color-mix(in srgb, var(--brand-900) 93%, #000) 0%, color-mix(in srgb, var(--brand-800) 80%, #000) 55%, color-mix(in srgb, var(--brand-900) 94%, #000) 100%)"></div>
 
   <div class="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
-    <!-- Dark frosted glass card — white type needs a dark base to stay legible -->
-    <div class="glass-dark-strong mx-auto max-w-3xl rounded-3xl p-8 text-center sm:p-10">
-      <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-gold-300">Welcome to the official portal</p>
-      <h1 class="mt-3 font-display text-3xl font-extrabold leading-tight text-white sm:text-4xl">
+    <div class="mx-auto max-w-3xl rounded-3xl border border-white/15 bg-black/25 p-8 text-center shadow-2xl backdrop-blur-md sm:p-11">
+      <span class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-amber-300">
+        Official Municipal Market Portal
+      </span>
+      <h1 class="mt-4 font-display text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl lg:text-[2.75rem]">
         {{ system_settings.market_name|default:"Dumingag Public Market" }}
       </h1>
-      <div class="divider-gold mx-auto mt-4"></div>
-      <p class="mt-5 text-sm leading-6 text-emerald-50/90 sm:text-base">
+      <div class="divider-gold mx-auto mt-5"></div>
+      <p class="mt-5 text-sm leading-relaxed text-white/85 sm:text-base">
         Rental and Collection Management System — operated by the {{ system_settings.office_name|default:"Market Office" }},
-        {{ system_settings.municipality_name|default:"Municipality of Dumingag" }}, for transparent, orderly, and efficient public market operations.
+        {{ system_settings.municipality_name|default:"Municipality of Dumingag" }}, for transparent, orderly, and accountable public market administration.
       </p>
-      <div class="mt-7 flex flex-wrap justify-center gap-3">
+      <div class="mt-8 flex flex-wrap justify-center gap-3">
         {% if user.is_authenticated %}
         <a href="{% url 'dashboard' %}" class="btn btn-gold btn-lg">Open Dashboard</a>
         {% else %}
         <a href="{% url 'login' %}" class="btn btn-gold btn-lg">Sign In to Portal</a>
         {% endif %}
-        <a href="#services" class="btn btn-lg btn-on-dark">View Services</a>
+        <a href="#services" class="btn btn-lg border border-white/25 bg-white/10 text-white hover:bg-white/20">Explore Services</a>
       </div>
     </div>
   </div>
 </section>
 
-<!-- Quick facts -->
+<!-- Key Market Figures -->
 <div class="mx-auto max-w-6xl px-4 py-10 sm:px-6">
   <div class="kpi-strip">
     <div class="kpi-item">
-      <p class="kpi-value">{{ total_stalls }}</p>
+      <p class="kpi-value tabular-nums">{{ total_stalls }}</p>
       <p class="kpi-label">Market Stalls</p>
     </div>
     <div class="kpi-item">
-      <p class="kpi-value">{{ total_tenants }}</p>
+      <p class="kpi-value tabular-nums">{{ total_tenants }}</p>
       <p class="kpi-label">Active Tenants</p>
     </div>
     <div class="kpi-item">
-      <p class="kpi-value">{{ occupancy_rate }}%</p>
+      <p class="kpi-value tabular-nums">{{ occupancy_rate }}%</p>
       <p class="kpi-label">Occupancy Rate</p>
     </div>
     <div class="kpi-item">
-      <p class="kpi-value">{% if sections %}{{ sections|length }}{% else %}9{% endif %}</p>
+      <p class="kpi-value tabular-nums">{% if sections %}{{ sections|length }}{% else %}9{% endif %}</p>
       <p class="kpi-label">Market Sections</p>
     </div>
   </div>
 </div>
 
-<!-- Services -->
+<!-- Online Services -->
 <section id="services" class="mx-auto max-w-6xl px-4 py-12 sm:px-6">
   <div class="section-title">Online Services</div>
-  <p class="mt-2 text-sm text-ink-soft">Services provided by the {{ system_settings.office_name|default:"Market Office" }} through this system.</p>
+  <p class="mt-2 text-sm text-ink-soft">Core public market administration services provided by the {{ system_settings.office_name|default:"Market Office" }}.</p>
   <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-    <div class="panel p-5 transition hover:-translate-y-1 hover:shadow-[var(--glass-shadow-lg)]">
-      <div class="divider-gold mb-3"></div>
-      <h3 class="font-display text-sm font-bold text-ink">Stall Rentals</h3>
-      <p class="mt-2 text-sm leading-6 text-ink-soft">Registration of stalls per market section, occupancy monitoring, and assignment to qualified tenants.</p>
+    <div class="panel p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)]">
+      <span class="stat-icon">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/></svg>
+      </span>
+      <h3 class="mt-4 font-display text-sm font-bold text-ink">Stall Rentals</h3>
+      <p class="mt-2 text-sm leading-6 text-ink-soft">Registration of stalls per market section, occupancy monitoring, and assignment to qualified stallholders.</p>
     </div>
-    <div class="panel p-5 transition hover:-translate-y-1 hover:shadow-[var(--glass-shadow-lg)]">
-      <div class="divider-gold mb-3"></div>
-      <h3 class="font-display text-sm font-bold text-ink">Billing &amp; Collections</h3>
-      <p class="mt-2 text-sm leading-6 text-ink-soft">Monthly billing, automatic penalties, and official receipts for cash, GCash, bank, and check payments.</p>
+    <div class="panel p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)]">
+      <span class="stat-icon stat-icon-gold">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+      </span>
+      <h3 class="mt-4 font-display text-sm font-bold text-ink">Billing &amp; Collections</h3>
+      <p class="mt-2 text-sm leading-6 text-ink-soft">Monthly rental billing, transparent surcharge computation, and official receipts for all payment methods.</p>
     </div>
-    <div class="panel p-5 transition hover:-translate-y-1 hover:shadow-[var(--glass-shadow-lg)]">
-      <div class="divider-gold mb-3"></div>
-      <h3 class="font-display text-sm font-bold text-ink">Tenant Records</h3>
-      <p class="mt-2 text-sm leading-6 text-ink-soft">Tenant profiles, rental contracts, account ledgers, and standing of rental obligations.</p>
+    <div class="panel p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)]">
+      <span class="stat-icon stat-icon-blue">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      </span>
+      <h3 class="mt-4 font-display text-sm font-bold text-ink">Tenant Records</h3>
+      <p class="mt-2 text-sm leading-6 text-ink-soft">Tenant profiles, 3-year rental contracts, account ledgers, and live standing of rental obligations.</p>
     </div>
-    <div class="panel p-5 transition hover:-translate-y-1 hover:shadow-[var(--glass-shadow-lg)]">
-      <div class="divider-gold mb-3"></div>
-      <h3 class="font-display text-sm font-bold text-ink">Reports &amp; Transparency</h3>
-      <p class="mt-2 text-sm leading-6 text-ink-soft">Daily to annual collection reports, occupancy reports, and a complete audit trail of all transactions.</p>
+    <div class="panel p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)]">
+      <span class="stat-icon">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      </span>
+      <h3 class="mt-4 font-display text-sm font-bold text-ink">Reports &amp; Transparency</h3>
+      <p class="mt-2 text-sm leading-6 text-ink-soft">Daily to annual collection reports, occupancy summaries, and a complete audit trail of all transactions.</p>
     </div>
   </div>
 </section>
 
-<!-- Market sections -->
-<section id="sections" class="border-y border-emerald-900/10 bg-white/55 backdrop-blur-xl">
+<!-- Market Sections -->
+<section id="sections" class="border-y border-[var(--border-subtle)] bg-[var(--bg-surface-subtle)]">
   <div class="mx-auto max-w-6xl px-4 py-12 sm:px-6">
     <div class="section-title">Market Sections</div>
-    <p class="mt-2 text-sm text-ink-soft">The public market is organized into the following sections.</p>
+    <p class="mt-2 text-sm text-ink-soft">The public market is organized into designated trade sections.</p>
     <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
       {% if sections %}
         {% for section in sections %}
-        <div class="neu-sm rounded-2xl px-4 py-3 text-center">
+        <div class="surface-card rounded-xl px-4 py-3.5 text-center transition hover:shadow-[var(--shadow-card-hover)]">
           <p class="text-sm font-semibold text-ink">{{ section.name }}</p>
         </div>
         {% endfor %}
       {% else %}
-        <div class="neu-sm rounded-2xl px-4 py-3 text-center"><p class="text-sm font-semibold text-ink">Dry Goods</p></div>
-        <div class="neu-sm rounded-2xl px-4 py-3 text-center"><p class="text-sm font-semibold text-ink">Fish</p></div>
-        <div class="neu-sm rounded-2xl px-4 py-3 text-center"><p class="text-sm font-semibold text-ink">Meat</p></div>
-        <div class="neu-sm rounded-2xl px-4 py-3 text-center"><p class="text-sm font-semibold text-ink">Vegetables</p></div>
-        <div class="neu-sm rounded-2xl px-4 py-3 text-center"><p class="text-sm font-semibold text-ink">Fruits</p></div>
-        <div class="neu-sm rounded-2xl px-4 py-3 text-center"><p class="text-sm font-semibold text-ink">Eatery</p></div>
-        <div class="neu-sm rounded-2xl px-4 py-3 text-center"><p class="text-sm font-semibold text-ink">Grocery</p></div>
-        <div class="neu-sm rounded-2xl px-4 py-3 text-center"><p class="text-sm font-semibold text-ink">Rice &amp; Grains</p></div>
-        <div class="neu-sm rounded-2xl px-4 py-3 text-center"><p class="text-sm font-semibold text-ink">Others</p></div>
+        <div class="surface-card rounded-xl px-4 py-3.5 text-center"><p class="text-sm font-semibold text-ink">Dry Goods</p></div>
+        <div class="surface-card rounded-xl px-4 py-3.5 text-center"><p class="text-sm font-semibold text-ink">Fish</p></div>
+        <div class="surface-card rounded-xl px-4 py-3.5 text-center"><p class="text-sm font-semibold text-ink">Meat</p></div>
+        <div class="surface-card rounded-xl px-4 py-3.5 text-center"><p class="text-sm font-semibold text-ink">Vegetables</p></div>
+        <div class="surface-card rounded-xl px-4 py-3.5 text-center"><p class="text-sm font-semibold text-ink">Fruits</p></div>
+        <div class="surface-card rounded-xl px-4 py-3.5 text-center"><p class="text-sm font-semibold text-ink">Eatery</p></div>
+        <div class="surface-card rounded-xl px-4 py-3.5 text-center"><p class="text-sm font-semibold text-ink">Grocery</p></div>
+        <div class="surface-card rounded-xl px-4 py-3.5 text-center"><p class="text-sm font-semibold text-ink">Rice &amp; Grains</p></div>
+        <div class="surface-card rounded-xl px-4 py-3.5 text-center"><p class="text-sm font-semibold text-ink">Others</p></div>
       {% endif %}
     </div>
   </div>
 </section>
 
-<!-- How to apply -->
+<!-- How to Apply -->
 <section id="process" class="mx-auto max-w-6xl px-4 py-12 sm:px-6">
   <div class="section-title">How to Apply for a Stall</div>
-  <p class="mt-2 text-sm text-ink-soft">Procedure for renting a public market stall.</p>
+  <p class="mt-2 text-sm text-ink-soft">Standard procedure for leasing a public market stall.</p>
   <div class="mt-6 grid gap-4 md:grid-cols-3">
     <div class="panel p-5">
-      <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-700 font-display text-lg font-extrabold text-white shadow-[0_10px_20px_-12px_rgb(5_150_105_/_0.9)]">1</span>
-      <h3 class="mt-3 font-display text-sm font-bold text-ink">Apply at the Market Office</h3>
-      <p class="mt-2 text-sm leading-6 text-ink-soft">Visit the {{ system_settings.office_name|default:"Market Office" }} and submit your application form and requirements.</p>
+      <span class="flex h-10 w-10 items-center justify-center rounded-xl font-display text-base font-extrabold text-white shadow-sm" style="background:var(--brand-grad)">1</span>
+      <h3 class="mt-4 font-display text-sm font-bold text-ink">Apply at the Market Office</h3>
+      <p class="mt-2 text-sm leading-6 text-ink-soft">Visit the {{ system_settings.office_name|default:"Market Office" }} and submit your application form and required identification.</p>
     </div>
     <div class="panel p-5">
-      <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-700 font-display text-lg font-extrabold text-white shadow-[0_10px_20px_-12px_rgb(5_150_105_/_0.9)]">2</span>
-      <h3 class="mt-3 font-display text-sm font-bold text-ink">Sign the Rental Contract</h3>
-      <p class="mt-2 text-sm leading-6 text-ink-soft">Once approved, sign the rental contract covering stall assignment, rates, due dates, and deposit.</p>
+      <span class="flex h-10 w-10 items-center justify-center rounded-xl font-display text-base font-extrabold text-white shadow-sm" style="background:var(--brand-grad)">2</span>
+      <h3 class="mt-4 font-display text-sm font-bold text-ink">Sign the Rental Contract</h3>
+      <p class="mt-2 text-sm leading-6 text-ink-soft">Upon approval, execute the rental contract covering stall assignment, rates, due dates, and security deposit.</p>
     </div>
     <div class="panel p-5">
-      <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-700 font-display text-lg font-extrabold text-white shadow-[0_10px_20px_-12px_rgb(5_150_105_/_0.9)]">3</span>
-      <h3 class="mt-3 font-display text-sm font-bold text-ink">Pay Monthly Rent</h3>
-      <p class="mt-2 text-sm leading-6 text-ink-soft">Pay at the cashier or authorized collector on or before the due date. Always keep your official receipt.</p>
+      <span class="flex h-10 w-10 items-center justify-center rounded-xl font-display text-base font-extrabold text-white shadow-sm" style="background:var(--brand-grad)">3</span>
+      <h3 class="mt-4 font-display text-sm font-bold text-ink">Pay Monthly Rent</h3>
+      <p class="mt-2 text-sm leading-6 text-ink-soft">Settle monthly rent at the cashier or authorized collector on or before the due date and keep your official receipt.</p>
     </div>
   </div>
 
-  <div class="panel mt-8 flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+  <div class="panel mt-8 flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
     <div>
-      <p class="font-display text-sm font-bold text-ink">Existing tenant or market office staff?</p>
-      <p class="mt-1 text-sm text-ink-soft">Sign in to view ledgers, billings, payments, and reports.</p>
+      <p class="font-display text-base font-bold text-ink">Existing tenant or market office staff?</p>
+      <p class="mt-1 text-sm text-ink-soft">Sign in to view account ledgers, billings, receipts, and reports.</p>
     </div>
     <div class="sm:shrink-0">
       {% if user.is_authenticated %}
@@ -226,18 +278,18 @@
   </div>
 </section>
 
-<!-- Footer -->
-<footer id="contact" class="mt-6 border-t border-gold-400/15 bg-emerald-950/92 text-emerald-100/75 backdrop-blur-xl">
+<!-- Institutional Footer -->
+<footer id="contact" class="mt-6 text-white/80" style="background:var(--sidebar-bg); border-top:1px solid var(--sidebar-border)">
   <div class="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-3">
     <div>
       <p class="font-display text-sm font-extrabold uppercase tracking-wide text-white">{{ system_settings.municipality_name|default:"Municipality of Dumingag" }}</p>
-      <p class="mt-1 text-xs">{{ system_settings.market_name|default:"Dumingag Public Market" }} • {{ system_settings.office_name|default:"Market Office" }}</p>
-      <p class="mt-3 text-xs leading-6 text-emerald-100/55">
+      <p class="mt-1 text-xs text-white/75">{{ system_settings.market_name|default:"Dumingag Public Market" }} • {{ system_settings.office_name|default:"Market Office" }}</p>
+      <p class="mt-3 text-xs leading-6 text-white/60">
         For inquiries and concerns, visit the {{ system_settings.office_name|default:"Market Office" }} during office hours, Monday to Friday, 8:00 AM to 5:00 PM.
       </p>
     </div>
     <div>
-      <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-gold-300">Quick Links</p>
+      <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-amber-300">Quick Links</p>
       <ul class="mt-3 space-y-2 text-xs">
         <li><a href="#home" class="transition hover:text-white">Home</a></li>
         <li><a href="#services" class="transition hover:text-white">Services</a></li>
@@ -247,21 +299,61 @@
       </ul>
     </div>
     <div>
-      <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-gold-300">Government</p>
+      <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-amber-300">Government</p>
       <ul class="mt-3 space-y-2 text-xs">
         <li><a href="https://www.gov.ph" class="transition hover:text-white" rel="noopener">GOV.PH — Official Government Portal</a></li>
         <li>Republic of the Philippines</li>
       </ul>
-      <p class="mt-4 flex items-center gap-2 text-xs text-emerald-100/55"><span class="inline-block h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgb(52_211_153_/_0.9)]"></span>All transactions are recorded and audited.</p>
+      <p class="mt-4 flex items-center gap-2 text-xs text-white/60">
+        <span class="inline-block h-2 w-2 rounded-full bg-emerald-400"></span>
+        All transactions are recorded and audited.
+      </p>
     </div>
   </div>
   <div class="border-t border-white/10">
-    <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-4 text-xs text-emerald-100/50 sm:flex-row sm:px-6">
+    <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-4 text-xs text-white/55 sm:flex-row sm:px-6">
       <p>© {% now "Y" %} {{ system_settings.municipality_name|default:"Municipality" }}. All Rights Reserved.</p>
       <p>{{ system_settings.market_name|default:"Public Market" }} Rental &amp; Collection System</p>
     </div>
   </div>
 </footer>
 
+<script>
+window.MRS_THEMES = [
+  { id: 'civic-emerald', name: 'Civic Emerald', primary: '#064e3b', accent: '#d97706' },
+  { id: 'royal-navy', name: 'Royal Navy', primary: '#0f2942', accent: '#1d4ed8' },
+  { id: 'slate-graphite', name: 'Slate Graphite', primary: '#18181b', accent: '#4f46e5' },
+  { id: 'burgundy-civic', name: 'Burgundy Civic', primary: '#4c1d24', accent: '#b45309' },
+  { id: 'midnight-dark', name: 'Midnight Dark', primary: '#0b1120', accent: '#10b981' }
+];
+window.setMrsTheme = function (themeId) {
+  var valid = window.MRS_THEMES.map(function (t) { return t.id; });
+  var next = valid.indexOf(themeId) !== -1 ? themeId : 'civic-emerald';
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem('mrs-theme', next);
+  window.dispatchEvent(new CustomEvent('mrs-theme-changed', { detail: { theme: next } }));
+};
+function mrsThemeSwitcher() {
+  return {
+    open: false,
+    themes: window.MRS_THEMES,
+    current: document.documentElement.dataset.theme || 'civic-emerald',
+    init() {
+      window.addEventListener('mrs-theme-changed', (e) => {
+        if (e.detail && e.detail.theme) this.current = e.detail.theme;
+      });
+    },
+    currentLabel() {
+      var found = this.themes.find(t => t.id === this.current);
+      return found ? found.name : 'Civic Emerald';
+    },
+    select(id) {
+      window.setMrsTheme(id);
+      this.current = id;
+      this.open = false;
+    }
+  };
+}
+</script>
 </body>
 </html>

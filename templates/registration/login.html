@@ -1,113 +1,165 @@
 {% load static %}<!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="civic-emerald">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign In — {{ system_settings.market_name|default:"Dumingag Public Market" }}</title>
+  <script>
+    (function () {
+      var saved = localStorage.getItem('mrs-theme') || 'civic-emerald';
+      var valid = ['civic-emerald', 'royal-navy', 'slate-graphite', 'burgundy-civic', 'midnight-dark'];
+      document.documentElement.dataset.theme = valid.indexOf(saved) !== -1 ? saved : 'civic-emerald';
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/output.css' %}?v={{ STATIC_VERSION }}">
+  <script src="{% static 'js/alpine.min.js' %}?v={{ STATIC_VERSION }}" defer></script>
+  <style>[x-cloak]{display:none!important}</style>
 </head>
-<body class="min-h-screen text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif">
+<body class="min-h-screen text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif; background:var(--bg-canvas)">
 
 <div class="flex min-h-screen">
 
-  <!-- Left: official brand panel -->
-  <div class="relative hidden w-1/2 overflow-hidden lg:block">
+  <!-- Left: Official Institutional Crest Panel -->
+  <div class="relative hidden w-1/2 overflow-hidden lg:flex lg:flex-col">
     <div class="absolute inset-0 bg-cover bg-center" style="background-image:url('{% static 'images/dumingag_bg.jpg' %}')"></div>
-    <div class="absolute inset-0 bg-gradient-to-br from-emerald-950/95 via-emerald-900/90 to-emerald-950/95"></div>
-    <div class="absolute -left-20 top-20 h-80 w-80 rounded-full bg-emerald-400/20 blur-3xl"></div>
-    <div class="absolute -right-20 bottom-10 h-80 w-80 rounded-full bg-gold-400/20 blur-3xl"></div>
-    <div class="relative flex h-full flex-col items-center justify-center px-12 text-center text-white">
-      <span class="flex h-28 w-28 items-center justify-center rounded-3xl bg-white/10 ring-1 ring-white/20 backdrop-blur-md">
+    <div class="absolute inset-0" style="background:linear-gradient(140deg, color-mix(in srgb, var(--brand-900) 95%, #000) 0%, color-mix(in srgb, var(--brand-800) 86%, #000) 55%, color-mix(in srgb, var(--brand-900) 96%, #000) 100%)"></div>
+
+    <div class="relative flex flex-1 flex-col items-center justify-center px-12 text-center text-white">
+      <span class="flex h-28 w-28 items-center justify-center rounded-3xl border border-white/20 bg-white/10 shadow-xl backdrop-blur-md">
         <img src="{% static 'images/lgu_dumingag_logo.png' %}" alt="Official Seal of the Municipality of Dumingag" class="h-24 w-24 object-contain">
       </span>
-      <p class="mt-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-gold-300">Republic of the Philippines</p>
-      <h1 class="mt-2 font-display text-3xl font-extrabold uppercase leading-tight">{{ system_settings.municipality_name|default:"Municipality of Dumingag" }}</h1>
+      <p class="mt-6 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-300">Republic of the Philippines</p>
+      <h1 class="mt-2 font-display text-3xl font-extrabold uppercase leading-tight tracking-tight">{{ system_settings.municipality_name|default:"Municipality of Dumingag" }}</h1>
       <div class="divider-gold mt-5"></div>
-      <p class="mt-5 font-display text-lg font-bold">{{ system_settings.market_name|default:"Dumingag Public Market" }}</p>
-      <p class="mt-1 text-sm text-emerald-50/75">{{ system_settings.office_name|default:"Market Office" }} • Rental &amp; Collection Management System</p>
+      <p class="mt-5 font-display text-lg font-bold text-white">{{ system_settings.market_name|default:"Dumingag Public Market" }}</p>
+      <p class="mt-1 text-sm text-white/75">{{ system_settings.office_name|default:"Market Office" }} • Rental &amp; Collection Management System</p>
     </div>
-    <p class="absolute inset-x-0 bottom-6 text-center text-xs text-emerald-100/50">For official use only • All transactions are recorded and audited</p>
+
+    <div class="relative border-t border-white/10 px-8 py-5 text-center">
+      <p class="text-xs text-white/60">For official use only • All transactions are recorded and audited</p>
+    </div>
   </div>
 
-  <!-- Right: sign-in form -->
-  <div class="flex w-full flex-col lg:w-1/2">
+  <!-- Right: Formal Sign-In Column -->
+  <div class="flex w-full flex-col lg:w-1/2" style="background:var(--bg-canvas)">
 
-    <!-- Compact brand bar (mobile) -->
-    <div class="flex items-center gap-3 border-b border-emerald-900/10 bg-white/72 px-6 py-4 backdrop-blur-xl lg:hidden">
-      <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/70 shadow-[var(--neu-shadow-sm)] ring-1 ring-white">
+    <!-- Compact Mobile Brand Header -->
+    <div class="theme-header flex items-center gap-3 px-6 py-4 lg:hidden">
+      <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] shadow-xs">
         <img src="{% static 'images/lgu_dumingag_logo.png' %}" alt="Municipal Seal" class="h-8 w-8 object-contain">
       </span>
-      <div>
-        <p class="font-display text-sm font-extrabold uppercase leading-tight text-emerald-900">{{ system_settings.municipality_name|default:"Municipality of Dumingag" }}</p>
-        <p class="text-xs text-ink-muted">{{ system_settings.market_name|default:"Dumingag Public Market" }}</p>
+      <div class="min-w-0">
+        <p class="truncate font-display text-sm font-extrabold uppercase leading-tight text-ink">{{ system_settings.municipality_name|default:"Municipality of Dumingag" }}</p>
+        <p class="truncate text-xs text-ink-muted">{{ system_settings.market_name|default:"Dumingag Public Market" }}</p>
       </div>
     </div>
 
-    <div class="flex items-center justify-between px-6 py-5 sm:px-10">
-      <a href="{% url 'landing' %}" class="link-emerald text-xs">← Back to Home</a>
-      <p class="hidden text-xs text-ink-muted sm:block">{% now "l, F d, Y" %}</p>
+    <!-- Top Utility Bar -->
+    <div class="flex items-center justify-between gap-3 px-6 py-5 sm:px-10">
+      <a href="{% url 'landing' %}" class="link-emerald text-xs font-semibold">← Back to Portal</a>
+      <div class="flex items-center gap-3">
+        <p class="hidden text-xs text-ink-muted sm:block tabular-nums">{% now "l, F d, Y" %}</p>
+        <!-- Corner Theme Switcher -->
+        <div x-data="mrsThemeSwitcher()" class="relative">
+          <button type="button" @click="open=!open"
+                  class="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2.5 py-1.5 text-xs font-semibold text-ink-soft transition hover:bg-[var(--bg-surface-subtle)] hover:text-ink"
+                  title="Switch Appearance Theme" aria-label="Switch Appearance Theme">
+            <svg class="h-3.5 w-3.5 brand-text shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+            </svg>
+            <span class="hidden sm:inline" x-text="currentLabel()">Civic Emerald</span>
+          </button>
+          <div x-show="open" @click.outside="open=false" x-transition x-cloak
+               class="theme-popover absolute right-0 mt-2 w-56 origin-top-right rounded-xl p-1.5 z-50">
+            <p class="px-2.5 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-ink-muted">Appearance Theme</p>
+            <div class="space-y-0.5">
+              <template x-for="t in themes" :key="t.id">
+                <button type="button" @click="select(t.id)" class="theme-option" :class="current === t.id ? 'is-active' : ''">
+                  <span class="inline-flex h-5 w-5 shrink-0 overflow-hidden rounded-full ring-1 ring-black/15">
+                    <span class="h-full w-1/2" :style="'background:' + t.primary"></span>
+                    <span class="h-full w-1/2" :style="'background:' + t.accent"></span>
+                  </span>
+                  <span class="flex-1 truncate" x-text="t.name"></span>
+                  <svg x-show="current === t.id" class="h-4 w-4 brand-text shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                  </svg>
+                </button>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
+    <!-- Centered Login Card -->
     <div class="flex flex-1 items-center justify-center px-6 pb-10 sm:px-10">
-      <div class="w-full max-w-[420px]">
-        <div class="glass-strong rounded-2xl p-7 shadow-[var(--glass-shadow-lg)] sm:p-8">
-          <span class="stat-icon">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-          </span>
-          <h2 class="mt-4 font-display text-2xl font-extrabold text-ink">Sign In</h2>
-          <p class="mt-1 text-sm text-ink-soft">Enter your official credentials to access the system.</p>
-
-          {% if messages %}
-            {% for message in messages %}
-              <div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% else %}alert-neutral{% endif %} mt-4">
-                {{ message }}
+      <div class="w-full max-w-[430px]">
+        <div class="panel overflow-hidden">
+          <div class="p-7 sm:p-8">
+            <div class="flex items-center gap-3">
+              <span class="stat-icon">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+              </span>
+              <div>
+                <h2 class="font-display text-2xl font-extrabold text-ink leading-tight">Sign In</h2>
+                <p class="text-xs font-medium text-ink-muted">{{ system_settings.office_name|default:"Market Office" }}</p>
               </div>
-            {% endfor %}
-          {% endif %}
-
-          <form method="post" action="{% url 'login' %}" class="mt-6 space-y-5">
-            {% csrf_token %}
-            {% if form.errors %}
-            <div class="alert alert-error">
-              Invalid username or password. Please try again or contact the Market Administrator.
             </div>
+            <p class="mt-3 text-sm text-ink-soft">Enter your official credentials to access the system.</p>
+
+            {% if messages %}
+              {% for message in messages %}
+                <div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% else %}alert-neutral{% endif %} mt-4">
+                  {{ message }}
+                </div>
+              {% endfor %}
             {% endif %}
-            {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
 
-            <div>
-              <label for="id_username" class="field-label">Username</label>
-              <div class="relative">
-                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
-                  <svg class="h-5 w-5 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                </div>
-                <input type="text" name="username" id="id_username" autofocus required placeholder="Enter your username"
-                  class="field w-full py-3 pl-11 pr-4 text-sm font-medium">
+            <form method="post" action="{% url 'login' %}" class="mt-6 space-y-5">
+              {% csrf_token %}
+              {% if form.errors %}
+              <div class="alert alert-error">
+                Invalid username or password. Please try again or contact the Market Administrator.
               </div>
-            </div>
+              {% endif %}
+              {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
 
-            <div>
-              <label for="id_password" class="field-label">Password</label>
-              <div class="relative">
-                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
-                  <svg class="h-5 w-5 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+              <div>
+                <label for="id_username" class="field-label">Username</label>
+                <div class="relative">
+                  <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+                    <svg class="h-5 w-5 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                  </div>
+                  <input type="text" name="username" id="id_username" autofocus required autocomplete="username" placeholder="Enter your username"
+                    class="field w-full py-3 pl-11 pr-4 text-sm font-medium">
                 </div>
-                <input type="password" name="password" id="id_password" required placeholder="Enter your password"
-                  class="field w-full py-3 pl-11 pr-4 text-sm font-medium">
               </div>
-            </div>
 
-            <button type="submit" class="btn btn-primary btn-lg w-full">
-              Sign In
-            </button>
-          </form>
+              <div>
+                <label for="id_password" class="field-label">Password</label>
+                <div class="relative">
+                  <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+                    <svg class="h-5 w-5 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                  </div>
+                  <input type="password" name="password" id="id_password" required autocomplete="current-password" placeholder="Enter your password"
+                    class="field w-full py-3 pl-11 pr-4 text-sm font-medium">
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-lg w-full">
+                Sign In
+              </button>
+            </form>
+          </div>
+          <div class="shimmer-line"></div>
         </div>
 
-        <div class="panel-flat mt-6 p-4 text-xs leading-5 text-ink-soft">
+        <div class="panel-flat mt-5 p-4 text-xs leading-5 text-ink-soft">
           <p>Access is limited to authorized personnel: Market Administrator, Collectors, Treasurer, and registered tenants.</p>
-          <p class="mt-2">For account concerns or password reset, contact the <span class="font-semibold text-ink">Market Administrator</span>.</p>
+          <p class="mt-1.5">For account concerns or password reset, contact the <span class="font-semibold text-ink">Market Administrator</span>.</p>
         </div>
 
         <p class="mt-6 text-center text-xs text-ink-muted">© {% now "Y" %} {{ system_settings.municipality_name|default:"Municipality of Dumingag" }}. All Rights Reserved.</p>
@@ -116,5 +168,42 @@
   </div>
 </div>
 
+<script>
+window.MRS_THEMES = [
+  { id: 'civic-emerald', name: 'Civic Emerald', primary: '#064e3b', accent: '#d97706' },
+  { id: 'royal-navy', name: 'Royal Navy', primary: '#0f2942', accent: '#1d4ed8' },
+  { id: 'slate-graphite', name: 'Slate Graphite', primary: '#18181b', accent: '#4f46e5' },
+  { id: 'burgundy-civic', name: 'Burgundy Civic', primary: '#4c1d24', accent: '#b45309' },
+  { id: 'midnight-dark', name: 'Midnight Dark', primary: '#0b1120', accent: '#10b981' }
+];
+window.setMrsTheme = function (themeId) {
+  var valid = window.MRS_THEMES.map(function (t) { return t.id; });
+  var next = valid.indexOf(themeId) !== -1 ? themeId : 'civic-emerald';
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem('mrs-theme', next);
+  window.dispatchEvent(new CustomEvent('mrs-theme-changed', { detail: { theme: next } }));
+};
+function mrsThemeSwitcher() {
+  return {
+    open: false,
+    themes: window.MRS_THEMES,
+    current: document.documentElement.dataset.theme || 'civic-emerald',
+    init() {
+      window.addEventListener('mrs-theme-changed', (e) => {
+        if (e.detail && e.detail.theme) this.current = e.detail.theme;
+      });
+    },
+    currentLabel() {
+      var found = this.themes.find(t => t.id === this.current);
+      return found ? found.name : 'Civic Emerald';
+    },
+    select(id) {
+      window.setMrsTheme(id);
+      this.current = id;
+      this.open = false;
+    }
+  };
+}
+</script>
 </body>
 </html>

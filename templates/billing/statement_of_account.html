@@ -1,0 +1,144 @@
+{% load static humanize %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Statement of Account — {{ tenant.full_name }}</title>
+  <link rel="stylesheet" href="{% static 'css/output.css' %}?v={{ STATIC_VERSION }}">
+  <style>
+    @media print { .no-print { display:none!important } @page { margin:0.55in; size:A4 portrait; } }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  </style>
+</head>
+<body class="bg-white p-6 font-sans text-ink">
+  <div class="max-w-4xl mx-auto">
+    <div class="no-print mb-4 flex justify-end gap-2">
+      <button onclick="window.print()" class="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-semibold text-white">Print SOA</button>
+      {% if user.profile.role != 'tenant' %}
+      <a href="{% url 'billing_tenant_collect' tenant.id %}" class="rounded-lg border border-emerald-800/40 px-4 py-2 text-sm font-semibold text-emerald-800">Collect Payment</a>
+      {% endif %}
+      <button onclick="window.close()" class="rounded-lg border border-ink/30 px-4 py-2 text-sm font-semibold text-ink-soft">Close</button>
+    </div>
+
+    <!-- ══ Official LGU / Market Header ══ -->
+    <div class="text-center border-b-2 border-emerald-800 pb-4 mb-5">
+      {% include 'includes/document_logo.html' %}
+      <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-muted">Republic of the Philippines</p>
+      <h1 class="text-sm font-bold uppercase text-emerald-900">{{ system_settings.municipality_name|default:"Municipality" }} — {{ system_settings.market_name|default:"Public Market" }}</h1>
+      <p class="text-xs text-ink-soft">{{ system_settings.office_name|default:"Market Administration Office" }}</p>
+      <h2 class="mt-3 text-lg font-bold uppercase tracking-wide text-emerald-800">Statement of Account (SOA)</h2>
+      <div class="divider-gold mx-auto mt-2"></div>
+      <p class="mt-2 text-xs text-ink-muted">As of {{ statement_date|date:"F d, Y" }} • Generated {{ now|date:"h:i A" }}</p>
+    </div>
+
+    <!-- ══ Tenant & Stall Details ══ -->
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 border border-ink/25 rounded-lg p-4 mb-5 text-xs">
+      <div class="space-y-1.5">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-800">Account Holder</p>
+        <p class="text-sm font-bold text-ink">{{ tenant.full_name }}</p>
+        <p class="text-ink-soft">Tenant ID: <span class="font-mono font-semibold text-ink">{{ tenant.tenant_id }}</span></p>
+        {% if tenant.business_name %}
+        <p class="text-ink-soft">Business: <span class="font-semibold text-ink">{{ tenant.business_name }}</span></p>
+        {% endif %}
+        <p class="text-ink-soft">Contact: {{ tenant.contact_number|default:"—" }}</p>
+        <p class="text-ink-soft">Address: {{ tenant.address|default:"—" }}</p>
+      </div>
+      <div class="space-y-1.5">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-800">Assigned Stall(s)</p>
+        {% for contract in active_contracts %}
+        <div class="flex items-center justify-between rounded border border-emerald-900/15 bg-emerald-50/40 px-2.5 py-1.5">
+          <div>
+            <span class="font-mono font-bold text-ink">{{ contract.stall.stall_number }}</span>
+            <span class="text-ink-muted"> • {{ contract.stall.section.name }}</span>
+          </div>
+          <span class="font-semibold text-emerald-900">₱{{ contract.monthly_rent|floatformat:2|intcomma }}/mo</span>
+        </div>
+        {% empty %}
+        <p class="text-ink-muted">No active stall contracts on file.</p>
+        {% endfor %}
+        <div class="pt-2 flex items-center justify-between border-t border-ink/15">
+          <span class="font-semibold uppercase text-ink-muted">Grand Total Due</span>
+          <span class="text-base font-extrabold {% if soa_totals.grand_total_due > 0 %}text-red-700{% else %}text-emerald-800{% endif %}">₱{{ soa_totals.grand_total_due|floatformat:2|intcomma }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Itemized Outstanding Billings ══ -->
+    <div class="mb-5">
+      <div class="mb-2 flex items-center justify-between">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-800">Itemized Unpaid / Partial / Overdue Billings ({{ soa_totals.item_count }})</h3>
+        {% if soa_totals.overdue_count %}
+        <span class="rounded-full bg-red-100 px-2.5 py-0.5 text-[11px] font-bold text-red-800">{{ soa_totals.overdue_count }} Overdue Month{{ soa_totals.overdue_count|pluralize }}</span>
+        {% endif %}
+      </div>
+      <table class="w-full border-collapse text-xs">
+        <thead>
+          <tr class="bg-emerald-100/70">
+            <th class="font-bold border border-emerald-900/25 px-2 py-2 text-left uppercase text-emerald-900">Period</th>
+            <th class="font-bold border border-emerald-900/25 px-2 py-2 text-left uppercase text-emerald-900">Stall</th>
+            <th class="font-bold border border-emerald-900/25 px-2 py-2 text-right uppercase text-emerald-900">Monthly Rent</th>
+            <th class="font-bold border border-emerald-900/25 px-2 py-2 text-right uppercase text-emerald-900">Penalty / Surcharge</th>
+            <th class="font-bold border border-emerald-900/25 px-2 py-2 text-right uppercase text-emerald-900">Paid</th>
+            <th class="font-bold border border-emerald-900/25 px-2 py-2 text-right uppercase text-emerald-900">Balance</th>
+            <th class="font-bold border border-emerald-900/25 px-2 py-2 text-left uppercase text-emerald-900">Due Date</th>
+            <th class="font-bold border border-emerald-900/25 px-2 py-2 text-left uppercase text-emerald-900">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr class="even:bg-emerald-50/40">
+            <td class="border border-ink/20 px-2 py-1.5 font-semibold text-ink">{{ item.period_label }}</td>
+            <td class="border border-ink/20 px-2 py-1.5 text-ink-soft">
+              <span class="font-mono font-semibold text-ink">{{ item.stall_number }}</span>
+              <span class="text-[10px] text-ink-muted"> ({{ item.section_name }})</span>
+            </td>
+            <td class="border border-ink/20 px-2 py-1.5 text-right text-ink">₱{{ item.rental_amount|floatformat:2|intcomma }}</td>
+            <td class="border border-ink/20 px-2 py-1.5 text-right {% if item.penalty_amount > 0 %}font-semibold text-amber-800{% else %}text-ink-muted{% endif %}">₱{{ item.penalty_amount|floatformat:2|intcomma }}</td>
+            <td class="border border-ink/20 px-2 py-1.5 text-right text-emerald-800">₱{{ item.amount_paid|floatformat:2|intcomma }}</td>
+            <td class="border border-ink/20 px-2 py-1.5 text-right font-bold text-ink">₱{{ item.balance|floatformat:2|intcomma }}</td>
+            <td class="border border-ink/20 px-2 py-1.5 text-ink-soft">{{ item.due_date|date:"M d, Y" }}</td>
+            <td class="border border-ink/20 px-2 py-1.5 font-semibold {% if item.status == 'Overdue' %}text-red-700{% elif item.status == 'Partial' %}text-amber-700{% else %}text-ink-soft{% endif %}">{{ item.status }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="border border-ink/20 px-3 py-5 text-center text-emerald-800 font-semibold">
+              No outstanding balance. Account is fully settled as of {{ statement_date|date:"F d, Y" }}.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        {% if items %}
+        <tfoot>
+          <tr class="bg-emerald-100/50 font-bold">
+            <td colspan="2" class="border border-emerald-900/25 px-2 py-2 text-right uppercase text-emerald-900">Grand Total Due</td>
+            <td class="border border-emerald-900/25 px-2 py-2 text-right text-ink">₱{{ soa_totals.total_rent|floatformat:2|intcomma }}</td>
+            <td class="border border-emerald-900/25 px-2 py-2 text-right text-amber-800">₱{{ soa_totals.total_penalty|floatformat:2|intcomma }}</td>
+            <td class="border border-emerald-900/25 px-2 py-2 text-right text-emerald-800">₱{{ soa_totals.total_paid|floatformat:2|intcomma }}</td>
+            <td class="border border-emerald-900/25 px-2 py-2 text-right text-red-700 text-sm">₱{{ soa_totals.grand_total_due|floatformat:2|intcomma }}</td>
+            <td colspan="2" class="border border-emerald-900/25 px-2 py-2"></td>
+          </tr>
+        </tfoot>
+        {% endif %}
+      </table>
+    </div>
+
+    <!-- ══ Payment Instructions & Notice Footer ══ -->
+    <div class="rounded-lg border border-amber-700/25 bg-amber-50/50 p-3.5 text-xs text-ink-soft space-y-1">
+      <p class="font-bold uppercase tracking-wider text-amber-900">Payment Notice &amp; Instructions</p>
+      <p>1. Please settle your outstanding balance at the {{ system_settings.office_name|default:"Market Administration Office" }} or through an authorized market collector. Always demand an Official Receipt (OR) for every payment.</p>
+      <p>2. Payments are applied strictly to the oldest unpaid/overdue rental period first (Arrears-First / FIFO) in accordance with municipal market rules.</p>
+      <p>3. Accounts with overdue balances are subject to applicable surcharges/penalties and formal demand notice. If payment has already been made, please present your Official Receipt for verification.</p>
+    </div>
+
+    <div class="mt-8 grid grid-cols-2 gap-8 text-center text-xs">
+      <div class="border-t border-ink/40 pt-2 mt-10">
+        Prepared By<br>
+        <span class="font-semibold text-ink">{{ user.get_full_name|default:user.username }}</span>
+      </div>
+      <div class="border-t border-ink/40 pt-2 mt-10">
+        Certified Correct<br>
+        <span class="font-semibold text-ink">Market Administrator / Municipal Treasurer</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

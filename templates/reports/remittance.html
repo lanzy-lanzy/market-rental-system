@@ -1,0 +1,192 @@
+{% extends 'reports/report_base.html' %}
+{% load static %}
+{% load humanize %}
+{% block report_title %}Daily Collector Remittance (AF 51){% endblock %}
+{% block report_heading %}Daily Collector Remittance / Abstract of Collection{% endblock %}
+{% block report_title_display %}Abstract of Collection &amp; Remittance (AF 51){% endblock %}
+{% block report_subtitle %}{{ remittance_date|date:"F d, Y" }} • {% if selected_collector %}Collector: {{ selected_collector.get_full_name|default:selected_collector.username }}{% else %}All Collectors{% endif %}{% endblock %}
+
+{% block report_actions %}
+<div class="no-print filter-bar">
+  <form method="get" class="flex flex-wrap items-end gap-3">
+    <div>
+      <label class="field-label" for="remittance_date">Remittance Date</label>
+      <input type="date" id="remittance_date" name="date" value="{{ remittance_date_iso }}" class="field w-full">
+    </div>
+    {% if collector_locked %}
+    <div>
+      <label class="field-label">Collector</label>
+      <div class="field flex items-center gap-2 bg-[var(--brand-tint)] border-[var(--brand-ring)] text-ink font-semibold">
+        <span>{{ selected_collector.get_full_name|default:selected_collector.username }}</span>
+        <span class="text-xs font-normal text-ink-muted">(My Collections)</span>
+      </div>
+    </div>
+    {% else %}
+    <div class="min-w-[14rem]">
+      <label class="field-label" for="remittance_collector">Collector</label>
+      <select name="collector" id="remittance_collector" class="field w-full">
+        <option value="">All Collectors</option>
+        {% for c in collectors %}
+        <option value="{{ c.pk }}" {% if collector_id == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.get_full_name|default:c.username }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
+    <button type="submit" class="btn btn-primary">Filter</button>
+    <a href="{% url 'report_remittance' %}" class="btn btn-ghost btn-sm">Today</a>
+  </form>
+  <div class="flex flex-wrap items-center gap-2 border-t border-[var(--border-subtle)] pt-3">
+    <a href="{% url 'report_remittance_print' %}?date={{ remittance_date_iso }}{% if collector_id %}&collector={{ collector_id }}{% endif %}" target="_blank" class="btn btn-primary btn-sm">
+      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+      Print AF 51 Remittance Slip
+    </a>
+    <button type="button" onclick="window.print()" class="btn btn-ghost btn-sm">Quick Print</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block report_content %}
+<!-- ══ Summary KPIs ══ -->
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <div class="stat-card">
+    <p class="stat-label">Grand Total for Remittance</p>
+    <p class="stat-value brand-text">&#8369;{{ grand_total|floatformat:2|intcomma }}</p>
+    <p class="stat-meta">{{ transaction_count }} official receipt{{ transaction_count|pluralize }} issued</p>
+  </div>
+  <div class="stat-card">
+    <p class="stat-label">Total Rent Collected</p>
+    <p class="stat-value text-ink">&#8369;{{ total_rent|floatformat:2|intcomma }}</p>
+    <p class="stat-meta">Principal stall rental portion</p>
+  </div>
+  <div class="stat-card">
+    <p class="stat-label">Total Penalty / Surcharge</p>
+    <p class="stat-value text-[var(--accent-text)]">&#8369;{{ total_penalty|floatformat:2|intcomma }}</p>
+    <p class="stat-meta">Late payment surcharge portion</p>
+  </div>
+  <div class="stat-card">
+    <p class="stat-label">OR # Series Used</p>
+    <p class="mt-2 font-mono text-base font-extrabold text-ink break-all">{{ or_series_display }}</p>
+    <p class="stat-meta">{{ transaction_count }} transaction{{ transaction_count|pluralize }} on {{ remittance_date|date:"M d, Y" }}</p>
+  </div>
+</div>
+
+<!-- ══ Payment Method Breakdown ══ -->
+<div class="panel overflow-hidden">
+  <div class="panel-header">
+    <div>
+      <h3 class="panel-title">Payment Method Breakdown</h3>
+      <p class="panel-subtitle">Summary by mode of collection for treasury turn-over</p>
+    </div>
+    <span class="badge badge-gold"><span class="badge-dot"></span>{{ payment_method_breakdown|length }} method{{ payment_method_breakdown|length|pluralize }}</span>
+  </div>
+  <div class="table-wrap rounded-none border-0 bg-transparent shadow-none backdrop-blur-none">
+    <div class="overflow-x-auto">
+      <table class="table min-w-[640px]">
+        <thead>
+          <tr>
+            <th>Payment Method</th>
+            <th class="num">Receipts</th>
+            <th class="num">Rent Collected</th>
+            <th class="num">Penalty / Surcharge</th>
+            <th class="num">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in payment_method_breakdown %}
+          <tr>
+            <td class="font-semibold text-ink">{{ m.label }}</td>
+            <td class="num">{{ m.count }}</td>
+            <td class="num">&#8369;{{ m.rent_total|floatformat:2|intcomma }}</td>
+            <td class="num text-[var(--accent-text)]">&#8369;{{ m.penalty_total|floatformat:2|intcomma }}</td>
+            <td class="num font-bold brand-text">&#8369;{{ m.amount_total|floatformat:2|intcomma }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="px-4 py-6 text-center text-sm text-ink-muted">No collections recorded for this date.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        {% if payment_method_breakdown %}
+        <tfoot>
+          <tr>
+            <td class="text-right font-bold">Total:</td>
+            <td class="num font-bold">{{ transaction_count }}</td>
+            <td class="num font-bold">&#8369;{{ total_rent|floatformat:2|intcomma }}</td>
+            <td class="num font-bold text-[var(--accent-text)]">&#8369;{{ total_penalty|floatformat:2|intcomma }}</td>
+            <td class="num font-bold brand-text">&#8369;{{ grand_total|floatformat:2|intcomma }}</td>
+          </tr>
+        </tfoot>
+        {% endif %}
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Itemized Collection Table ══ -->
+<div class="panel overflow-hidden">
+  <div class="panel-header">
+    <div>
+      <h3 class="panel-title">Itemized Abstract of Collection</h3>
+      <p class="panel-subtitle">Chronological OR listing for {{ remittance_date|date:"F d, Y" }}</p>
+    </div>
+    <span class="badge badge-gold"><span class="badge-dot"></span>OR Series: {{ or_series_display }}</span>
+  </div>
+  <div class="table-wrap rounded-none border-0 bg-transparent shadow-none backdrop-blur-none">
+    <div class="overflow-x-auto">
+      <table class="table min-w-[1100px]">
+        <thead>
+          <tr>
+            <th>OR #</th>
+            <th>Date / Time</th>
+            <th>Tenant</th>
+            <th>Stall</th>
+            <th>Period</th>
+            <th>Method</th>
+            <th class="num">Rent</th>
+            <th class="num">Penalty</th>
+            <th class="num">Amount Paid</th>
+            <th>Collector</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td class="mono font-bold brand-text">{{ row.or_number }}</td>
+            <td class="whitespace-nowrap text-xs text-ink-soft">{{ row.payment.payment_date|date:"M d, Y" }}<br>{{ row.payment.created_at|date:"h:i A" }}</td>
+            <td class="font-semibold text-ink">{{ row.payment.tenant.full_name }}</td>
+            <td class="mono">{{ row.payment.stall.stall_number }}</td>
+            <td class="whitespace-nowrap">{{ row.period_label }}</td>
+            <td>{{ row.payment.get_payment_method_display }}</td>
+            <td class="num">&#8369;{{ row.rent_portion|floatformat:2|intcomma }}</td>
+            <td class="num text-[var(--accent-text)]">&#8369;{{ row.penalty_portion|floatformat:2|intcomma }}</td>
+            <td class="num font-bold brand-text">&#8369;{{ row.amount_paid|floatformat:2|intcomma }}</td>
+            <td>{{ row.payment.collected_by.get_full_name|default:row.payment.collected_by.username|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="10" class="px-4 py-10 text-center">
+              <div class="empty-state">
+                <span class="empty-icon">
+                  <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </span>
+                <p class="mt-4 text-sm font-semibold text-ink">No collections recorded for {{ remittance_date|date:"F d, Y" }}</p>
+                <p class="mt-1 text-xs text-ink-muted">Select another date or collector above to view remittance records.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="6" class="text-right font-bold">Grand Total for Remittance:</td>
+            <td class="num font-bold">&#8369;{{ total_rent|floatformat:2|intcomma }}</td>
+            <td class="num font-bold text-[var(--accent-text)]">&#8369;{{ total_penalty|floatformat:2|intcomma }}</td>
+            <td class="num font-bold brand-text">&#8369;{{ grand_total|floatformat:2|intcomma }}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,125 @@
+{% load humanize %}
+<div id="collection-sheet-content" class="space-y-4">
+  <!-- ══ Route Summary Strip ══ -->
+  <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
+    <div class="panel p-3.5">
+      <p class="stat-label">Stalls to Collect</p>
+      <p class="mt-1 text-lg font-extrabold text-ink num">{{ summary.total_accounts }}</p>
+      <p class="text-xs text-ink-muted">{{ summary.overdue_accounts }} overdue</p>
+    </div>
+    <div class="panel p-3.5">
+      <p class="stat-label">Unpaid Months</p>
+      <p class="mt-1 text-lg font-extrabold text-ink num">{{ summary.total_unpaid_months }}</p>
+      <p class="text-xs text-ink-muted">Open billing periods</p>
+    </div>
+    <div class="panel p-3.5">
+      <p class="stat-label">Rent Due</p>
+      <p class="mt-1 text-lg font-extrabold text-ink num">&#8369;{{ summary.total_rent_due|floatformat:2|intcomma }}</p>
+      <p class="text-xs text-ink-muted">Base stall rentals</p>
+    </div>
+    <div class="panel p-3.5">
+      <p class="stat-label">Penalty / Surcharge</p>
+      <p class="mt-1 text-lg font-extrabold text-amber-700 num">&#8369;{{ summary.total_penalty_due|floatformat:2|intcomma }}</p>
+      <p class="text-xs text-ink-muted">Late surcharges</p>
+    </div>
+    <div class="panel p-3.5 col-span-2 sm:col-span-1">
+      <p class="stat-label">Total Balance</p>
+      <p class="mt-1 text-lg font-extrabold text-red-700 num">&#8369;{{ summary.total_balance|floatformat:2|intcomma }}</p>
+      <p class="text-xs text-ink-muted">Collectible on route</p>
+    </div>
+  </div>
+
+  <!-- ══ Collection Sheet Table ══ -->
+  <div class="table-wrap">
+    <div class="overflow-x-auto">
+      <table class="table min-w-[1100px]">
+        <thead>
+          <tr>
+            <th>Stall #</th>
+            <th>Section</th>
+            <th>Tenant</th>
+            <th class="text-center">Unpaid Months</th>
+            <th class="text-right">Rent Due</th>
+            <th class="text-right">Penalty Due</th>
+            <th class="text-right">Total Balance</th>
+            <th>Status</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td class="whitespace-nowrap">
+              <span class="chip mono font-bold">{{ row.stall.stall_number }}</span>
+            </td>
+            <td class="whitespace-nowrap">
+              <span class="chip chip-emerald"><span class="h-2 w-2 rounded-full bg-emerald-600"></span>{{ row.section.name }}</span>
+            </td>
+            <td class="whitespace-nowrap">
+              <p class="text-sm font-semibold text-ink">{{ row.tenant.full_name }}</p>
+              <p class="text-xs text-ink-muted mono">{{ row.tenant.tenant_id }} • {{ row.oldest_period }}{% if row.latest_period != row.oldest_period %} – {{ row.latest_period }}{% endif %}</p>
+            </td>
+            <td class="whitespace-nowrap text-center">
+              <span class="chip font-bold num">{{ row.unpaid_months }}</span>
+              {% if row.overdue_months %}
+              <p class="mt-0.5 text-[11px] font-semibold text-red-700">{{ row.overdue_months }} overdue</p>
+              {% endif %}
+            </td>
+            <td class="whitespace-nowrap text-right text-sm text-ink num">&#8369;{{ row.rent_due|floatformat:2|intcomma }}</td>
+            <td class="whitespace-nowrap text-right text-sm {% if row.penalty_due > 0 %}font-semibold text-amber-700{% else %}text-ink-muted{% endif %} num">&#8369;{{ row.penalty_due|floatformat:2|intcomma }}</td>
+            <td class="whitespace-nowrap text-right text-sm font-extrabold text-red-700 num">&#8369;{{ row.total_balance|floatformat:2|intcomma }}</td>
+            <td class="whitespace-nowrap">{% include 'includes/status_badge.html' with status=row.status %}</td>
+            <td class="whitespace-nowrap text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <a href="{% url 'billing_tenant_collect' row.tenant.id %}" class="btn btn-primary btn-sm">Collect</a>
+                <a href="{% url 'billing_tenant_soa' row.tenant.id %}" target="_blank" class="btn btn-ghost btn-sm" title="Printable Statement of Account">SOA</a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9">
+              <div class="empty-state">
+                <span class="empty-icon">
+                  <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </span>
+                <p class="mt-4 text-sm font-semibold text-ink">No outstanding balances found</p>
+                <p class="mt-1 text-xs text-ink-muted">All stalls matching the current filter are settled.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        {% if rows %}
+        <tfoot>
+          <tr class="border-t-2 border-emerald-900/15 bg-emerald-50/40 font-bold">
+            <td colspan="3" class="text-right text-xs uppercase tracking-wider text-ink-soft">Route Totals ({{ summary.total_accounts }} stall{{ summary.total_accounts|pluralize }})</td>
+            <td class="text-center text-sm text-ink num">{{ summary.total_unpaid_months }}</td>
+            <td class="whitespace-nowrap text-right text-sm text-ink num">&#8369;{{ summary.total_rent_due|floatformat:2|intcomma }}</td>
+            <td class="whitespace-nowrap text-right text-sm text-amber-800 num">&#8369;{{ summary.total_penalty_due|floatformat:2|intcomma }}</td>
+            <td class="whitespace-nowrap text-right text-sm text-red-700 num">&#8369;{{ summary.total_balance|floatformat:2|intcomma }}</td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+        {% endif %}
+      </table>
+    </div>
+  </div>
+</div>
+
+{% if is_htmx_request %}
+<a id="collection-sheet-print-link"
+   hx-swap-oob="true"
+   href="{% url 'billing_collection_sheet_print' %}{% if filter_querystring %}?{{ filter_querystring }}{% endif %}"
+   target="_blank"
+   class="btn btn-primary btn-sm">
+  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+  Print Field Sheet
+</a>
+<div id="collection-sheet-filter-meta" hx-swap-oob="true" class="flex items-center gap-2 lg:shrink-0">
+  <span class="chip chip-emerald"><span class="h-2 w-2 rounded-full bg-emerald-600"></span> {{ summary.total_accounts }} stall{{ summary.total_accounts|pluralize }}</span>
+  {% if search_query or section_filter or status_filter %}
+  <a href="{% url 'billing_collection_sheet' %}" class="btn btn-ghost btn-sm">Clear ✕</a>
+  {% endif %}
+</div>
+{% endif %}

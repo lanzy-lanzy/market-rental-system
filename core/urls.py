@@ -26,6 +26,9 @@ from core.views.billing import (
     billing_collect, billing_quick_pay, billing_tenant_collect,
     billing_list_print, billing_list_export_pdf, billing_view_print, billing_view_export_pdf,
 )
+from core.views.collection_sheet import (
+    billing_collection_sheet, billing_collection_sheet_print, billing_tenant_soa,
+)
 from core.views.payments import (
     payment_list, payment_add, payment_view,
     payment_receipt, payment_print_receipt,
@@ -39,6 +42,7 @@ from core.views.reports import (
     report_paid_tenants, report_unpaid_tenants, report_overdue,
     report_ledger, report_occupancy, report_vacant,
     report_export_pdf, report_export_excel,
+    report_remittance, report_remittance_print,
 )
 from core.views.ledger import ledger_list, ledger_view, ledger_print, ledger_list_print, ledger_list_export_pdf, ledger_view_export_pdf
 from core.views.notices import notice_list, notice_add, notice_print, notice_mark_served, notice_list_print, notice_list_export_pdf, notice_export_pdf
@@ -122,6 +126,9 @@ urlpatterns = [
 
     # Billing
     path('billing/', billing_list, name='billing_list'),
+    path('billing/collection-sheet/', billing_collection_sheet, name='billing_collection_sheet'),
+    path('billing/collection-sheet/print/', billing_collection_sheet_print, name='billing_collection_sheet_print'),
+    path('billing/tenant/<int:tenant_id>/soa/', billing_tenant_soa, name='billing_tenant_soa'),
     path('billing/print/', billing_list_print, name='billing_list_print'),
     path('billing/export/pdf/', billing_list_export_pdf, name='billing_list_export_pdf'),
     path('billing/generate/', billing_generate, name='billing_generate'),
@@ -146,6 +153,7 @@ urlpatterns = [
     path('payments/<int:pk>/export/pdf/', payment_receipt_export_pdf, name='payment_receipt_export_pdf'),
     path('payments/batch-receipt/', payment_batch_receipt, name='payment_batch_receipt'),
     path('payments/batch-receipt/export/pdf/', payment_batch_export_pdf, name='payment_batch_export_pdf'),
+    path('payments/remittance/', report_remittance, name='collector_remittance'),
     path('payments/add-modal/', payment_add_modal, name='payment_add_modal'),
     path('payments/<int:pk>/edit-modal/', payment_edit_modal, name='payment_edit_modal'),
     path('payments/<int:pk>/void/', payment_void, name='payment_void'),
@@ -153,6 +161,8 @@ urlpatterns = [
     # Reports
     path('reports/', report_dashboard, name='report_dashboard'),
     path('reports/daily/', report_daily, name='report_daily'),
+    path('reports/remittance/', report_remittance, name='report_remittance'),
+    path('reports/remittance/print/', report_remittance_print, name='report_remittance_print'),
     path('reports/weekly/', report_weekly, name='report_weekly'),
     path('reports/monthly/', report_monthly, name='report_monthly'),
     path('reports/annual/', report_annual, name='report_annual'),

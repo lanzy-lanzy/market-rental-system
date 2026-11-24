@@ -1,0 +1,114 @@
+{% load static humanize %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Field Collection Sheet - Print</title>
+  <link rel="stylesheet" href="{% static 'css/output.css' %}?v={{ STATIC_VERSION }}">
+  <style>
+    @media print { .no-print { display:none!important } @page { margin:0.45in; size:A4 landscape; } }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  </style>
+</head>
+<body class="bg-white p-6 font-sans text-ink">
+  <div class="max-w-7xl mx-auto">
+    <div class="no-print mb-4 flex justify-end gap-2">
+      <button onclick="window.print()" class="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-semibold text-white">Print</button>
+      <a href="{% url 'billing_collection_sheet' %}{% if filter_querystring %}?{{ filter_querystring }}{% endif %}" class="rounded-lg border border-emerald-800/40 px-4 py-2 text-sm font-semibold text-emerald-800">Back to Sheet</a>
+      <button onclick="window.close()" class="rounded-lg border border-ink/30 px-4 py-2 text-sm font-semibold text-ink-soft">Close</button>
+    </div>
+
+    <div class="text-center border-b-2 border-emerald-800 pb-4 mb-5">
+      {% include 'includes/document_logo.html' %}
+      <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-muted">Republic of the Philippines</p>
+      <h1 class="text-sm font-bold uppercase text-emerald-900">{{ system_settings.municipality_name|default:"Municipality" }} — {{ system_settings.market_name|default:"Public Market" }}</h1>
+      <p class="text-xs text-ink-soft">{{ system_settings.office_name|default:"Market Administration Office" }}</p>
+      <h2 class="mt-2 text-lg font-bold uppercase text-emerald-800">Field Collection Sheet{% if selected_section %} — {{ selected_section.name }}{% endif %}</h2>
+      <div class="divider-gold mx-auto mt-2"></div>
+      <p class="mt-2 text-xs text-ink-muted">
+        Route Date: {{ now|date:"F d, Y h:i A" }} • Collector: {{ user.get_full_name|default:user.username }}
+        {% if selected_section %} • Section: {{ selected_section.name }}{% endif %}
+        {% if status_filter %} • Status: {{ status_filter }}{% else %} • Status: All Outstanding{% endif %}
+        {% if search_query %} • Search: "{{ search_query }}"{% endif %}
+      </p>
+    </div>
+
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-2 text-xs text-ink-soft border border-emerald-900/20 rounded-lg bg-emerald-50/40 px-3 py-2">
+      <div>Stalls on Route: <strong class="text-emerald-900">{{ summary.total_accounts }}</strong> ({{ summary.total_unpaid_months }} unpaid month{{ summary.total_unpaid_months|pluralize }})</div>
+      <div class="flex flex-wrap items-center gap-4">
+        <span>Rent Due: <strong class="text-ink">₱{{ summary.total_rent_due|floatformat:2|intcomma }}</strong></span>
+        <span>Penalty Due: <strong class="text-amber-800">₱{{ summary.total_penalty_due|floatformat:2|intcomma }}</strong></span>
+        <span>Total Collectible: <strong class="text-red-700">₱{{ summary.total_balance|floatformat:2|intcomma }}</strong></span>
+      </div>
+    </div>
+
+    <table class="w-full border-collapse text-xs">
+      <thead>
+        <tr class="bg-emerald-100/70">
+          <th class="font-bold border border-emerald-900/30 px-2 py-2 text-left uppercase text-emerald-900">Stall #</th>
+          <th class="font-bold border border-emerald-900/30 px-2 py-2 text-left uppercase text-emerald-900">Section</th>
+          <th class="font-bold border border-emerald-900/30 px-2 py-2 text-left uppercase text-emerald-900">Tenant</th>
+          <th class="font-bold border border-emerald-900/30 px-2 py-2 text-center uppercase text-emerald-900">Months</th>
+          <th class="font-bold border border-emerald-900/30 px-2 py-2 text-right uppercase text-emerald-900">Rent Due</th>
+          <th class="font-bold border border-emerald-900/30 px-2 py-2 text-right uppercase text-emerald-900">Penalty</th>
+          <th class="font-bold border border-emerald-900/30 px-2 py-2 text-right uppercase text-emerald-900">Balance</th>
+          <th class="font-bold border border-emerald-900/30 px-2 py-2 text-left uppercase text-emerald-900">Status</th>
+          <th class="font-bold border border-emerald-900/30 px-2 py-2 text-center uppercase text-emerald-900 w-24">Amount Paid</th>
+          <th class="font-bold border border-emerald-900/30 px-2 py-2 text-center uppercase text-emerald-900 w-24">OR #</th>
+          <th class="font-bold border border-emerald-900/30 px-2 py-2 text-center uppercase text-emerald-900 w-28">Signature</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr class="even:bg-emerald-50/30">
+          <td class="border border-ink/25 px-2 py-2 font-mono font-bold text-ink">{{ row.stall.stall_number }}</td>
+          <td class="border border-ink/25 px-2 py-2 text-ink-soft">{{ row.section.name }}</td>
+          <td class="border border-ink/25 px-2 py-2">
+            <span class="font-semibold text-ink">{{ row.tenant.full_name }}</span>
+            <span class="block text-[10px] text-ink-muted">{{ row.tenant.tenant_id }} • {{ row.oldest_period }}{% if row.latest_period != row.oldest_period %}–{{ row.latest_period }}{% endif %}</span>
+          </td>
+          <td class="border border-ink/25 px-2 py-2 text-center font-semibold text-ink">{{ row.unpaid_months }}</td>
+          <td class="border border-ink/25 px-2 py-2 text-right text-ink">₱{{ row.rent_due|floatformat:2|intcomma }}</td>
+          <td class="border border-ink/25 px-2 py-2 text-right text-ink-soft">₱{{ row.penalty_due|floatformat:2|intcomma }}</td>
+          <td class="border border-ink/25 px-2 py-2 text-right font-bold text-ink">₱{{ row.total_balance|floatformat:2|intcomma }}</td>
+          <td class="border border-ink/25 px-2 py-2 text-ink-soft">{{ row.status }}</td>
+          <td class="border border-ink/25 px-2 py-2">&nbsp;</td>
+          <td class="border border-ink/25 px-2 py-2">&nbsp;</td>
+          <td class="border border-ink/25 px-2 py-2">&nbsp;</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="11" class="border border-ink/25 px-2 py-6 text-center text-ink-muted">No outstanding balances on this collection route.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      {% if rows %}
+      <tfoot>
+        <tr class="bg-emerald-100/50 font-bold">
+          <td colspan="3" class="border border-emerald-900/30 px-2 py-2 text-right uppercase text-emerald-900">Route Totals</td>
+          <td class="border border-emerald-900/30 px-2 py-2 text-center text-ink">{{ summary.total_unpaid_months }}</td>
+          <td class="border border-emerald-900/30 px-2 py-2 text-right text-ink">₱{{ summary.total_rent_due|floatformat:2|intcomma }}</td>
+          <td class="border border-emerald-900/30 px-2 py-2 text-right text-amber-800">₱{{ summary.total_penalty_due|floatformat:2|intcomma }}</td>
+          <td class="border border-emerald-900/30 px-2 py-2 text-right text-red-700">₱{{ summary.total_balance|floatformat:2|intcomma }}</td>
+          <td colspan="4" class="border border-emerald-900/30 px-2 py-2 text-right text-[10px] font-normal text-ink-muted">Field Collector Remittance Entry</td>
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+
+    <div class="mt-8 grid grid-cols-3 gap-8 text-center text-xs">
+      <div class="border-t border-ink/40 pt-2 mt-10">
+        Collected / Prepared By<br>
+        <span class="font-semibold text-ink">{{ user.get_full_name|default:user.username }}</span>
+      </div>
+      <div class="border-t border-ink/40 pt-2 mt-10">
+        Verified By<br>
+        <span class="font-semibold text-ink">Market Supervisor / Administrator</span>
+      </div>
+      <div class="border-t border-ink/40 pt-2 mt-10">
+        Received By<br>
+        <span class="font-semibold text-ink">Municipal Treasurer</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

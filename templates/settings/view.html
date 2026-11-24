@@ -9,10 +9,71 @@
 
   <!-- ══ Hero ══ -->
   <div class="glass-deep relative overflow-hidden rounded-2xl p-6 text-white">
-    <div class="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-emerald-400/20 blur-2xl"></div>
+    <div class="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-white/10 blur-2xl"></div>
     <h3 class="relative font-display text-lg font-extrabold tracking-tight">System Configuration</h3>
     <p class="relative mt-1 text-sm text-white/75">These values appear on receipts, reports and official notices. Changes are audited.</p>
     <div class="shimmer-line mt-4"></div>
+  </div>
+
+  <!-- ══ Appearance & Theme ══ -->
+  <div class="panel overflow-hidden"
+       x-data="{
+         current: document.documentElement.dataset.theme || localStorage.getItem('mrs-theme') || 'civic-emerald',
+         themes: [
+           { id: 'civic-emerald', name: 'Civic Emerald', desc: 'Classic LGU emerald &amp; gold', swatch: '#047857', accent: '#d9a404', bg: '#f4f7f5' },
+           { id: 'royal-navy', name: 'Royal Navy', desc: 'Executive municipal navy', swatch: '#1d4ed8', accent: '#d97706', bg: '#f4f6fa' },
+           { id: 'slate-graphite', name: 'Slate Graphite', desc: 'Neutral formal graphite', swatch: '#334155', accent: '#0284c7', bg: '#f8fafc' },
+           { id: 'burgundy-civic', name: 'Burgundy Civic', desc: 'Formal treasury burgundy', swatch: '#881337', accent: '#ca8a04', bg: '#faf6f7' },
+           { id: 'midnight-dark', name: 'Midnight Dark', desc: 'Low-glare dark workspace', swatch: '#0f172a', accent: '#10b981', bg: '#0b1120' }
+         ],
+         pick(id) {
+           this.current = id;
+           if (window.setMrsTheme) {
+             window.setMrsTheme(id);
+           } else {
+             document.documentElement.dataset.theme = id;
+             try { localStorage.setItem('mrs-theme', id); } catch (e) {}
+           }
+         }
+       }"
+       @mrs-theme-changed.window="current = $event.detail.theme">
+    <div class="panel-header">
+      <div>
+        <h3 class="panel-title">Appearance &amp; Theme</h3>
+        <p class="panel-subtitle">Choose a formal workspace palette — saved to this browser and synced with the top-bar switcher</p>
+      </div>
+      <span class="badge badge-gold"><span class="badge-dot"></span>5 Themes</span>
+    </div>
+    <div class="panel-body">
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5" role="radiogroup" aria-label="Workspace theme">
+        <template x-for="t in themes" :key="t.id">
+          <button type="button"
+                  @click="pick(t.id)"
+                  :aria-checked="(current === t.id).toString()"
+                  role="radio"
+                  :data-theme-choice="t.id"
+                  class="group relative flex flex-col items-start gap-2.5 rounded-xl border p-3 text-left transition"
+                  :class="current === t.id
+                    ? 'border-[var(--brand-600)] bg-[var(--brand-tint)] ring-2 ring-[var(--brand-ring)]'
+                    : 'border-[var(--border-subtle)] bg-[var(--bg-surface-subtle)] hover:border-[var(--border-strong)]'">
+            <div class="flex w-full items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5">
+                <span class="h-5 w-5 rounded-full border border-black/15 shadow-sm" :style="'background:' + t.swatch"></span>
+                <span class="h-3.5 w-3.5 rounded-full border border-black/15" :style="'background:' + t.accent"></span>
+                <span class="h-3.5 w-3.5 rounded-full border border-black/15" :style="'background:' + t.bg"></span>
+              </div>
+              <span x-show="current === t.id" class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--brand-700)] text-white">
+                <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              </span>
+            </div>
+            <div>
+              <p class="text-xs font-extrabold text-ink" x-text="t.name"></p>
+              <p class="mt-0.5 text-[11px] leading-snug text-ink-muted" x-html="t.desc"></p>
+            </div>
+          </button>
+        </template>
+      </div>
+    </div>
   </div>
 
   <!-- ══ Form ══ -->
@@ -78,7 +139,7 @@
           </div>
         </div>
         <div class="alert alert-warning mt-4">
-          <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/70 text-xs font-bold ring-1 ring-current/20">💡</span>
+          <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--bg-surface)] text-xs font-bold ring-1 ring-current/20">💡</span>
           <p class="flex-1 font-medium">Penalties are auto-computed after the grace period. Fixed = flat amount, Percentage = % of rental.</p>
         </div>
       </div>
@@ -89,7 +150,7 @@
         <div class="mt-2">{{ form.terms_and_conditions }}</div>
         {% if form.terms_and_conditions.errors %}<p class="field-error">{{ form.terms_and_conditions.errors.0 }}</p>{% endif %}
         <div class="alert alert-info mt-4">
-          <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/70 text-xs font-bold ring-1 ring-current/20">i</span>
+          <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--bg-surface)] text-xs font-bold ring-1 ring-current/20">i</span>
           <p class="flex-1 font-medium">Write one clause per line — the numbering is yours, the printout keeps it. These clauses appear in the <b>Terms and Conditions</b> section of every printed contract and PDF.</p>
         </div>
       </div>
@@ -99,8 +160,8 @@
         <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label class="field-label" for="{{ form.logo.id_for_label }}">Logo</label>
-            <div class="mt-2 flex items-center gap-3 rounded-xl border border-white/70 bg-white/50 p-3">
-              {% if settings.logo %}<img src="{{ settings.logo.url }}" alt="Current logo" class="h-10 w-auto rounded-lg border border-emerald-900/10 bg-white">{% endif %}
+            <div class="mt-2 flex items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-subtle)] p-3">
+              {% if settings.logo %}<img src="{{ settings.logo.url }}" alt="Current logo" class="h-10 w-auto rounded-lg border border-[var(--border-subtle)] bg-white">{% endif %}
               <div class="flex-1">{{ form.logo }}</div>
             </div>
             {% if form.logo.errors %}<p class="field-error">{{ form.logo.errors.0 }}</p>{% endif %}
@@ -113,7 +174,7 @@
         </div>
       </div>
 
-      <div class="mt-7 flex items-center justify-end gap-3 border-t border-emerald-900/10 pt-5">
+      <div class="mt-7 flex items-center justify-end gap-3 border-t border-[var(--border-subtle)] pt-5">
         <a href="{% url 'dashboard' %}" class="btn btn-ghost">Cancel</a>
         <button type="submit" class="btn btn-primary">Save Settings</button>
       </div>

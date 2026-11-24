@@ -502,7 +502,7 @@ def _tenant_outstanding_qs(tenant):
     return (
         Billing.objects.filter(tenant=tenant)
         .select_related('stall', 'stall__section', 'contract')
-        .order_by('billing_year', 'billing_month', 'stall__stall_number')
+        .order_by('billing_year', 'billing_month', 'stall__stall_number', 'id')
     )
 
 
@@ -513,11 +513,12 @@ def billing_tenant_collect(request, tenant_pk):
 
     Lists every billing month (past and current) tied to the tenant's
     contracts, oldest first, so the collector can review the complete picture
-    before tapping Collect. The batch form below lets them tick specific
-    months (or all outstanding ones) and settle them in a single action —
-    each ticked month produces its own official receipt via the shared
-    ``record_payment`` service so ledger, billing status and audit trail stay
-    identical to the one-month modal flow.
+    before tapping Collect. Supports both:
+    - Checkbox selection (`collection_mode='selected'`): settle ticked months in full.
+    - Arrears-First FIFO (`collection_mode='fifo'`): enter `amount_tendered` and
+      allocate strictly oldest unpaid/overdue month first (full settlement on older
+      months, partial on the next month), computing `change_due` if cash exceeds
+      total outstanding.
     """
     tenant = get_object_or_404(Tenant, pk=tenant_pk)
 
@@ -532,17 +533,23 @@ def billing_tenant_collect(request, tenant_pk):
 
     billings = list(_tenant_outstanding_qs(tenant))
     outstanding = [b for b in billings if b.balance and b.balance > 0 and b.status != 'Paid']
+    today = date.today()
+    overdue_count = sum(
+        1 for b in outstanding
+        if b.status == 'Overdue' or (b.due_date and b.due_date < today)
+    )
+    total_rent = sum((Decimal(str(b.rental_amount or 0)) for b in billings), Decimal('0.00'))
+    total_penalty = sum((Decimal(str(b.penalty_amount or 0)) for b in billings), Decimal('0.00'))
+    total_due = sum((Decimal(str(b.total_due or 0)) for b in billings), Decimal('0.00'))
+    total_paid = sum((Decimal(str(b.amount_paid or 0)) for b in billings), Decimal('0.00'))
     total_outstanding = sum((Decimal(str(b.balance)) for b in outstanding), Decimal('0.00'))
 
     if request.method == 'POST':
-        selected_ids = {int(x) for x in request.POST.getlist('billing_ids') if x.isdigit()}
-        if not selected_ids:
-            messages.error(request, 'Select at least one billing month to collect.')
-            return redirect('billing_tenant_collect', tenant_pk=tenant.pk)
+        collection_mode = (request.POST.get('collection_mode') or 'selected').strip().lower()
 
         raw_date = (request.POST.get('payment_date') or '').strip()
         try:
-            pay_date = datetime.strptime(raw_date, '%Y-%m-%d').date() if raw_date else date.today()
+            pay_date = datetime.strptime(raw_date, '%Y-%m-%d').date() if raw_date else today
         except ValueError:
             messages.error(request, 'Invalid payment date.')
             return redirect('billing_tenant_collect', tenant_pk=tenant.pk)
@@ -552,65 +559,123 @@ def billing_tenant_collect(request, tenant_pk):
             payment_method = 'Cash'
         remarks = (request.POST.get('remarks') or '').strip()
 
-        # Re-query with select_for_update inside the transaction so concurrent
-        # collectors cannot settle the same month twice while this page loads.
-        billings_map = {
-            b.pk: b
-            for b in Billing.objects.select_for_update().filter(
-                pk__in=selected_ids, tenant=tenant
-            )
-        }
-        # Always settle oldest first so partials line up with the contract.
-        ordered = sorted(billings_map.values(), key=lambda b: (b.billing_year, b.billing_month, b.stall_id))
-
-        # Pre-generate ONE official receipt number for the whole batch. Every
-        # Payment row shares this OR so the printed document is a single
-        # consolidated receipt — not three separate ones. Internal
-        # ``receipt_number`` stays unique per row to satisfy the DB constraint,
-        # but only the shared OR is surfaced to the collector and tenant.
         shared_or = generate_receipt_number()
-
         created_payments = []
-        for billing in ordered:
-            if billing.status == 'Paid' or Decimal(str(billing.balance)) <= 0:
-                continue
-            amount = Decimal(str(billing.balance))
-            payment = record_payment(
-                tenant=tenant,
-                billing=billing,
-                amount=amount,
-                payment_date=pay_date,
-                payment_method=payment_method,
-                collected_by=request.user,
-                remarks=remarks,
-                official_receipt_no=shared_or,
+        amount_tendered = None
+        change_due = Decimal('0.00')
+
+        if collection_mode == 'fifo':
+            raw_tendered = (request.POST.get('amount_tendered') or '').strip()
+            try:
+                amount_tendered = Decimal(raw_tendered).quantize(Decimal('0.01'))
+            except Exception:
+                amount_tendered = Decimal('0.00')
+            if amount_tendered <= 0:
+                messages.error(request, 'Enter a cash tendered amount greater than zero.')
+                return redirect('billing_tenant_collect', tenant_pk=tenant.pk)
+
+            # Lock all unpaid/partial/overdue billings strictly oldest-first (FIFO).
+            ordered = list(
+                Billing.objects.select_for_update()
+                .filter(tenant=tenant, balance__gt=0)
+                .exclude(status='Paid')
+                .order_by('billing_year', 'billing_month', 'id')
             )
-            created_payments.append(payment)
+            remaining_cash = amount_tendered
+            for billing in ordered:
+                if remaining_cash <= 0:
+                    break
+                bill_balance = Decimal(str(billing.balance or 0)).quantize(Decimal('0.01'))
+                if bill_balance <= 0 or billing.status == 'Paid':
+                    continue
+                apply_amount = min(remaining_cash, bill_balance).quantize(Decimal('0.01'))
+                payment = record_payment(
+                    tenant=tenant,
+                    billing=billing,
+                    amount=apply_amount,
+                    payment_date=pay_date,
+                    payment_method=payment_method,
+                    collected_by=request.user,
+                    remarks=remarks,
+                    official_receipt_no=shared_or,
+                )
+                created_payments.append(payment)
+                remaining_cash = (remaining_cash - apply_amount).quantize(Decimal('0.01'))
 
-        if not created_payments:
-            messages.info(request, 'Nothing to collect — the selected months are already settled.')
-            return redirect('billing_tenant_collect', tenant_pk=tenant.pk)
+            if not created_payments:
+                messages.info(request, 'Nothing to collect — all billing months are already settled.')
+                return redirect('billing_tenant_collect', tenant_pk=tenant.pk)
 
-        total_collected = sum((p.amount_paid for p in created_payments), Decimal('0.00'))
+            total_collected = sum((p.amount_paid for p in created_payments), Decimal('0.00'))
+            change_due = max(Decimal('0.00'), (amount_tendered - total_collected).quantize(Decimal('0.01')))
+        else:
+            selected_ids = {int(x) for x in request.POST.getlist('billing_ids') if x.isdigit()}
+            if not selected_ids:
+                messages.error(request, 'Select at least one billing month to collect.')
+                return redirect('billing_tenant_collect', tenant_pk=tenant.pk)
+
+            # Re-query with select_for_update inside the transaction so concurrent
+            # collectors cannot settle the same month twice while this page loads.
+            billings_map = {
+                b.pk: b
+                for b in Billing.objects.select_for_update().filter(
+                    pk__in=selected_ids, tenant=tenant
+                )
+            }
+            # Always settle oldest first so partials line up with the contract.
+            ordered = sorted(billings_map.values(), key=lambda b: (b.billing_year, b.billing_month, b.id))
+
+            for billing in ordered:
+                if billing.status == 'Paid' or Decimal(str(billing.balance)) <= 0:
+                    continue
+                amount = Decimal(str(billing.balance))
+                payment = record_payment(
+                    tenant=tenant,
+                    billing=billing,
+                    amount=amount,
+                    payment_date=pay_date,
+                    payment_method=payment_method,
+                    collected_by=request.user,
+                    remarks=remarks,
+                    official_receipt_no=shared_or,
+                )
+                created_payments.append(payment)
+
+            if not created_payments:
+                messages.info(request, 'Nothing to collect — the selected months are already settled.')
+                return redirect('billing_tenant_collect', tenant_pk=tenant.pk)
+
+            total_collected = sum((p.amount_paid for p in created_payments), Decimal('0.00'))
+
         periods = ', '.join(
             f'{p.billing_month:02d}/{p.billing_year}' for p in created_payments
         )
+        audit_action = 'COLLECT_FIFO' if collection_mode == 'fifo' else 'COLLECT_BATCH'
+        change_note = f' (tendered ₱{amount_tendered:.2f}, change ₱{change_due:.2f})' if amount_tendered is not None else ''
         AuditLog.objects.create(
             user=request.user,
-            action='COLLECT_BATCH',
+            action=audit_action,
             module='Billing',
             description=(
                 f'Batch collected {len(created_payments)} month(s) [{periods}] '
-                f'for {tenant.full_name} — ₱{total_collected} '
+                f'for {tenant.full_name} — ₱{total_collected}{change_note} '
                 f'under consolidated OR {shared_or}'
             ),
             ip_address=request.META.get('REMOTE_ADDR'),
         )
-        messages.success(
-            request,
-            f'Collected {len(created_payments)} month(s) totalling ₱{total_collected:.2f} '
-            f'under OR {shared_or}.',
-        )
+        if amount_tendered is not None and change_due > 0:
+            messages.success(
+                request,
+                f'Collected {len(created_payments)} month(s) totalling ₱{total_collected:.2f} '
+                f'(Tendered ₱{amount_tendered:.2f} • Change due: ₱{change_due:.2f}) '
+                f'under OR {shared_or}.',
+            )
+        else:
+            messages.success(
+                request,
+                f'Collected {len(created_payments)} month(s) totalling ₱{total_collected:.2f} '
+                f'under OR {shared_or}.',
+            )
         # Stash the batch so the printable page renders every month as one
         # line item on a single consolidated receipt.
         from core.views.payments import BATCH_RECEIPT_SESSION_KEY
@@ -625,8 +690,13 @@ def billing_tenant_collect(request, tenant_pk):
         'tenant': tenant,
         'billings': billings,
         'outstanding': outstanding,
+        'overdue_count': overdue_count,
+        'total_rent': total_rent,
+        'total_penalty': total_penalty,
+        'total_due': total_due,
+        'total_paid': total_paid,
         'total_outstanding': total_outstanding,
-        'today': date.today(),
+        'today': today,
         'payment_methods': Payment.PAYMENT_METHOD_CHOICES,
     }
     return render(request, 'billing/collect_grouped.html', context)

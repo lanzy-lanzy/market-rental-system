@@ -1,12 +1,14 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from core.permissions import management_required, admin_required
+from django.contrib.auth.models import User
+from core.permissions import management_required, admin_required, staff_required, is_collector
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Sum, Count, Q
 from django.http import HttpResponse
+from django.utils import timezone
 from datetime import date, datetime, timedelta
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 import calendar
 
 from core.models import (
@@ -987,3 +989,180 @@ def report_export_excel(request):
     response['Content-Disposition'] = f'attachment; filename="{report_type}_report_{date.today()}.xlsx"'
     wb.save(response)
     return response
+
+
+def _allocate_payment_rent_penalty(payment):
+    """Split a Payment's amount_paid into (rent_portion, penalty_portion).
+
+    Guarantees ``rent_portion + penalty_portion == amount_paid`` rounded to 2dp.
+    """
+    two_dp = Decimal('0.01')
+    amount_paid = Decimal(payment.amount_paid or 0).quantize(two_dp, rounding=ROUND_HALF_UP)
+    if amount_paid <= 0:
+        return Decimal('0.00'), Decimal('0.00')
+
+    billing = payment.billing if payment.billing_id else None
+    ref_rental = Decimal(
+        payment.rental_amount
+        if payment.rental_amount is not None and payment.rental_amount > 0
+        else (billing.rental_amount if billing else 0)
+        or 0
+    )
+    ref_penalty = Decimal(
+        payment.penalty_amount
+        if payment.penalty_amount is not None and payment.penalty_amount > 0
+        else (billing.penalty_amount if billing else 0)
+        or 0
+    )
+    ref_total = ref_rental + ref_penalty
+
+    if ref_penalty <= 0 or ref_total <= 0:
+        return amount_paid, Decimal('0.00')
+
+    if amount_paid >= ref_total:
+        penalty_portion = ref_penalty.quantize(two_dp, rounding=ROUND_HALF_UP)
+        if penalty_portion > amount_paid:
+            penalty_portion = amount_paid
+        rent_portion = (amount_paid - penalty_portion).quantize(two_dp, rounding=ROUND_HALF_UP)
+        return rent_portion, penalty_portion
+
+    penalty_portion = (amount_paid * ref_penalty / ref_total).quantize(two_dp, rounding=ROUND_HALF_UP)
+    if penalty_portion < Decimal('0.00'):
+        penalty_portion = Decimal('0.00')
+    elif penalty_portion > amount_paid:
+        penalty_portion = amount_paid
+    rent_portion = (amount_paid - penalty_portion).quantize(two_dp, rounding=ROUND_HALF_UP)
+    return rent_portion, penalty_portion
+
+
+def _build_remittance_context(request):
+    """Shared context builder for End-of-Day Collector Remittance / AF 51 Abstract."""
+    raw_date = (request.GET.get('date') or '').strip()
+    try:
+        remittance_date = date.fromisoformat(raw_date) if raw_date else date.today()
+    except ValueError:
+        remittance_date = date.today()
+
+    collector_locked = is_collector(request.user)
+    selected_collector = None
+    collector_id = ''
+
+    collectors = User.objects.filter(
+        Q(profile__role__in=['collector', 'cashier', 'admin', 'treasurer', 'supervisor'])
+        | Q(collected_payments__isnull=False)
+    ).distinct().order_by('first_name', 'last_name', 'username')
+
+    payments = (
+        Payment.objects.filter(
+            status__in=['Paid', 'Partial'],
+            payment_date=remittance_date,
+        )
+        .select_related('tenant', 'stall', 'stall__section', 'billing', 'collected_by')
+        .order_by('created_at', 'id')
+    )
+
+    if collector_locked:
+        selected_collector = request.user
+        collector_id = str(request.user.pk)
+        payments = payments.filter(collected_by=request.user)
+    else:
+        raw_collector = (request.GET.get('collector') or '').strip()
+        collector_pk = _parse_optional_int(raw_collector, min_val=1)
+        if collector_pk is not None:
+            selected_collector = User.objects.filter(pk=collector_pk).first()
+            if selected_collector:
+                collector_id = str(selected_collector.pk)
+                payments = payments.filter(collected_by=selected_collector)
+
+    rows = []
+    total_rent = Decimal('0.00')
+    total_penalty = Decimal('0.00')
+    grand_total = Decimal('0.00')
+    method_totals = {}
+    method_order = [choice[0] for choice in Payment.PAYMENT_METHOD_CHOICES]
+
+    for payment in payments:
+        or_number = (payment.official_receipt_no or '').strip() or payment.receipt_number
+        rent_portion, penalty_portion = _allocate_payment_rent_penalty(payment)
+        amount_paid = (rent_portion + penalty_portion).quantize(Decimal('0.01'))
+
+        total_rent += rent_portion
+        total_penalty += penalty_portion
+        grand_total += amount_paid
+
+        method_key = payment.payment_method or 'Cash'
+        method_label = payment.get_payment_method_display() if hasattr(payment, 'get_payment_method_display') else method_key
+        if method_key not in method_totals:
+            method_totals[method_key] = {
+                'key': method_key,
+                'label': method_label,
+                'count': 0,
+                'rent_total': Decimal('0.00'),
+                'penalty_total': Decimal('0.00'),
+                'amount_total': Decimal('0.00'),
+            }
+        method_totals[method_key]['count'] += 1
+        method_totals[method_key]['rent_total'] += rent_portion
+        method_totals[method_key]['penalty_total'] += penalty_portion
+        method_totals[method_key]['amount_total'] += amount_paid
+
+        period_label = f'{calendar.month_abbr[payment.billing_month]} {payment.billing_year}' if 1 <= (payment.billing_month or 0) <= 12 else f'{payment.billing_month}/{payment.billing_year}'
+
+        rows.append({
+            'payment': payment,
+            'or_number': or_number,
+            'period_label': period_label,
+            'rent_portion': rent_portion,
+            'penalty_portion': penalty_portion,
+            'amount_paid': amount_paid,
+        })
+
+    # Order payment method breakdown predictably
+    ordered_methods = []
+    for key in method_order:
+        if key in method_totals:
+            ordered_methods.append(method_totals[key])
+    for key, item in method_totals.items():
+        if key not in method_order:
+            ordered_methods.append(item)
+
+    or_series_start = rows[0]['or_number'] if rows else None
+    or_series_end = rows[-1]['or_number'] if rows else None
+    if not rows:
+        or_series_display = '—'
+    elif or_series_start == or_series_end:
+        or_series_display = or_series_start
+    else:
+        or_series_display = f'{or_series_start} — {or_series_end}'
+
+    return {
+        'remittance_date': remittance_date,
+        'remittance_date_iso': remittance_date.isoformat(),
+        'collector_locked': collector_locked,
+        'collectors': collectors,
+        'selected_collector': selected_collector,
+        'collector_id': collector_id,
+        'rows': rows,
+        'transaction_count': len(rows),
+        'or_series_start': or_series_start,
+        'or_series_end': or_series_end,
+        'or_series_display': or_series_display,
+        'total_rent': total_rent,
+        'total_penalty': total_penalty,
+        'grand_total': grand_total,
+        'payment_method_breakdown': ordered_methods,
+        'now': timezone.localtime(timezone.now()),
+        'report_type': 'Daily Collector Remittance / Abstract of Collection (AF 51)',
+    }
+
+
+@staff_required
+def report_remittance(request):
+    context = _build_remittance_context(request)
+    return render(request, 'reports/remittance.html', context)
+
+
+@staff_required
+def report_remittance_print(request):
+    context = _build_remittance_context(request)
+    return render(request, 'reports/print_remittance.html', context)
