@@ -4,12 +4,12 @@
     <th>Month / Stall</th>
     <th class="num">Rent</th>
     <th class="num">Penalty</th>
-    <th class="num">Discount</th>
     <th class="num">Total Due</th>
     <th class="num">Paid</th>
     <th class="num">Remaining</th>
     <th>Status</th>
     <th>Payments / Receipts</th>
+    <th>Remarks</th>
   </tr></thead>
   <tbody>
     {% for entry in collection_rows %}
@@ -17,7 +17,6 @@
       <td class="whitespace-nowrap"><strong>{{ entry.billing.billing_month|stringformat:"02d" }}/{{ entry.billing.billing_year }}</strong><br><span class="text-xs text-ink-soft">{{ entry.billing.stall.stall_number }}</span></td>
       <td class="num whitespace-nowrap">&#8369;{{ entry.billing.rental_amount|floatformat:2|intcomma }}</td>
       <td class="num whitespace-nowrap">&#8369;{{ entry.billing.penalty_amount|floatformat:2|intcomma }}</td>
-      <td class="num whitespace-nowrap">&#8369;{{ entry.billing.discount|floatformat:2|intcomma }}</td>
       <td class="num whitespace-nowrap font-bold">&#8369;{{ entry.billing.total_due|floatformat:2|intcomma }}</td>
       <td class="num whitespace-nowrap text-emerald-700">&#8369;{{ entry.paid|floatformat:2|intcomma }}</td>
       <td class="num whitespace-nowrap font-bold {% if entry.balance > 0 %}text-red-600{% else %}text-emerald-700{% endif %}">&#8369;{{ entry.balance|floatformat:2|intcomma }}</td>
@@ -31,14 +30,15 @@
         </div>
         {% empty %}<span class="text-ink-muted">No payment received</span>{% endfor %}
       </td>
+      <td class="text-xs text-ink-soft">{{ entry.remarks|default:"—" }}</td>
     </tr>
     {% empty %}<tr><td colspan="9" class="py-6 text-center">No monthly rental bills yet.</td></tr>{% endfor %}
   </tbody>
   <tfoot><tr>
-    <td colspan="4" class="text-right font-bold">All Months Total</td>
+    <td colspan="3" class="text-right font-bold">All Months Total</td>
     <td class="num whitespace-nowrap font-bold">&#8369;{{ total_debits|floatformat:2|intcomma }}</td>
     <td class="num whitespace-nowrap text-emerald-700">&#8369;{{ total_credits|floatformat:2|intcomma }}</td>
     <td class="num whitespace-nowrap font-bold {% if running_balance > 0 %}text-red-600{% else %}text-emerald-700{% endif %}">&#8369;{{ running_balance|floatformat:2|intcomma }}</td>
-    <td colspan="2"></td>
+    <td colspan="3"></td>
   </tr></tfoot>
 </table>

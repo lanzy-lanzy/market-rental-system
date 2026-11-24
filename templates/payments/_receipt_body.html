@@ -85,12 +85,6 @@
           <td class="border border-emerald-900/12 px-2 py-3 text-right text-sm tabular-nums text-red-700">{{ payment.penalty_amount|floatformat:2|intcomma }}</td>
         </tr>
         {% endif %}
-        {% if payment.discount > 0 %}
-        <tr>
-          <td class="border border-emerald-900/12 px-2 py-3 text-sm text-emerald-700">Discount</td>
-          <td class="border border-emerald-900/12 px-2 py-3 text-right text-sm tabular-nums text-emerald-700">({{ payment.discount|floatformat:2|intcomma }})</td>
-        </tr>
-        {% endif %}
       </tbody>
       <tfoot>
         <tr>

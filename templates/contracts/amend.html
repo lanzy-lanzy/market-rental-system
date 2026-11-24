@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Amend Contract Rate - {{ contract.tenant.full_name }}{% endblock %}
+{% block page_title %}Amend Contract Rate{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-2xl space-y-5">
+  <div class="page-head">
+    <div>
+      <p class="page-title">Amend Contract Rate</p>
+      <p class="page-sub">{{ contract.tenant.full_name }} — Stall {{ contract.stall.stall_number }} ({{ contract.stall.section.name }})</p>
+    </div>
+    <a href="{% url 'contract_view' contract.id %}" class="btn btn-ghost btn-sm">Back to Contract</a>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <h3 class="panel-title">Rate &amp; Terms Amendment</h3>
+        <p class="panel-subtitle">Current Monthly Rent: &#8369;{{ contract.monthly_rent|floatformat:2|intcomma }}</p>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="alert alert-info mb-5">
+        <svg class="h-4 w-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span>{{ renovation_notice }}</span>
+      </div>
+
+      <form method="post" action="{% url 'contract_amend' contract.id %}">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="alert alert-error mb-4">
+          {% for err in form.non_field_errors %}<p>{{ err }}</p>{% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="form-grid sm:grid-cols-2">
+          <div>
+            <label class="field-label">Reason for Change <span class="text-red-500">*</span></label>
+            {{ form.reason }}
+            {% if form.reason.errors %}<p class="field-error">{{ form.reason.errors.0 }}</p>{% endif %}
+          </div>
+          <div>
+            <label class="field-label">Effective Date <span class="text-red-500">*</span></label>
+            {{ form.effective_date }}
+            {% if form.effective_date.errors %}<p class="field-error">{{ form.effective_date.errors.0 }}</p>{% endif %}
+          </div>
+          <div class="sm:col-span-2">
+            <label class="field-label">New Monthly Rent (&#8369;) <span class="text-red-500">*</span></label>
+            {{ form.new_monthly_rent }}
+            {% if form.new_monthly_rent.errors %}<p class="field-error">{{ form.new_monthly_rent.errors.0 }}</p>{% endif %}
+          </div>
+          <div class="sm:col-span-2">
+            <label class="field-label">Remarks</label>
+            {{ form.remarks }}
+            {% if form.remarks.errors %}<p class="field-error">{{ form.remarks.errors.0 }}</p>{% endif %}
+          </div>
+        </div>
+
+        <div class="mt-6 flex items-center justify-end gap-3 border-t border-emerald-900/10 pt-4">
+          <a href="{% url 'contract_view' contract.id %}" class="btn btn-ghost">Cancel</a>
+          <button type="submit" class="btn btn-primary">Record Amendment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

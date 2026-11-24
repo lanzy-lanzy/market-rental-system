@@ -59,11 +59,6 @@
           {% if form.penalty_amount.errors %}<p class="field-error">{{ form.penalty_amount.errors.0 }}</p>{% endif %}
         </div>
         <div>
-          <label class="field-label">Discount (&#8369;)</label>
-          {{ form.discount }}
-          {% if form.discount.errors %}<p class="field-error">{{ form.discount.errors.0 }}</p>{% endif %}
-        </div>
-        <div>
           <label class="field-label">Total Amount Due (&#8369;)</label>
           {{ form.total_amount_due }}
           {% if form.total_amount_due.errors %}<p class="field-error">{{ form.total_amount_due.errors.0 }}</p>{% endif %}

@@ -155,6 +155,12 @@ class Tenant(models.Model):
 
 
 class RentalContract(models.Model):
+    DEFAULT_DURATION_YEARS = 3
+    RENOVATION_EXPANSION_NOTICE = (
+        'This contract and its monthly rental rate are subject to change in the '
+        'event of stall renovation, expansion, or market redevelopment approved '
+        'by the Local Government Unit.'
+    )
     STATUS_CHOICES = [
         ('Active', 'Active'),
         ('Expired', 'Expired'),
@@ -183,8 +189,63 @@ class RentalContract(models.Model):
             ),
         ]
 
+    @classmethod
+    def compute_end_date(cls, start_date, years=None):
+        """Return the default contract end date (3 years from start_date)."""
+        if not start_date:
+            return None
+        duration = cls.DEFAULT_DURATION_YEARS if years is None else years
+        try:
+            return start_date.replace(year=start_date.year + duration)
+        except ValueError:
+            # Handle Feb 29 -> Feb 28 on non-leap target years.
+            return start_date.replace(year=start_date.year + duration, day=28)
+
+    def save(self, *args, **kwargs):
+        if self.start_date and not self.end_date:
+            self.end_date = self.compute_end_date(self.start_date)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.tenant.full_name} - {self.stall.stall_number} ({self.get_status_display()})"
+
+
+class ContractAmendment(models.Model):
+    REASON_CHOICES = [
+        ('renovation', 'Stall Renovation'),
+        ('expansion', 'Stall Expansion'),
+        ('rate_adjustment', 'Rate Adjustment'),
+        ('ordinance', 'Market Ordinance / LGU Revision'),
+        ('other', 'Other'),
+    ]
+    contract = models.ForeignKey(
+        RentalContract,
+        on_delete=models.CASCADE,
+        related_name='amendments',
+    )
+    reason = models.CharField(max_length=30, choices=REASON_CHOICES, default='renovation')
+    effective_date = models.DateField()
+    previous_monthly_rent = models.DecimalField(max_digits=10, decimal_places=2)
+    new_monthly_rent = models.DecimalField(max_digits=10, decimal_places=2)
+    remarks = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='contract_amendments',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-effective_date', '-created_at', '-id']
+
+    def __str__(self):
+        return (
+            f"Amendment #{self.pk} ({self.get_reason_display()}) - "
+            f"{self.contract.stall.stall_number}: "
+            f"{self.previous_monthly_rent} -> {self.new_monthly_rent}"
+        )
 
 
 class Billing(models.Model):

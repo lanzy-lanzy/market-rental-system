@@ -1,5 +1,4 @@
 {% load humanize %}
-<div id="stall-table-wrapper" class="space-y-4">
 <div id="stall-table" class="table-wrap">
   <div class="overflow-x-auto">
     <table class="table min-w-[1100px] table-fixed">
@@ -28,22 +27,21 @@
       <tbody>
         {% for stall in page_obj %}
         <tr>
-          <td class="whitespace-nowrap"><span class="chip mono">{{ stall.stall_number }}</span></td>
+          <td class="whitespace-nowrap"><a href="{% url 'stall_view' stall.id %}" class="chip mono hover:underline">{{ stall.stall_number }}</a></td>
           <td class="whitespace-nowrap"><span class="chip chip-emerald"><span class="h-2 w-2 rounded-full bg-emerald-600"></span>{{ stall.section.name }}</span></td>
           <td class="truncate text-sm text-ink-soft" title="{{ stall.stall_type.name }}">{{ stall.stall_type.name|default:"—" }}</td>
           <td class="whitespace-nowrap text-sm text-ink-soft num">{{ stall.size|floatformat:1|default:"—" }} <span class="text-xs text-ink-muted">sqm</span></td>
           <td class="whitespace-nowrap text-sm font-bold text-ink num">₱{{ stall.monthly_rate|floatformat:2|intcomma }}</td>
           <td class="whitespace-nowrap">{% include 'includes/status_badge.html' with status=stall.status %}</td>
           <td class="text-sm">
-            {% for c in stall.contracts.all %}
-              {% if c.status == 'Active' %}
+            {% if stall.active_contracts %}
+              {% with c=stall.active_contracts.0 %}
                 <a href="{% url 'tenant_view' c.tenant.id %}" class="truncate font-semibold text-ink hover:text-emerald-700 block" title="{{ c.tenant.full_name }}">{{ c.tenant.full_name }}</a>
-              {% endif %}
-            {% empty %}
-                <span class="text-ink-muted">— vacant</span>
-            {% endfor %}
-            {% if stall.status == 'Vacant' and not stall.contracts.all %}
-                <span class="text-ink-muted">— vacant</span>
+              {% endwith %}
+            {% elif stall.status == 'Vacant' %}
+              <span class="text-ink-muted">— Vacant</span>
+            {% else %}
+              <span class="text-ink-muted">—</span>
             {% endif %}
           </td>
           <td class="whitespace-nowrap text-right">
@@ -69,4 +67,44 @@
   </div>
 </div>
 {% include 'includes/pagination.html' with pagination_target='stall-table-wrapper' %}
+
+{% if is_htmx_request %}
+<a id="stall-print-link" hx-swap-oob="true" href="{% url 'stall_list_print' %}{% if filter_querystring %}?{{ filter_querystring }}{% endif %}" target="_blank" class="btn btn-ghost btn-sm hidden sm:inline-flex">Print Preview</a>
+<a id="stall-pdf-link" hx-swap-oob="true" href="{% url 'stall_list_export_pdf' %}{% if filter_querystring %}?{{ filter_querystring }}{% endif %}" class="btn btn-gold btn-sm hidden sm:inline-flex">Export PDF</a>
+<div id="stall-filter-meta" hx-swap-oob="true" class="flex items-center gap-2 lg:shrink-0">
+  <span class="chip chip-emerald"><span class="h-2 w-2 rounded-full bg-emerald-600"></span> {{ page_obj.paginator.count|default:"0" }} results</span>
+  {% if search_query or section_filter or status_filter %}
+  <a href="{% url 'stall_list' %}" class="btn btn-ghost btn-sm">Clear ✕</a>
+  {% endif %}
 </div>
+<div id="stall-status-pills" hx-swap-oob="true" class="flex flex-wrap items-center gap-2 border-t border-emerald-900/10 pt-3">
+  <span class="text-xs font-semibold uppercase tracking-wider text-ink-muted mr-1">Status:</span>
+  <a href="{% url 'stall_list' %}{% if search_query or section_filter %}?{% if search_query %}search={{ search_query|urlencode }}{% if section_filter %}&{% endif %}{% endif %}{% if section_filter %}section={{ section_filter|urlencode }}{% endif %}{% endif %}"
+     hx-get="{% url 'stall_list' %}"
+     hx-target="#stall-table-wrapper"
+     hx-include="[name='search'],[name='section']"
+     hx-push-url="true"
+     onclick="document.getElementById('stall-status-select').value='';"
+     class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-ghost{% endif %}">
+    All <span class="ml-1 opacity-80">({{ status_counts.all|default:"0" }})</span>
+  </a>
+  <a href="{% url 'stall_list' %}?status=Vacant{% if search_query %}&search={{ search_query|urlencode }}{% endif %}{% if section_filter %}&section={{ section_filter|urlencode }}{% endif %}"
+     hx-get="{% url 'stall_list' %}?status=Vacant"
+     hx-target="#stall-table-wrapper"
+     hx-include="[name='search'],[name='section']"
+     hx-push-url="true"
+     onclick="document.getElementById('stall-status-select').value='Vacant';"
+     class="btn btn-sm {% if status_filter == 'Vacant' %}btn-primary{% else %}btn-ghost{% endif %}">
+    Vacant <span class="ml-1 opacity-80">({{ status_counts.Vacant|default:"0" }})</span>
+  </a>
+  <a href="{% url 'stall_list' %}?status=Occupied{% if search_query %}&search={{ search_query|urlencode }}{% endif %}{% if section_filter %}&section={{ section_filter|urlencode }}{% endif %}"
+     hx-get="{% url 'stall_list' %}?status=Occupied"
+     hx-target="#stall-table-wrapper"
+     hx-include="[name='search'],[name='section']"
+     hx-push-url="true"
+     onclick="document.getElementById('stall-status-select').value='Occupied';"
+     class="btn btn-sm {% if status_filter == 'Occupied' %}btn-primary{% else %}btn-ghost{% endif %}">
+    Occupied <span class="ml-1 opacity-80">({{ status_counts.Occupied|default:"0" }})</span>
+  </a>
+</div>
+{% endif %}

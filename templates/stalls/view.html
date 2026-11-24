@@ -18,10 +18,14 @@
         </span>
         <div>
           <h2 class="page-title">Stall {{ stall.stall_number }}</h2>
-          <div class="mt-1 flex items-center gap-3 text-sm text-ink-muted">
+          <div class="mt-1 flex flex-wrap items-center gap-3 text-sm text-ink-muted">
             <span class="chip chip-emerald">{{ stall.section.name }}</span>
             <span class="text-emerald-900/20">|</span>
             {% include 'includes/status_badge.html' with status=stall.status %}
+            {% if current_contract %}
+            <span class="text-emerald-900/20">|</span>
+            <span class="text-xs text-ink-soft">Current Tenant: <a href="{% url 'tenant_view' current_contract.tenant.id %}" class="font-semibold text-emerald-700 hover:underline">{{ current_contract.tenant.full_name }}</a></span>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -37,11 +41,11 @@
           </svg>
           Edit
         </button>
-        <a href="{% url 'stall_view_print' stall.id %}" target="_blank" class="btn btn-ghost">
+        <a id="stall-view-print-link" href="{% url 'stall_view_print' stall.id %}{% if history_querystring %}?{{ history_querystring }}{% endif %}" target="_blank" class="btn btn-ghost">
           <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
           Print Preview
         </a>
-        <a href="{% url 'stall_view_export_pdf' stall.id %}" class="btn btn-gold">
+        <a id="stall-view-pdf-link" href="{% url 'stall_view_export_pdf' stall.id %}{% if history_querystring %}?{{ history_querystring }}{% endif %}" class="btn btn-gold">
           <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2"/></svg>
           Export PDF
         </a>
@@ -124,53 +128,51 @@
     </div>
   </div>
 
-  <!-- ══ Contract History ══ -->
-  <div class="panel overflow-hidden">
-    <div class="panel-header">
+  <!-- ══ Rental History ══ -->
+  <div id="stall-rental-history" class="panel overflow-hidden">
+    <div class="panel-header flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h3 class="panel-title">Contract History</h3>
-        <p class="panel-subtitle">{{ contracts|length }} contract(s) recorded for this stall</p>
+        <h3 class="panel-title">Rental History</h3>
+        <p class="panel-subtitle">All past and current rental contracts &amp; billing totals for Stall {{ stall.stall_number }}</p>
       </div>
+      <form method="get" action="{% url 'stall_view' stall.id %}" class="flex flex-wrap items-center gap-2">
+        <select name="year" aria-label="Filter rental history by year"
+                hx-get="{% url 'stall_view' stall.id %}"
+                hx-target="#stall-rental-history-wrapper"
+                hx-trigger="change"
+                hx-include="closest form"
+                hx-push-url="true"
+                class="field text-sm py-1.5 w-36">
+          <option value="">All Years</option>
+          {% for yr in available_years %}
+          <option value="{{ yr }}" {% if history_year_filter == yr|stringformat:"s" %}selected{% endif %}>{{ yr }}</option>
+          {% endfor %}
+        </select>
+        <select name="status" aria-label="Filter rental history by contract status"
+                hx-get="{% url 'stall_view' stall.id %}"
+                hx-target="#stall-rental-history-wrapper"
+                hx-trigger="change"
+                hx-include="closest form"
+                hx-push-url="true"
+                class="field text-sm py-1.5 w-40">
+          <option value="">All Statuses</option>
+          {% for value, label in contract_status_choices %}
+          <option value="{{ value }}" {% if history_status_filter == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <noscript>
+          <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+        </noscript>
+        <span id="stall-history-clear-wrap">
+          {% if history_year_filter or history_status_filter %}
+          <a href="{% url 'stall_view' stall.id %}" class="btn btn-ghost btn-sm">Clear ✕</a>
+          {% endif %}
+        </span>
+      </form>
     </div>
-    <div class="table-wrap rounded-none border-0 shadow-none">
-      <div class="overflow-x-auto">
-        <table class="table min-w-[760px]">
-          <thead>
-            <tr>
-              <th>Tenant</th>
-              <th>Start Date</th>
-              <th>End Date</th>
-              <th class="text-right">Monthly Rent</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for contract in contracts %}
-            <tr>
-              <td class="whitespace-nowrap">
-                <a href="{% url 'tenant_view' contract.tenant.id %}" class="text-sm font-semibold text-emerald-700 hover:underline">{{ contract.tenant.full_name }}</a>
-              </td>
-              <td class="whitespace-nowrap text-sm text-ink-soft">{{ contract.start_date|date:"M d, Y" }}</td>
-              <td class="whitespace-nowrap text-sm text-ink-soft">{{ contract.end_date|date:"M d, Y"|default:"--" }}</td>
-              <td class="whitespace-nowrap text-sm font-semibold text-ink num">&#8369;{{ contract.monthly_rent|floatformat:2|intcomma }}</td>
-              <td class="whitespace-nowrap">{% include 'includes/status_badge.html' with status=contract.status %}</td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="5">
-                <div class="empty-state">
-                  <span class="empty-icon">
-                    <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a2 2 0 01.707.293l5.414 5.414a2 2 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                  </span>
-                  <p class="mt-4 text-sm font-semibold text-ink">No contract history</p>
-                  <p class="mt-1 text-xs text-ink-muted">Contracts assigned to this stall will appear here.</p>
-                </div>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+
+    <div id="stall-rental-history-wrapper">
+      {% include 'stalls/_rental_history.html' %}
     </div>
   </div>
 

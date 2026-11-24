@@ -55,8 +55,9 @@
           {% if form.start_date.errors %}<p class="field-error">{{ form.start_date.errors.0 }}</p>{% endif %}
         </div>
         <div>
-          <label class="field-label">End Date <span class="text-ink-muted font-normal">(optional)</span></label>
+          <label class="field-label">End of Contract <span class="text-ink-muted font-normal">(3-year default)</span></label>
           {{ form.end_date }}
+          <p class="field-hint">Defaults to 3 years from start date.</p>
           {% if form.end_date.errors %}<p class="field-error">{{ form.end_date.errors.0 }}</p>{% endif %}
         </div>
         <div>
@@ -85,11 +86,15 @@
           {% if form.remarks.errors %}<p class="field-error">{{ form.remarks.errors.0 }}</p>{% endif %}
         </div>
       </div>
+      <div class="mt-4 rounded-xl border border-amber-300/70 bg-amber-50/80 px-3.5 py-2.5 text-xs text-amber-900">
+        <strong>Subject to Change:</strong> Standard contract term is <strong>3 years</strong>. The contract and monthly rental rate are subject to change in case of stall renovation or expansion.
+      </div>
       <div class="mt-5 flex items-center justify-end gap-3 border-t border-emerald-900/10 pt-4">
         <button type="button" onclick="closeModal()" class="btn btn-ghost">Cancel</button>
         <button type="submit" class="btn btn-primary">{% if is_add %}Create Contract{% else %}Update Contract{% endif %}</button>
       </div>
     </form>
     {% include 'contracts/_tenant_stall_autofill.html' %}
+    {% include 'contracts/_end_date_autofill.html' %}
   </div>
 </div>

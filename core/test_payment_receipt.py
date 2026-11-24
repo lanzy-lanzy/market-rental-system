@@ -114,7 +114,7 @@ class ManualPaymentEndsOnTheReceiptTests(BillingFixtureMixin, TestCase):
         return {
             'tenant': self.tenant.pk, 'stall': self.stall.pk, 'billing': self.billing.pk,
             'billing_month': 1, 'billing_year': 2026,
-            'rental_amount': '100.00', 'penalty_amount': '0.00', 'discount': '0.00',
+            'rental_amount': '100.00', 'penalty_amount': '0.00',
             'total_amount_due': '100.00', 'amount_paid': '100.00',
             'payment_date': '2026-01-10', 'payment_method': 'Cash',
             'official_receipt_no': '', 'collected_by': self.collector.pk,

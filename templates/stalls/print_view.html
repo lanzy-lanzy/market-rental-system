@@ -5,39 +5,85 @@
   <title>Stall {{ stall.stall_number }} - Print</title>
   <link rel="stylesheet" href="{% static 'css/output.css' %}?v={{ STATIC_VERSION }}">
   <style>
-    @media print { .no-print { display:none!important } @page { margin:0.6in; } }
+    @media print { .no-print { display:none!important } @page { margin:0.5in; size:A4 landscape; } }
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   </style>
 </head>
 <body class="bg-white p-6 font-sans text-ink">
-  <div class="max-w-3xl mx-auto">
+  <div class="max-w-5xl mx-auto">
     <div class="no-print mb-4 flex justify-end gap-2">
       <button onclick="window.print()" class="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-semibold text-white">Print</button>
-      <a href="{% url 'stall_view_export_pdf' stall.id %}" class="rounded-lg border border-emerald-800/40 px-4 py-2 text-sm font-semibold text-emerald-800">Export PDF</a>
+      <a href="{% url 'stall_view_export_pdf' stall.id %}{% if history_querystring %}?{{ history_querystring }}{% endif %}" class="rounded-lg border border-emerald-800/40 px-4 py-2 text-sm font-semibold text-emerald-800">Export PDF</a>
       <button onclick="window.close()" class="rounded-lg border border-ink/30 px-4 py-2 text-sm font-semibold text-ink-soft">Close</button>
     </div>
     <div class="text-center border-b-2 border-emerald-800 pb-4 mb-6">
       {% include 'includes/document_logo.html' %}
       <h1 class="text-sm font-bold uppercase text-emerald-900">{{ system_settings.municipality_name|default:"Municipality" }} — {{ system_settings.market_name|default:"Public Market" }}</h1>
       <p class="text-xs text-ink-soft">{{ system_settings.office_name|default:"" }}</p>
-      <h2 class="mt-2 text-base font-bold uppercase text-emerald-800">Stall Detail — {{ stall.stall_number }}</h2>
+      <h2 class="mt-2 text-base font-bold uppercase text-emerald-800">Stall Detail &amp; Rental History — {{ stall.stall_number }}</h2>
       <div class="divider-gold mx-auto mt-2"></div>
-      <p class="mt-3 text-xs text-ink-muted">{{ stall.section.name }} • {{ stall.stall_type.name|default:"" }} • {{ now|date:"F d, Y" }}</p>
+      <p class="mt-3 text-xs text-ink-muted">{{ stall.section.name }} • {{ stall.stall_type.name|default:"—" }} • {{ now|date:"F d, Y" }}{% if history_year_filter %} • Year: {{ history_year_filter }}{% endif %}{% if history_status_filter %} • Status: {{ history_status_filter }}{% endif %}</p>
     </div>
-    <div class="grid grid-cols-2 gap-4 text-sm border border-ink/25 rounded-lg p-4">
+    <div class="grid grid-cols-3 gap-4 text-sm border border-ink/25 rounded-lg p-4">
       <div><p class="text-xs uppercase tracking-wider text-ink-muted">Stall Number</p><p class="font-mono font-bold text-lg text-ink">{{ stall.stall_number }}</p></div>
       <div><p class="text-xs uppercase tracking-wider text-ink-muted">Status</p><p><span class="rounded-full bg-emerald-100/70 px-2 py-1 text-xs font-bold text-emerald-900">{{ stall.status }}</span></p></div>
+      <div><p class="text-xs uppercase tracking-wider text-ink-muted">Monthly Rate</p><p class="font-bold text-ink">₱{{ stall.monthly_rate|floatformat:2|intcomma }}</p></div>
       <div><p class="text-xs uppercase tracking-wider text-ink-muted">Section</p><p class="text-ink-soft">{{ stall.section.name }}</p></div>
       <div><p class="text-xs uppercase tracking-wider text-ink-muted">Type</p><p class="text-ink-soft">{{ stall.stall_type.name|default:"—" }}</p></div>
       <div><p class="text-xs uppercase tracking-wider text-ink-muted">Size</p><p class="text-ink-soft">{{ stall.size|default:"—" }} sqm</p></div>
-      <div><p class="text-xs uppercase tracking-wider text-ink-muted">Monthly Rate</p><p class="font-bold text-ink">₱{{ stall.monthly_rate|floatformat:2|intcomma }}</p></div>
-      <div class="col-span-2"><p class="text-xs uppercase tracking-wider text-ink-muted">Remarks</p><p class="text-sm text-ink-soft">{{ stall.remarks|default:"—" }}</p></div>
+      <div class="col-span-3"><p class="text-xs uppercase tracking-wider text-ink-muted">Remarks</p><p class="text-sm text-ink-soft">{{ stall.remarks|default:"—" }}</p></div>
     </div>
+
     <div class="mt-6">
-      <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-800 mb-2">Contracts ({{ contracts|length }})</h3>
+      <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-800">Rental History ({{ history_summary.contract_count }})</h3>
+        <div class="flex flex-wrap items-center gap-4 text-xs text-ink-soft">
+          <span>Billed: <strong class="text-ink">₱{{ history_summary.total_billed|floatformat:2|intcomma }}</strong></span>
+          <span>Paid: <strong class="text-emerald-800">₱{{ history_summary.total_paid|floatformat:2|intcomma }}</strong></span>
+          <span>Balance: <strong class="{% if history_summary.total_balance > 0 %}text-red-700{% else %}text-emerald-800{% endif %}">₱{{ history_summary.total_balance|floatformat:2|intcomma }}</strong></span>
+        </div>
+      </div>
       <table class="w-full border-collapse text-xs">
-        <thead><tr class="bg-emerald-100/60"><th class="font-bold border border-emerald-900/25 px-2 py-1.5 text-left text-emerald-900">Tenant</th><th class="font-bold border border-emerald-900/25 px-2 py-1.5 text-left text-emerald-900">Period</th><th class="font-bold border border-emerald-900/25 px-2 py-1.5 text-right text-emerald-900">Rent</th><th class="font-bold border border-emerald-900/25 px-2 py-1.5 text-left text-emerald-900">Status</th></tr></thead>
-        <tbody>{% for c in contracts %}<tr><td class="border border-ink/20 px-2 py-1.5 font-semibold text-ink">{{ c.tenant.full_name }} ({{ c.tenant.tenant_id }})</td><td class="border border-ink/20 px-2 py-1.5 text-ink-soft">{{ c.start_date|date:"M d, Y" }} — {{ c.end_date|date:"M d, Y"|default:"Open" }}</td><td class="border border-ink/20 px-2 py-1.5 text-right text-ink">₱{{ c.monthly_rent|floatformat:2 }}</td><td class="border border-ink/20 px-2 py-1.5 text-ink-soft">{{ c.status }}</td></tr>{% empty %}<tr><td colspan="4" class="border border-ink/20 text-center py-3 text-ink-muted">No contracts</td></tr>{% endfor %}</tbody>
+        <thead>
+          <tr class="bg-emerald-100/60">
+            <th class="font-bold border border-emerald-900/25 px-2 py-1.5 text-left text-emerald-900">Contract #</th>
+            <th class="font-bold border border-emerald-900/25 px-2 py-1.5 text-left text-emerald-900">Tenant</th>
+            <th class="font-bold border border-emerald-900/25 px-2 py-1.5 text-left text-emerald-900">Start Date</th>
+            <th class="font-bold border border-emerald-900/25 px-2 py-1.5 text-left text-emerald-900">End Date</th>
+            <th class="font-bold border border-emerald-900/25 px-2 py-1.5 text-right text-emerald-900">Monthly Rate</th>
+            <th class="font-bold border border-emerald-900/25 px-2 py-1.5 text-left text-emerald-900">Status</th>
+            <th class="font-bold border border-emerald-900/25 px-2 py-1.5 text-right text-emerald-900">Total Billed</th>
+            <th class="font-bold border border-emerald-900/25 px-2 py-1.5 text-right text-emerald-900">Total Paid</th>
+            <th class="font-bold border border-emerald-900/25 px-2 py-1.5 text-right text-emerald-900">Balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in contracts %}
+          <tr class="even:bg-emerald-50/40">
+            <td class="border border-ink/20 px-2 py-1.5 font-mono font-semibold text-ink">{{ c.contract_number }}</td>
+            <td class="border border-ink/20 px-2 py-1.5 font-semibold text-ink">{{ c.tenant.full_name }} <span class="font-normal text-ink-muted">({{ c.tenant.tenant_id }})</span></td>
+            <td class="border border-ink/20 px-2 py-1.5 text-ink-soft">{{ c.start_date|date:"M d, Y" }}</td>
+            <td class="border border-ink/20 px-2 py-1.5 text-ink-soft">{{ c.end_date|date:"M d, Y"|default:"Open-ended" }}</td>
+            <td class="border border-ink/20 px-2 py-1.5 text-right text-ink">₱{{ c.monthly_rent|floatformat:2|intcomma }}</td>
+            <td class="border border-ink/20 px-2 py-1.5 text-ink-soft">{{ c.status }}</td>
+            <td class="border border-ink/20 px-2 py-1.5 text-right text-ink">₱{{ c.total_billed|floatformat:2|intcomma }}</td>
+            <td class="border border-ink/20 px-2 py-1.5 text-right font-semibold text-emerald-800">₱{{ c.total_paid|floatformat:2|intcomma }}</td>
+            <td class="border border-ink/20 px-2 py-1.5 text-right font-semibold {% if c.total_balance > 0 %}text-red-700{% else %}text-ink-soft{% endif %}">₱{{ c.total_balance|floatformat:2|intcomma }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="9" class="border border-ink/20 text-center py-3 text-ink-muted">No rental history recorded</td></tr>
+          {% endfor %}
+        </tbody>
+        {% if contracts %}
+        <tfoot>
+          <tr class="bg-emerald-100/40 font-bold">
+            <td colspan="6" class="border border-emerald-900/25 px-2 py-1.5 text-right uppercase text-emerald-900">Totals</td>
+            <td class="border border-emerald-900/25 px-2 py-1.5 text-right text-ink">₱{{ history_summary.total_billed|floatformat:2|intcomma }}</td>
+            <td class="border border-emerald-900/25 px-2 py-1.5 text-right text-emerald-900">₱{{ history_summary.total_paid|floatformat:2|intcomma }}</td>
+            <td class="border border-emerald-900/25 px-2 py-1.5 text-right {% if history_summary.total_balance > 0 %}text-red-700{% else %}text-emerald-900{% endif %}">₱{{ history_summary.total_balance|floatformat:2|intcomma }}</td>
+          </tr>
+        </tfoot>
+        {% endif %}
       </table>
     </div>
     <div class="mt-8 grid grid-cols-2 gap-8 text-center text-xs"><div class="border-t border-ink/40 pt-2 mt-12">Prepared by<br><span class="font-semibold text-ink">{{ user.get_full_name|default:user.username }}</span></div><div class="border-t border-ink/40 pt-2 mt-12">Verified by<br><span class="font-semibold text-ink">Market Administrator</span></div></div>

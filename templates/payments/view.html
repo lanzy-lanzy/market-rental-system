@@ -155,8 +155,6 @@
         </div>
       </div>
 
-      {% if payment.discount %}<p class="mt-4 text-xs text-ink-muted">Discount applied: <span class="font-bold text-ink">&#8369;{{ payment.discount }}</span></p>{% endif %}
-
       <div class="alert alert-warning mt-4">
         <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/70 text-xs font-bold ring-1 ring-current/20">!</span>
         <p class="flex-1">Remaining balance for billing period: <span class="font-bold">&#8369;{{ payment.billing.balance|floatformat:2|intcomma }}</span> • Billing status: <span class="font-bold">{% include 'includes/status_badge.html' with status=payment.billing.status %}</span> • Due: {{ payment.billing.due_date|date:"M d, Y" }}</p>

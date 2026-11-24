@@ -32,8 +32,8 @@
   </form>
   <div class="flex flex-wrap items-center gap-2 border-t border-emerald-900/10 pt-3">
     <button onclick="window.print()" class="btn btn-ghost btn-sm">Print</button>
-    <a href="{% url 'report_export_excel' %}?report=occupancy&section={{ section_filter }}&status={{ status_filter }}" class="btn btn-gold btn-sm">Excel</a>
-    <a href="{% url 'report_export_pdf' %}?report=occupancy&section={{ section_filter }}&status={{ status_filter }}" class="btn btn-ghost btn-sm">PDF</a>
+    <a href="{% url 'report_export_excel' %}?report=occupancy&section={{ section_filter|default:'' }}&status={{ status_filter|default:'' }}" class="btn btn-gold btn-sm">Excel</a>
+    <a href="{% url 'report_export_pdf' %}?report=occupancy&section={{ section_filter|default:'' }}&status={{ status_filter|default:'' }}" class="btn btn-ghost btn-sm">PDF</a>
   </div>
 </div>
 {% endblock %}

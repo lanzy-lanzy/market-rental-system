@@ -38,12 +38,42 @@
     <div class="paper-block grid grid-cols-2 gap-4 text-sm">
       <div><p class="paper-label">Tenant</p><p class="font-semibold">{{ contract.tenant.full_name }} ({{ contract.tenant.tenant_id }})</p><p class="text-xs paper-meta">{{ contract.tenant.business_name|default:"" }}</p></div>
       <div><p class="paper-label">Stall</p><p class="font-mono font-bold">{{ contract.stall.stall_number }} • {{ contract.stall.section.name }}</p><p class="text-xs paper-meta">{{ contract.stall.stall_type.name|default:"" }}</p></div>
-      <div><p class="paper-label">Period</p><p>{{ contract.start_date|date:"F d, Y" }} — {{ contract.end_date|date:"F d, Y"|default:"Open-ended" }}</p></div>
+      <div><p class="paper-label">Start Date</p><p class="font-semibold">{{ contract.start_date|date:"F d, Y" }}</p></div>
+      <div><p class="paper-label">End of Contract</p><p class="font-semibold">{{ contract.end_date|date:"F d, Y"|default:"Open-ended" }}</p></div>
       <div><p class="paper-label">Status</p><p><span class="paper-chip">{{ contract.status }}</span></p></div>
       <div><p class="paper-label">Monthly Rent</p><p class="paper-title font-bold text-lg">₱{{ contract.monthly_rent|floatformat:2|intcomma }}</p></div>
-      <div><p class="paper-label">Due Day / Deposit</p><p>Due day {{ contract.due_day }} • Deposit ₱{{ contract.security_deposit|floatformat:2|intcomma }}</p></div>
+      <div class="col-span-2"><p class="paper-label">Due Day / Deposit</p><p>Due day {{ contract.due_day }} • Deposit ₱{{ contract.security_deposit|floatformat:2|intcomma }}</p></div>
       <div class="col-span-2"><p class="paper-label">Remarks</p><p>{{ contract.remarks|default:"—" }}</p></div>
     </div>
+    <div class="mt-4 rounded-md border border-amber-400 bg-amber-50 px-3.5 py-2.5 text-xs text-amber-950">
+      <p class="font-bold uppercase tracking-wider text-[10px] text-amber-900">Notice — Contract &amp; Monthly Rent Subject to Change</p>
+      <p class="mt-0.5 leading-5">{{ renovation_notice }}</p>
+    </div>
+    {% if amendments %}
+    <div class="mt-6">
+      <h3 class="paper-title text-xs font-bold uppercase tracking-wider mb-2">Rate &amp; Terms Amendment History ({{ amendments|length }})</h3>
+      <table class="paper-table w-full border-collapse text-xs">
+        <thead><tr>
+          <th class="px-2 py-1.5 text-left">Effective Date</th>
+          <th class="px-2 py-1.5 text-left">Reason</th>
+          <th class="px-2 py-1.5 text-right">Previous Rent</th>
+          <th class="px-2 py-1.5 text-right">New Rent</th>
+          <th class="px-2 py-1.5 text-left">Remarks</th>
+        </tr></thead>
+        <tbody>
+          {% for a in amendments %}
+          <tr>
+            <td class="px-2 py-1.5">{{ a.effective_date|date:"M d, Y" }}</td>
+            <td class="px-2 py-1.5 font-semibold">{{ a.get_reason_display }}</td>
+            <td class="paper-money px-2 py-1.5">₱{{ a.previous_monthly_rent|floatformat:2|intcomma }}</td>
+            <td class="paper-money px-2 py-1.5 font-bold text-emerald-800">₱{{ a.new_monthly_rent|floatformat:2|intcomma }}</td>
+            <td class="px-2 py-1.5">{{ a.remarks|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
     <div class="mt-6">
       <h3 class="paper-title text-xs font-bold uppercase tracking-wider mb-2">Billings ({{ billings|length }})</h3>
       <table class="paper-table w-full border-collapse text-xs">

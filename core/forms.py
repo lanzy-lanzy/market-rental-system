@@ -10,7 +10,7 @@ from django.core.exceptions import ValidationError
 
 from .models import (
     UserProfile, Tenant, Stall, MarketSection, StallType,
-    RentalContract, Billing, Payment, Notice, SystemSetting,
+    RentalContract, ContractAmendment, Billing, Payment, Notice, SystemSetting,
     PenaltySetting,
 )
 
@@ -308,6 +308,10 @@ class RentalContractForm(forms.ModelForm):
         # stall. An existing contract always maps to exactly one stall.
         self.is_new_contract = not (self.instance and self.instance.pk)
         if self.is_new_contract:
+            if not self.is_bound:
+                today = date.today()
+                self.fields['start_date'].initial = today
+                self.fields['end_date'].initial = RentalContract.compute_end_date(today)
             self.fields['stall'].required = False
             self.fields['monthly_rent'].required = False
             self.fields['monthly_rent'].widget.attrs['placeholder'] = "Blank = each stall's own rate"
@@ -326,6 +330,13 @@ class RentalContractForm(forms.ModelForm):
             self.fields['stall'].queryset = (
                 self.assignable_stalls | Stall.objects.filter(pk=self.instance.stall_id)
             ).distinct().order_by('stall_number')
+
+        self.fields['end_date'].help_text = (
+            f'Defaults to {RentalContract.DEFAULT_DURATION_YEARS} years from start date if left blank.'
+        )
+        self.fields['end_date'].widget.attrs['data-default-duration-years'] = str(
+            RentalContract.DEFAULT_DURATION_YEARS
+        )
 
         # Lets the form pre-select a stall the tenant already holds.
         self.fields['tenant'].widget.attrs['data-assigned-stalls'] = json.dumps(
@@ -388,6 +399,12 @@ class RentalContractForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
+        start_date = cleaned.get('start_date')
+        end_date = cleaned.get('end_date')
+        if start_date and not end_date:
+            cleaned['end_date'] = RentalContract.compute_end_date(start_date)
+        elif start_date and end_date and end_date <= start_date:
+            self.add_error('end_date', 'End date must be later than the start date.')
         stall = cleaned.get('stall')
         status = cleaned.get('status')
         if stall and status == 'Active':
@@ -399,12 +416,52 @@ class RentalContractForm(forms.ModelForm):
         return cleaned
 
 
+class ContractAmendmentForm(forms.ModelForm):
+    """Record a contract rate/terms amendment (e.g., stall renovation or expansion)."""
+
+    class Meta:
+        model = ContractAmendment
+        fields = ['reason', 'effective_date', 'new_monthly_rent', 'remarks']
+        widgets = {
+            'reason': forms.Select(attrs={'class': TW_SELECT}),
+            'effective_date': DateInput(attrs={'class': TW_INPUT}),
+            'new_monthly_rent': forms.NumberInput(
+                attrs={'class': TW_INPUT, 'placeholder': 'New monthly rent amount', 'step': '0.01', 'min': '0.01'}
+            ),
+            'remarks': forms.Textarea(
+                attrs={'class': TW_TEXTAREA, 'rows': 3, 'placeholder': 'Details of renovation, expansion, or rate adjustment'}
+            ),
+        }
+
+    def __init__(self, *args, contract=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.contract = contract
+        if not self.is_bound:
+            self.fields['effective_date'].initial = date.today()
+            if contract is not None:
+                self.fields['new_monthly_rent'].initial = contract.monthly_rent
+
+    def clean_new_monthly_rent(self):
+        new_rent = self.cleaned_data.get('new_monthly_rent')
+        if new_rent is None or new_rent <= 0:
+            raise forms.ValidationError('New monthly rent must be greater than zero.')
+        if self.contract is not None and new_rent == self.contract.monthly_rent:
+            raise forms.ValidationError('New monthly rent must differ from the current monthly rent.')
+        return new_rent
+
+    def clean_effective_date(self):
+        effective_date = self.cleaned_data.get('effective_date')
+        if self.contract and self.contract.start_date and effective_date and effective_date < self.contract.start_date:
+            raise forms.ValidationError('Effective date cannot be earlier than the contract start date.')
+        return effective_date
+
+
 class BillingForm(forms.ModelForm):
     class Meta:
         model = Billing
         fields = [
             'tenant', 'stall', 'contract', 'billing_month', 'billing_year',
-            'rental_amount', 'penalty_amount', 'discount', 'total_due',
+            'rental_amount', 'penalty_amount', 'total_due',
             'amount_paid', 'balance', 'due_date', 'status',
         ]
         widgets = {
@@ -420,7 +477,6 @@ class BillingForm(forms.ModelForm):
             'billing_year': forms.NumberInput(attrs={'class': TW_INPUT, 'placeholder': 'Year (e.g., 2026)'}),
             'rental_amount': forms.NumberInput(attrs={'class': TW_INPUT, 'step': '0.01'}),
             'penalty_amount': forms.NumberInput(attrs={'class': TW_INPUT, 'step': '0.01'}),
-            'discount': forms.NumberInput(attrs={'class': TW_INPUT, 'step': '0.01'}),
             'total_due': forms.NumberInput(attrs={'class': TW_INPUT, 'step': '0.01', 'readonly': 'readonly'}),
             'amount_paid': forms.NumberInput(attrs={'class': TW_INPUT, 'step': '0.01'}),
             'balance': forms.NumberInput(attrs={'class': TW_INPUT, 'step': '0.01', 'readonly': 'readonly'}),
@@ -432,12 +488,8 @@ class BillingForm(forms.ModelForm):
         cleaned = super().clean()
         rental = cleaned.get('rental_amount') or 0
         penalty = cleaned.get('penalty_amount') or 0
-        discount = cleaned.get('discount') or 0
         # Recompute total_due and balance to prevent manual tampering
-        try:
-            total_due = rental + penalty - discount
-        except Exception:
-            total_due = rental + penalty
+        total_due = rental + penalty
         cleaned['total_due'] = total_due
         amt_paid = cleaned.get('amount_paid') or 0
         try:
@@ -461,13 +513,20 @@ class BillingForm(forms.ModelForm):
                 cleaned['status'] = 'Unpaid'
         return cleaned
 
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.discount = 0
+        if commit:
+            instance.save()
+        return instance
+
 
 class PaymentForm(forms.ModelForm):
     class Meta:
         model = Payment
         fields = [
             'tenant', 'stall', 'billing', 'billing_month', 'billing_year',
-            'rental_amount', 'penalty_amount', 'discount', 'total_amount_due',
+            'rental_amount', 'penalty_amount', 'total_amount_due',
             'amount_paid', 'payment_date', 'payment_method', 'official_receipt_no',
             'collected_by', 'status', 'remarks',
         ]
@@ -484,7 +543,6 @@ class PaymentForm(forms.ModelForm):
             'billing_year': forms.NumberInput(attrs={'class': TW_INPUT, 'placeholder': 'Year (e.g., 2026)'}),
             'rental_amount': forms.NumberInput(attrs={'class': TW_INPUT, 'step': '0.01'}),
             'penalty_amount': forms.NumberInput(attrs={'class': TW_INPUT, 'step': '0.01'}),
-            'discount': forms.NumberInput(attrs={'class': TW_INPUT, 'step': '0.01'}),
             'total_amount_due': forms.NumberInput(attrs={'class': TW_INPUT, 'step': '0.01'}),
             'amount_paid': forms.NumberInput(attrs={'class': TW_INPUT, 'step': '0.01'}),
             'payment_date': DateInput(attrs={'class': TW_INPUT}),
@@ -494,6 +552,13 @@ class PaymentForm(forms.ModelForm):
             'status': forms.Select(attrs={'class': TW_SELECT}),
             'remarks': forms.Textarea(attrs={'class': TW_TEXTAREA, 'rows': 3, 'placeholder': 'Optional remarks'}),
         }
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.discount = 0
+        if commit:
+            instance.save()
+        return instance
 
     def clean(self):
         cleaned = super().clean()
@@ -700,8 +765,9 @@ class BulkAssignStallsForm(forms.Form):
         initial=date.today,
     )
     end_date = forms.DateField(
-        widget=DateInput(attrs={'class': TW_INPUT}),
-        label='End Date (optional)',
+        widget=DateInput(attrs={'class': TW_INPUT, 'data-default-duration-years': str(RentalContract.DEFAULT_DURATION_YEARS)}),
+        label='End Date (3-Year Term)',
+        help_text='Defaults to 3 years from start date if left blank.',
         required=False,
     )
     due_day = forms.IntegerField(
@@ -722,6 +788,8 @@ class BulkAssignStallsForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if not self.is_bound:
+            self.fields['end_date'].initial = RentalContract.compute_end_date(date.today())
         self.fields['tenant'].queryset = Tenant.objects.filter(status='Active').order_by('full_name')
         # Only stalls that can legally receive a new Active contract. The status
         # column can drift out of sync after manual edits, so the active
@@ -746,7 +814,9 @@ class BulkAssignStallsForm(forms.Form):
         cleaned = super().clean()
         start = cleaned.get('start_date')
         end = cleaned.get('end_date')
-        if start and end and end <= start:
+        if start and not end:
+            cleaned['end_date'] = RentalContract.compute_end_date(start)
+        elif start and end and end <= start:
             self.add_error('end_date', 'End date must be later than the start date.')
         return cleaned
 

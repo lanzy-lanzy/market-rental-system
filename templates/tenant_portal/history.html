@@ -44,7 +44,7 @@
           <option value="{{ forloop.counter }}" {% if month_filter|stringformat:"s" == forloop.counter|stringformat:"s" %}selected{% endif %}>{{ m }}</option>
           {% endfor %}
         </select>
-        <select name="year" hx-get="{% url 'tenant_portal_history' %}" hx-target="#portal-history-wrapper" hx-trigger="change" hx-include="[name='search'],[name='type'],[name='month'],[name='status']" hx-push-url="true" class="field w-full sm:w-auto sm:min-w-[8rem]">
+        <select name="year" id="history_year" aria-label="Filter by year" hx-get="{% url 'tenant_portal_history' %}" hx-target="#portal-history-wrapper" hx-trigger="change" hx-include="[name='search'],[name='type'],[name='month'],[name='status']" hx-push-url="true" class="field w-full sm:w-auto sm:min-w-[8rem]">
           <option value="">All Years</option>
           {% for y in available_years %}
           <option value="{{ y }}" {% if year_filter == y|stringformat:"s" %}selected{% endif %}>{{ y }}</option>

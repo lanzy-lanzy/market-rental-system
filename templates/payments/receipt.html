@@ -116,12 +116,6 @@
                 <td class="num text-red-600">{{ payment.penalty_amount|floatformat:2|intcomma }}</td>
               </tr>
               {% endif %}
-              {% if payment.discount > 0 %}
-              <tr>
-                <td class="text-emerald-700">Discount</td>
-                <td class="num text-emerald-700">({{ payment.discount|floatformat:2|intcomma }})</td>
-              </tr>
-              {% endif %}
             </tbody>
             <tfoot>
               <tr>

@@ -284,3 +284,71 @@ class ContractAddViewTests(TestCase):
         self.assertIn('Created 2 contracts for Anne O', resp.content.decode())
         self.assertEqual(self.tenant.contracts.count(), 2)
         self.assertEqual(AuditLog.objects.filter(action='BULK_ASSIGN').count(), 1)
+
+
+class ContractThreeYearDurationTests(TestCase):
+    """Contracts default to a 3-year end_date when not explicitly provided."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.section, _ = MarketSection.objects.get_or_create(name='Meat Section')
+        cls.stall_a = Stall.objects.create(
+            stall_number='MS-01', section=cls.section, monthly_rate=2000, status='Vacant')
+        cls.stall_b = Stall.objects.create(
+            stall_number='MS-02', section=cls.section, monthly_rate=2500, status='Vacant')
+        cls.tenant = Tenant.objects.create(
+            tenant_id='TEN-501', full_name='Three Year Tenant', address='Poblacion',
+            contact_number='09000000501', status='Active')
+
+    def test_compute_end_date_adds_three_years_and_handles_leap_day(self):
+        self.assertEqual(
+            RentalContract.compute_end_date(date(2026, 6, 15)),
+            date(2029, 6, 15),
+        )
+        self.assertEqual(
+            RentalContract.compute_end_date(date(2024, 2, 29)),
+            date(2027, 2, 28),
+        )
+
+    def test_model_save_defaults_end_date_to_three_years(self):
+        contract = RentalContract.objects.create(
+            tenant=self.tenant, stall=self.stall_a, status='Active',
+            start_date=date(2026, 3, 10), monthly_rent=2000, due_day=5, security_deposit=0,
+        )
+        self.assertEqual(contract.end_date, date(2029, 3, 10))
+
+    def test_new_contract_form_sets_three_year_initial_and_fills_blank_end_date(self):
+        unbound = RentalContractForm()
+        self.assertEqual(unbound.fields['start_date'].initial, date.today())
+        self.assertEqual(
+            unbound.fields['end_date'].initial,
+            RentalContract.compute_end_date(date.today()),
+        )
+
+        form = RentalContractForm(data={
+            'tenant': self.tenant.pk,
+            'stalls': [str(self.stall_b.pk)],
+            'start_date': '2026-08-01',
+            'end_date': '',
+            'due_day': 5,
+            'security_deposit': '1000',
+            'status': 'Active',
+            'remarks': '',
+        })
+        self.assertTrue(form.is_valid(), form.errors)
+        contract = form.save()
+        self.assertEqual(contract.end_date, date(2029, 8, 1))
+
+    def test_form_rejects_end_date_on_or_before_start_date(self):
+        form = RentalContractForm(data={
+            'tenant': self.tenant.pk,
+            'stalls': [str(self.stall_b.pk)],
+            'start_date': '2026-08-01',
+            'end_date': '2026-08-01',
+            'due_day': 5,
+            'security_deposit': '1000',
+            'status': 'Active',
+            'remarks': '',
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('end_date', form.errors)

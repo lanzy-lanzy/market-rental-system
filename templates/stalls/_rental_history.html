@@ -1,0 +1,117 @@
+{% load humanize %}
+<div id="stall-rental-history-body">
+  <!-- ══ Summary Strip ══ -->
+  <div class="grid grid-cols-2 gap-3 border-b border-emerald-900/10 bg-emerald-50/30 p-4 sm:grid-cols-4">
+    <div class="rounded-xl border border-emerald-900/10 bg-white/80 p-3">
+      <p class="stat-label">Rentals Shown</p>
+      <p class="mt-1 text-lg font-extrabold text-ink num">{{ history_summary.contract_count }}</p>
+      <p class="text-xs text-ink-muted">{{ history_summary.unique_tenants }} unique tenant{{ history_summary.unique_tenants|pluralize }}</p>
+    </div>
+    <div class="rounded-xl border border-emerald-900/10 bg-white/80 p-3">
+      <p class="stat-label">Total Billed</p>
+      <p class="mt-1 text-lg font-extrabold text-ink num">&#8369;{{ history_summary.total_billed|floatformat:2|intcomma }}</p>
+      <p class="text-xs text-ink-muted">Across listed contracts</p>
+    </div>
+    <div class="rounded-xl border border-emerald-900/10 bg-white/80 p-3">
+      <p class="stat-label">Total Paid</p>
+      <p class="mt-1 text-lg font-extrabold text-emerald-700 num">&#8369;{{ history_summary.total_paid|floatformat:2|intcomma }}</p>
+      <p class="text-xs text-ink-muted">Collected rentals</p>
+    </div>
+    <div class="rounded-xl border border-emerald-900/10 bg-white/80 p-3">
+      <p class="stat-label">Total Balance</p>
+      <p class="mt-1 text-lg font-extrabold {% if history_summary.total_balance > 0 %}text-red-700{% else %}text-emerald-700{% endif %} num">&#8369;{{ history_summary.total_balance|floatformat:2|intcomma }}</p>
+      <p class="text-xs text-ink-muted">{% if history_summary.total_balance > 0 %}Outstanding{% else %}Settled{% endif %}</p>
+    </div>
+  </div>
+
+  <!-- ══ Rental History Table ══ -->
+  <div class="table-wrap rounded-none border-0 shadow-none">
+    <div class="overflow-x-auto">
+      <table class="table min-w-[1040px]">
+        <thead>
+          <tr>
+            <th>Contract #</th>
+            <th>Tenant</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th class="text-right">Monthly Rate</th>
+            <th>Status</th>
+            <th class="text-right">Total Billed</th>
+            <th class="text-right">Total Paid</th>
+            <th class="text-right">Balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for contract in contracts %}
+          <tr>
+            <td class="whitespace-nowrap">
+              <a href="{% url 'contract_view' contract.id %}" class="chip mono hover:underline">{{ contract.contract_number }}</a>
+            </td>
+            <td class="whitespace-nowrap">
+              <a href="{% url 'tenant_view' contract.tenant.id %}" class="text-sm font-semibold text-emerald-700 hover:underline">{{ contract.tenant.full_name }}</a>
+              <p class="text-xs text-ink-muted mono">{{ contract.tenant.tenant_id }}</p>
+            </td>
+            <td class="whitespace-nowrap text-sm text-ink-soft">{{ contract.start_date|date:"M d, Y" }}</td>
+            <td class="whitespace-nowrap text-sm text-ink-soft">{{ contract.end_date|date:"M d, Y"|default:"Open-ended" }}</td>
+            <td class="whitespace-nowrap text-right text-sm font-semibold text-ink num">&#8369;{{ contract.monthly_rent|floatformat:2|intcomma }}</td>
+            <td class="whitespace-nowrap">
+              <div class="flex items-center gap-1.5">
+                {% include 'includes/status_badge.html' with status=contract.status %}
+                {% if contract.status == 'Active' %}
+                <span class="chip chip-emerald text-[10px]">Current</span>
+                {% endif %}
+              </div>
+            </td>
+            <td class="whitespace-nowrap text-right text-sm text-ink num">&#8369;{{ contract.total_billed|floatformat:2|intcomma }}</td>
+            <td class="whitespace-nowrap text-right text-sm font-semibold text-emerald-700 num">&#8369;{{ contract.total_paid|floatformat:2|intcomma }}</td>
+            <td class="whitespace-nowrap text-right text-sm font-semibold {% if contract.total_balance > 0 %}text-red-700{% else %}text-ink-soft{% endif %} num">&#8369;{{ contract.total_balance|floatformat:2|intcomma }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9">
+              <div class="empty-state">
+                <span class="empty-icon">
+                  <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a2 2 0 01.707.293l5.414 5.414a2 2 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </span>
+                {% if history_year_filter or history_status_filter %}
+                <p class="mt-4 text-sm font-semibold text-ink">No rental history matches the selected filter</p>
+                <p class="mt-1 text-xs text-ink-muted">Try clearing the year or status filter to view all {{ total_all_contracts }} recorded rental{{ total_all_contracts|pluralize }}.</p>
+                {% else %}
+                <p class="mt-4 text-sm font-semibold text-ink">No rental history recorded</p>
+                <p class="mt-1 text-xs text-ink-muted">Past and current rental contracts for this stall will appear here.</p>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        {% if contracts %}
+        <tfoot>
+          <tr class="border-t-2 border-emerald-900/15 bg-emerald-50/40 font-bold">
+            <td colspan="6" class="text-right text-xs uppercase tracking-wider text-ink-soft">Totals ({{ history_summary.contract_count }} contract{{ history_summary.contract_count|pluralize }})</td>
+            <td class="whitespace-nowrap text-right text-sm text-ink num">&#8369;{{ history_summary.total_billed|floatformat:2|intcomma }}</td>
+            <td class="whitespace-nowrap text-right text-sm text-emerald-800 num">&#8369;{{ history_summary.total_paid|floatformat:2|intcomma }}</td>
+            <td class="whitespace-nowrap text-right text-sm {% if history_summary.total_balance > 0 %}text-red-700{% else %}text-emerald-800{% endif %} num">&#8369;{{ history_summary.total_balance|floatformat:2|intcomma }}</td>
+          </tr>
+        </tfoot>
+        {% endif %}
+      </table>
+    </div>
+  </div>
+</div>
+
+{% if is_htmx_request %}
+<a id="stall-view-print-link" hx-swap-oob="true" href="{% url 'stall_view_print' stall.id %}{% if history_querystring %}?{{ history_querystring }}{% endif %}" target="_blank" class="btn btn-ghost">
+  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+  Print Preview
+</a>
+<a id="stall-view-pdf-link" hx-swap-oob="true" href="{% url 'stall_view_export_pdf' stall.id %}{% if history_querystring %}?{{ history_querystring }}{% endif %}" class="btn btn-gold">
+  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2"/></svg>
+  Export PDF
+</a>
+<span id="stall-history-clear-wrap" hx-swap-oob="true">
+  {% if history_year_filter or history_status_filter %}
+  <a href="{% url 'stall_view' stall.id %}" class="btn btn-ghost btn-sm">Clear ✕</a>
+  {% endif %}
+</span>
+{% endif %}

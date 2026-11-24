@@ -110,7 +110,6 @@
             <th class="border border-gray-400 px-2 py-2 text-left">Stall</th>
             <th class="border border-gray-400 px-2 py-2 text-right">Rental</th>
             <th class="border border-gray-400 px-2 py-2 text-right">Penalty</th>
-            <th class="border border-gray-400 px-2 py-2 text-right">Discount</th>
             <th class="border border-gray-400 px-2 py-2 text-right">Total Due</th>
             <th class="border border-gray-400 px-2 py-2 text-right">Amount Paid</th>
           </tr>
@@ -126,7 +125,6 @@
             <td class="mono border border-gray-300 px-2 py-2 text-xs text-gray-800">{{ p.stall.stall_number }}</td>
             <td class="border border-gray-300 px-2 py-2 text-right tabular-nums text-gray-800">{{ p.rental_amount|floatformat:2|intcomma }}</td>
             <td class="border border-gray-300 px-2 py-2 text-right tabular-nums {% if p.penalty_amount > 0 %}text-red-700{% else %}text-gray-600{% endif %}">{{ p.penalty_amount|floatformat:2|intcomma }}</td>
-            <td class="border border-gray-300 px-2 py-2 text-right tabular-nums {% if p.discount > 0 %}text-emerald-700{% else %}text-gray-600{% endif %}">{{ p.discount|floatformat:2|intcomma }}</td>
             <td class="border border-gray-300 px-2 py-2 text-right font-semibold tabular-nums text-gray-900">{{ p.total_amount_due|floatformat:2|intcomma }}</td>
             <td class="border border-gray-300 px-2 py-2 text-right font-bold tabular-nums text-emerald-800">{{ p.amount_paid|floatformat:2|intcomma }}</td>
           </tr>
@@ -137,7 +135,6 @@
             <td colspan="3" class="border border-gray-400 bg-gray-100 px-2 py-2 text-right uppercase tracking-wider text-gray-700">Totals ({{ month_count }} month{{ month_count|pluralize }})</td>
             <td class="border border-gray-400 bg-gray-100 px-2 py-2 text-right tabular-nums text-gray-800">{{ rental_total|floatformat:2|intcomma }}</td>
             <td class="border border-gray-400 bg-gray-100 px-2 py-2 text-right tabular-nums text-gray-800">{{ penalty_total|floatformat:2|intcomma }}</td>
-            <td class="border border-gray-400 bg-gray-100 px-2 py-2 text-right tabular-nums text-gray-800">{{ discount_total|floatformat:2|intcomma }}</td>
             <td class="border border-gray-400 bg-gray-100 px-2 py-2 text-right tabular-nums text-gray-900">{{ total_due|floatformat:2|intcomma }}</td>
             <td class="border border-gray-400 bg-gray-100 px-2 py-2 text-right tabular-nums text-emerald-800">{{ total_paid|floatformat:2|intcomma }}</td>
           </tr>

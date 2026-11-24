@@ -6,8 +6,8 @@ from django.db.models import Q
 from django.db import IntegrityError, transaction
 from datetime import date
 
-from core.models import RentalContract, Tenant, Stall, Billing, AuditLog
-from core.forms import RentalContractForm, BulkAssignStallsForm
+from core.models import RentalContract, ContractAmendment, Tenant, Stall, Billing, AuditLog
+from core.forms import RentalContractForm, BulkAssignStallsForm, ContractAmendmentForm
 from core.permissions import management_required
 from core.helpers import ensure_initial_billing, render_to_pdf_response
 from django.contrib.auth.decorators import login_required
@@ -215,11 +215,76 @@ def contract_view(request, pk):
         pk=pk
     )
     billings = Billing.objects.filter(contract=contract).order_by('-billing_year', '-billing_month', '-created_at', '-id')
+    amendments = contract.amendments.select_related('created_by').all()
     context = {
         'contract': contract,
         'billings': billings,
+        'amendments': amendments,
+        'renovation_notice': RentalContract.RENOVATION_EXPANSION_NOTICE,
     }
     return render(request, 'contracts/view.html', context)
+
+
+@management_required
+def contract_amend(request, pk):
+    """Record a contract rate/terms amendment (e.g. stall renovation or expansion)."""
+    contract = get_object_or_404(
+        RentalContract.objects.select_related('tenant', 'stall', 'stall__section'),
+        pk=pk,
+    )
+    template = 'contracts/_amend_modal.html' if is_htmx(request) else 'contracts/amend.html'
+    if request.method == 'POST':
+        form = ContractAmendmentForm(request.POST, contract=contract)
+        if form.is_valid():
+            with transaction.atomic():
+                locked_contract = RentalContract.objects.select_for_update().get(pk=contract.pk)
+                previous_rent = locked_contract.monthly_rent
+                amendment = form.save(commit=False)
+                amendment.contract = locked_contract
+                amendment.previous_monthly_rent = previous_rent
+                amendment.created_by = request.user
+                amendment.save()
+
+                locked_contract.monthly_rent = amendment.new_monthly_rent
+                locked_contract.save(update_fields=['monthly_rent', 'updated_at'])
+
+            AuditLog.objects.create(
+                user=request.user,
+                action='AMEND_RATE',
+                module='RentalContract',
+                description=(
+                    f'Amended contract #{contract.pk} ({contract.tenant.full_name} - '
+                    f'{contract.stall.stall_number}) for {amendment.get_reason_display()}: '
+                    f'₱{previous_rent:.2f} -> ₱{amendment.new_monthly_rent:.2f} '
+                    f'effective {amendment.effective_date.isoformat()}'
+                ),
+                ip_address=request.META.get('REMOTE_ADDR'),
+            )
+            toast = (
+                f'Rate amended from ₱{previous_rent:.2f} to '
+                f'₱{amendment.new_monthly_rent:.2f} ({amendment.get_reason_display()}).'
+            )
+            if is_htmx(request):
+                from django.http import HttpResponse
+                return HttpResponse(
+                    '<script>\n'
+                    'closeModal();\n'
+                    f'showToast({json.dumps(toast)}, "success");\n'
+                    'setTimeout(function() { location.reload(); }, 500);\n'
+                    '</script>'
+                )
+            messages.success(request, toast)
+            return redirect('contract_view', pk=contract.pk)
+        elif not is_htmx(request):
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = ContractAmendmentForm(contract=contract)
+
+    return render(request, template, {
+        'form': form,
+        'contract': contract,
+        'renovation_notice': RentalContract.RENOVATION_EXPANSION_NOTICE,
+    })
 
 
 @management_required
@@ -401,10 +466,13 @@ def contract_list_export_pdf(request):
 def contract_view_print(request, pk):
     contract = get_object_or_404(RentalContract.objects.select_related('tenant', 'stall', 'stall__section'), pk=pk)
     billings = Billing.objects.filter(contract=contract).order_by('-billing_year', '-billing_month', '-created_at', '-id')
+    amendments = contract.amendments.select_related('created_by').all()
     from core.models import SystemSetting
     context = {
         'contract': contract,
         'billings': billings,
+        'amendments': amendments,
+        'renovation_notice': RentalContract.RENOVATION_EXPANSION_NOTICE,
         'system_settings': SystemSetting.objects.first(),
         'user': request.user,
         'now': __import__('django.utils.timezone', fromlist=['now']).now(),
@@ -416,10 +484,13 @@ def contract_view_print(request, pk):
 def contract_view_export_pdf(request, pk):
     contract = get_object_or_404(RentalContract.objects.select_related('tenant', 'stall', 'stall__section'), pk=pk)
     billings = Billing.objects.filter(contract=contract).order_by('-billing_year', '-billing_month', '-created_at', '-id')
+    amendments = contract.amendments.select_related('created_by').all()
     from core.models import SystemSetting
     context = {
         'contract': contract,
         'billings': billings,
+        'amendments': amendments,
+        'renovation_notice': RentalContract.RENOVATION_EXPANSION_NOTICE,
         'system_settings': SystemSetting.objects.first(),
         'user': request.user,
         'now': __import__('django.utils.timezone', fromlist=['now']).now(),

@@ -18,7 +18,7 @@ from core.views.contracts import (
     contract_list, contract_add, contract_edit, contract_delete,
     contract_view, contract_add_modal, contract_edit_modal, contract_terminate,
     contract_list_print, contract_list_export_pdf, contract_view_print, contract_view_export_pdf,
-    contract_bulk_assign,
+    contract_bulk_assign, contract_amend,
 )
 from core.views.billing import (
     billing_list, billing_generate, billing_view,
@@ -117,6 +117,7 @@ urlpatterns = [
     path('contracts/add-modal/', contract_add_modal, name='contract_add_modal'),
     path('contracts/<int:pk>/edit-modal/', contract_edit_modal, name='contract_edit_modal'),
     path('contracts/<int:pk>/terminate/', contract_terminate, name='contract_terminate'),
+    path('contracts/<int:pk>/amend/', contract_amend, name='contract_amend'),
     path('contracts/bulk-assign/', contract_bulk_assign, name='contract_bulk_assign'),
 
     # Billing

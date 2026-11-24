@@ -33,7 +33,7 @@ class BillingFixtureMixin:
         self.billing = Billing.objects.create(
             tenant=self.tenant, stall=self.stall, contract=self.contract,
             billing_month=1, billing_year=2026, rental_amount=Decimal('100.00'),
-            penalty_amount=Decimal('0.00'), discount=Decimal('0.00'),
+            penalty_amount=Decimal('0.00'),
             total_due=Decimal('100.00'), amount_paid=Decimal('0.00'),
             balance=Decimal('100.00'), due_date=date(2026, 1, 5), status='Unpaid',
         )

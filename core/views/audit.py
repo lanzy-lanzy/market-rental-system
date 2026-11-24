@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.shortcuts import render
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -12,14 +14,34 @@ def is_htmx(request):
 
 @admin_required
 def audit_log_list(request):
-    logs = AuditLog.objects.select_related('user').all().order_by('-created_at', '-id')
+    base_logs = AuditLog.objects.all()
+    available_years = sorted(
+        {dt.year for dt in base_logs.dates('created_at', 'year', order='DESC')},
+        reverse=True,
+    )
+    if not available_years:
+        available_years = [date.today().year]
+
+    logs = base_logs.select_related('user').order_by('-created_at', '-id')
 
     user_filter = request.GET.get('user')
     action_filter = request.GET.get('action')
     module_filter = request.GET.get('module')
+    raw_year = (request.GET.get('year') or '').strip()
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
     search_query = (request.GET.get('search') or request.GET.get('q') or '').strip()
+
+    year_filter = ''
+    if raw_year:
+        try:
+            year_int = int(raw_year)
+            year_filter = str(year_int)
+            logs = logs.filter(created_at__year=year_int)
+            if year_int not in available_years:
+                available_years = sorted(set(available_years) | {year_int}, reverse=True)
+        except (ValueError, TypeError):
+            year_filter = ''
 
     if user_filter:
         logs = logs.filter(user_id=user_filter)
@@ -48,9 +70,11 @@ def audit_log_list(request):
 
     context = {
         'page_obj': page_obj,
+        'available_years': available_years,
         'user_filter': user_filter,
         'action_filter': action_filter,
         'module_filter': module_filter,
+        'year_filter': year_filter,
         'date_from': date_from,
         'date_to': date_to,
         'search_query': search_query,

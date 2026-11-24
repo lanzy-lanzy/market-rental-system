@@ -1,0 +1,58 @@
+{% load humanize %}
+<div class="panel overflow-hidden">
+  <div class="panel-header">
+    <div>
+      <h3 class="panel-title">Amend Contract Rate</h3>
+      <p class="panel-subtitle">{{ contract.tenant.full_name }} — {{ contract.stall.stall_number }}</p>
+    </div>
+    <button type="button" onclick="closeModal()" class="btn-icon" title="Close">
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="panel-body">
+    <div class="alert alert-info mb-4">
+      <svg class="h-4 w-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <div>
+        <p class="font-semibold">Current Monthly Rent: &#8369;{{ contract.monthly_rent|floatformat:2|intcomma }}</p>
+        <p class="mt-0.5 text-xs">{{ renovation_notice }}</p>
+      </div>
+    </div>
+
+    <form hx-post="{% url 'contract_amend' contract.id %}" hx-target="#modal-content">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+      <div class="alert alert-error mb-4">
+        {% for err in form.non_field_errors %}<p>{{ err }}</p>{% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="form-grid sm:grid-cols-2">
+        <div>
+          <label class="field-label">Reason for Change <span class="text-red-500">*</span></label>
+          {{ form.reason }}
+          {% if form.reason.errors %}<p class="field-error">{{ form.reason.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="field-label">Effective Date <span class="text-red-500">*</span></label>
+          {{ form.effective_date }}
+          {% if form.effective_date.errors %}<p class="field-error">{{ form.effective_date.errors.0 }}</p>{% endif %}
+        </div>
+        <div class="sm:col-span-2">
+          <label class="field-label">New Monthly Rent (&#8369;) <span class="text-red-500">*</span></label>
+          {{ form.new_monthly_rent }}
+          {% if form.new_monthly_rent.errors %}<p class="field-error">{{ form.new_monthly_rent.errors.0 }}</p>{% endif %}
+        </div>
+        <div class="sm:col-span-2">
+          <label class="field-label">Remarks</label>
+          {{ form.remarks }}
+          {% if form.remarks.errors %}<p class="field-error">{{ form.remarks.errors.0 }}</p>{% endif %}
+        </div>
+      </div>
+
+      <div class="mt-5 flex items-center justify-end gap-3 border-t border-emerald-900/10 pt-4">
+        <button type="button" onclick="closeModal()" class="btn btn-ghost">Cancel</button>
+        <button type="submit" class="btn btn-primary">Record Amendment</button>
+      </div>
+    </form>
+  </div>
+</div>

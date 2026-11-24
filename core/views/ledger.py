@@ -13,6 +13,15 @@ def is_htmx(request):
     return getattr(request, 'htmx', None) or request.headers.get('HX-Request') == 'true'
 
 
+def _attach_ledger_summaries(tenants):
+    for tenant in tenants:
+        statement = tenant_statement(tenant)
+        tenant.ledger_status = statement['account_status']
+        tenant.ledger_balance = statement['running_balance']
+        tenant.ledger_remarks = statement['account_remarks']
+    return tenants
+
+
 @management_or_tenant_required
 def ledger_list(request):
     role = get_user_role(request.user)
@@ -37,6 +46,7 @@ def ledger_list(request):
 
     paginator = Paginator(tenants, 10)
     page_obj = paginator.get_page(request.GET.get('page'))
+    _attach_ledger_summaries(page_obj.object_list)
 
     context = {
         'page_obj': page_obj,
@@ -118,8 +128,10 @@ def ledger_list_print(request):
     search = request.GET.get('search', '').strip()
     if search:
         tenants = tenants.filter(Q(full_name__icontains=search) | Q(tenant_id__icontains=search))
+    tenant_list = _attach_ledger_summaries(list(tenants))
     context = {
-        'tenants': tenants,
+        'tenants': tenant_list,
+        'tenant_count': len(tenant_list),
         'search': search,
         'system_settings': SystemSetting.objects.first(),
         'user': request.user,
@@ -142,8 +154,10 @@ def ledger_list_export_pdf(request):
     search = request.GET.get('search', '').strip()
     if search:
         tenants = tenants.filter(Q(full_name__icontains=search) | Q(tenant_id__icontains=search))
+    tenant_list = _attach_ledger_summaries(list(tenants))
     context = {
-        'tenants': tenants,
+        'tenants': tenant_list,
+        'tenant_count': len(tenant_list),
         'search': search,
         'system_settings': SystemSetting.objects.first(),
         'user': request.user,

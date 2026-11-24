@@ -13,18 +13,24 @@
   <div class="max-w-6xl mx-auto">
     <div class="no-print mb-4 flex justify-end gap-2">
       <button onclick="window.print()" class="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-semibold text-white">Print</button>
-      <a href="{% url 'stall_list_export_pdf' %}?{{ request.GET.urlencode }}" class="rounded-lg border border-emerald-800/40 px-4 py-2 text-sm font-semibold text-emerald-800">Export PDF</a>
+      <a href="{% url 'stall_list_export_pdf' %}{% if filter_querystring %}?{{ filter_querystring }}{% endif %}" class="rounded-lg border border-emerald-800/40 px-4 py-2 text-sm font-semibold text-emerald-800">Export PDF</a>
       <button onclick="window.close()" class="rounded-lg border border-ink/30 px-4 py-2 text-sm font-semibold text-ink-soft">Close</button>
     </div>
     <div class="text-center border-b-2 border-emerald-800 pb-4 mb-6">
       {% include 'includes/document_logo.html' %}
       <h1 class="text-sm font-bold uppercase text-emerald-900">{{ system_settings.municipality_name|default:"Municipality" }} — {{ system_settings.market_name|default:"Public Market" }}</h1>
       <p class="text-xs text-ink-soft">{{ system_settings.office_name|default:"Market Administration Office" }}</p>
-      <h2 class="mt-3 text-lg font-bold uppercase text-emerald-800">Stalls List</h2>
+      <h2 class="mt-3 text-lg font-bold uppercase text-emerald-800">Stalls List{% if status_filter %} — {{ status_filter }}{% endif %}</h2>
       <div class="divider-gold mx-auto mt-2"></div>
-      <p class="mt-3 text-xs text-ink-muted">Generated {{ now|date:"F d, Y h:i A" }} • By {{ user.get_full_name|default:user.username }}{% if search_query %} • Search: "{{ search_query }}"{% endif %}{% if status_filter %} • Status: {{ status_filter }}{% endif %}{% if section_filter %} • Section filter{% endif %}</p>
+      <p class="mt-3 text-xs text-ink-muted">Generated {{ now|date:"F d, Y h:i A" }} • By {{ user.get_full_name|default:user.username }}{% if search_query %} • Search: "{{ search_query }}"{% endif %}{% if status_filter %} • Status: {{ status_filter }}{% endif %}{% if selected_section %} • Section: {{ selected_section.name }}{% endif %}</p>
     </div>
-    <div class="mb-4 text-xs text-ink-soft">Total: <strong class="text-emerald-900">{{ stalls.count }}</strong> stalls</div>
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-2 text-xs text-ink-soft">
+      <div>Total: <strong class="text-emerald-900">{{ stalls.count }}</strong> stalls</div>
+      <div class="flex items-center gap-4">
+        <span>Vacant: <strong class="text-ink">{{ status_counts.Vacant|default:"0" }}</strong></span>
+        <span>Occupied: <strong class="text-emerald-800">{{ status_counts.Occupied|default:"0" }}</strong></span>
+      </div>
+    </div>
     <table class="w-full border-collapse text-xs">
       <thead><tr class="bg-emerald-100/60">
         <th class="font-bold border border-emerald-900/25 px-2 py-2 text-left uppercase text-emerald-900">Stall #</th>
@@ -44,7 +50,7 @@
           <td class="border border-ink/20 px-2 py-1.5 text-right text-ink-soft">{{ stall.size|floatformat:1|default:"—" }} sqm</td>
           <td class="border border-ink/20 px-2 py-1.5 text-right font-bold text-ink">₱{{ stall.monthly_rate|floatformat:2|intcomma }}</td>
           <td class="border border-ink/20 px-2 py-1.5 text-ink-soft">{{ stall.status }}</td>
-          <td class="border border-ink/20 px-2 py-1.5 text-ink-soft">{% for c in stall.contracts.all %}{% if c.status == 'Active' %}{{ c.tenant.full_name }}{% endif %}{% empty %}—{% endfor %}</td>
+          <td class="border border-ink/20 px-2 py-1.5 text-ink-soft">{% if stall.active_contracts %}{{ stall.active_contracts.0.tenant.full_name }}{% else %}—{% endif %}</td>
         </tr>
         {% empty %}<tr><td colspan="7" class="border border-ink/20 px-2 py-4 text-center text-ink-muted">No stalls found</td></tr>{% endfor %}
       </tbody>

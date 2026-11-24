@@ -1,0 +1,110 @@
+{% load humanize %}
+<div id="report-tenants-wrapper" class="space-y-5">
+  <div class="no-print flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-emerald-900/10 bg-white/60 px-4 py-3 backdrop-blur-md">
+    <div class="flex flex-wrap items-center gap-2 text-xs text-ink-soft">
+      <span class="font-semibold text-ink">Active filter:</span>
+      <span class="badge badge-gold"><span class="badge-dot"></span>{{ status_label }}</span>
+      {% if search_query %}
+      <span class="badge badge-muted">Search: “{{ search_query }}”</span>
+      {% endif %}
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <button type="button" onclick="window.print()" class="btn btn-ghost btn-sm">Print</button>
+      <a href="{% url 'report_export_excel' %}?report={{ export_report_key }}&month={{ month }}&year={{ year }}{% if status_filter %}&status={{ status_filter|urlencode }}{% endif %}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}" class="btn btn-gold btn-sm">Excel</a>
+      <a href="{% url 'report_export_pdf' %}?report={{ export_report_key }}&month={{ month }}&year={{ year }}{% if status_filter %}&status={{ status_filter|urlencode }}{% endif %}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}" class="btn btn-ghost btn-sm">PDF</a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div class="stat-card">
+      <p class="stat-label">
+        {% if status_filter == 'paid' %}Total Collected{% else %}Total Remaining Balance{% endif %}
+      </p>
+      <p class="stat-value {% if status_filter == 'paid' %}text-emerald-700{% else %}text-red-600{% endif %}">
+        &#8369;{% if status_filter == 'paid' %}{{ total_collected|floatformat:2|intcomma }}{% else %}{{ total_balance|floatformat:2|intcomma }}{% endif %}
+      </p>
+      <p class="stat-meta">{{ status_label }} • {{ month_name }} {{ year }}</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">Total Billed</p>
+      <p class="stat-value text-ink">&#8369;{{ total_due|floatformat:2|intcomma }}</p>
+      <p class="stat-meta">Collected: &#8369;{{ total_collected|floatformat:2|intcomma }}</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">Tenant Count</p>
+      <p class="stat-value">{{ total_count }}</p>
+      <p class="stat-meta">Accounts matching current filter</p>
+    </div>
+  </div>
+
+  <div class="panel overflow-hidden">
+    <div class="panel-header">
+      <div>
+        <h3 class="panel-title">{{ report_type|default:"Tenants Report" }}</h3>
+        <p class="panel-subtitle">Per-tenant billing status for {{ month_name }} {{ year }} • {{ status_label }}</p>
+      </div>
+      <span class="badge badge-gold"><span class="badge-dot"></span>{{ total_count }} tenant{{ total_count|pluralize }}</span>
+    </div>
+    <div class="table-wrap rounded-none border-0 bg-transparent shadow-none backdrop-blur-none">
+      <div class="overflow-x-auto">
+        <table class="table min-w-[1100px]">
+          <thead>
+            <tr>
+              <th>Tenant ID</th>
+              <th>Tenant Name</th>
+              <th>Stall</th>
+              <th>Section</th>
+              <th class="num">Rental</th>
+              <th class="num">Penalty</th>
+              <th class="num">Total Due</th>
+              <th class="num">Paid</th>
+              <th class="num">Balance</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for billing in page_obj %}
+            <tr>
+              <td class="mono">{{ billing.tenant.tenant_id }}</td>
+              <td class="font-semibold text-ink">{{ billing.tenant.full_name }}</td>
+              <td>{{ billing.stall.stall_number }}</td>
+              <td>{{ billing.stall.section.name }}</td>
+              <td class="num">&#8369;{{ billing.rental_amount|floatformat:2|intcomma }}</td>
+              <td class="num text-red-600">{{ billing.penalty_amount|floatformat:2|intcomma }}</td>
+              <td class="num font-semibold text-ink">&#8369;{{ billing.total_due|floatformat:2|intcomma }}</td>
+              <td class="num text-emerald-700">&#8369;{{ billing.amount_paid|floatformat:2|intcomma }}</td>
+              <td class="num font-semibold {% if billing.balance > 0 %}text-red-600{% else %}text-emerald-700{% endif %}">&#8369;{{ billing.balance|floatformat:2|intcomma }}</td>
+              <td>{% include 'includes/status_badge.html' with status=billing.status %}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="10" class="px-4 py-10 text-center">
+                <div class="empty-state">
+                  <span class="empty-icon">
+                    <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                  </span>
+                  <p class="mt-4 text-sm font-semibold text-ink">No records found</p>
+                  <p class="mt-1 text-xs text-ink-muted">Nothing matched this report for the selected period and filter.</p>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4" class="text-right">Grand Total:</td>
+              <td class="num">&#8369;{{ total_rental|floatformat:2|intcomma }}</td>
+              <td class="num text-red-600">&#8369;{{ total_penalty|floatformat:2|intcomma }}</td>
+              <td class="num">&#8369;{{ total_due|floatformat:2|intcomma }}</td>
+              <td class="num text-emerald-700">&#8369;{{ total_collected|floatformat:2|intcomma }}</td>
+              <td class="num text-red-600">&#8369;{{ total_balance|floatformat:2|intcomma }}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {% include 'includes/pagination.html' with pagination_target='report-tenants-wrapper' %}
+</div>

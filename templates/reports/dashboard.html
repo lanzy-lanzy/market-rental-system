@@ -101,22 +101,26 @@
 
   <!-- ══ Billing status breakdown ══ -->
   <div class="kpi-strip">
-    <div class="kpi-item">
+    <a href="{% url 'report_unpaid_tenants' %}?month={{ month }}&year={{ year }}&status=all" class="kpi-item transition hover:bg-white/60">
       <p class="kpi-value">{{ total_count }}</p>
       <p class="kpi-label">Total Billings</p>
-    </div>
-    <div class="kpi-item">
+    </a>
+    <a href="{% url 'report_paid_tenants' %}?month={{ month }}&year={{ year }}&status=paid" class="kpi-item transition hover:bg-white/60">
       <p class="kpi-value text-emerald-700">{{ paid_count }}</p>
       <p class="kpi-label">Paid</p>
-    </div>
-    <div class="kpi-item">
+    </a>
+    <a href="{% url 'report_unpaid_tenants' %}?month={{ month }}&year={{ year }}&status=unpaid" class="kpi-item transition hover:bg-white/60">
       <p class="kpi-value text-amber-600">{{ unpaid_count }}</p>
       <p class="kpi-label">Unpaid</p>
-    </div>
-    <div class="kpi-item">
+    </a>
+    <a href="{% url 'report_unpaid_tenants' %}?month={{ month }}&year={{ year }}&status=overdue" class="kpi-item transition hover:bg-white/60">
       <p class="kpi-value text-red-600">{{ overdue_count }}</p>
       <p class="kpi-label">Overdue</p>
-    </div>
+    </a>
+    <a href="{% url 'report_unpaid_tenants' %}?month={{ month }}&year={{ year }}&status=balance" class="kpi-item transition hover:bg-white/60">
+      <p class="kpi-value text-red-600">{{ balance_count }}</p>
+      <p class="kpi-label">With Balance</p>
+    </a>
   </div>
 
   <!-- ══ Available reports ══ -->

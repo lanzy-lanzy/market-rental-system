@@ -25,7 +25,7 @@
   <p style="text-align:right; font-size:8pt; margin-bottom:6px;">Debit: &#8369;{{ total_debit|floatformat:2 }} &nbsp; Credit: &#8369;{{ total_credit|floatformat:2 }}</p>
   <table>
     <thead>
-      <tr><th class="font-bold">Date</th><th class="font-bold">Tenant</th><th class="font-bold">Description</th><th class="font-bold right">Debit</th><th class="font-bold right">Credit</th><th class="font-bold right">Balance</th></tr>
+      <tr><th class="font-bold">Date</th><th class="font-bold">Tenant</th><th class="font-bold">Description</th><th class="font-bold right">Debit</th><th class="font-bold right">Credit</th><th class="font-bold right">Balance</th><th class="font-bold">Status</th><th class="font-bold">Remarks</th></tr>
     </thead>
     <tbody>
       {% for entry in entries %}
@@ -36,9 +36,11 @@
         <td class="right">{{ entry.debit|floatformat:2 }}</td>
         <td class="right">{{ entry.credit|floatformat:2 }}</td>
         <td class="right"><strong>{{ entry.balance|floatformat:2 }}</strong></td>
+        <td>{% if entry.payment %}{{ entry.payment.status }}{% elif entry.billing %}{{ entry.billing.status }}{% else %}—{% endif %}</td>
+        <td>{% if entry.payment and entry.payment.remarks %}{{ entry.payment.remarks }}{% elif entry.billing and entry.billing.contract and entry.billing.contract.remarks %}{{ entry.billing.contract.remarks }}{% elif entry.tenant.notes %}{{ entry.tenant.notes }}{% else %}—{% endif %}</td>
       </tr>
       {% empty %}
-      <tr><td colspan="6" style="text-align:center; padding:12px;">No entries</td></tr>
+      <tr><td colspan="8" style="text-align:center; padding:12px;">No entries</td></tr>
       {% endfor %}
     </tbody>
   </table>

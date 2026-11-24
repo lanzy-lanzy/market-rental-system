@@ -51,7 +51,6 @@ def _batch_context(request, payments):
     total_due = sum((p.total_amount_due for p in payments), Decimal('0.00'))
     rental_total = sum((p.rental_amount for p in payments), Decimal('0.00'))
     penalty_total = sum((p.penalty_amount for p in payments), Decimal('0.00'))
-    discount_total = sum((p.discount for p in payments), Decimal('0.00'))
     remaining = sum((Decimal(str(p.billing.balance or 0)) for p in payments), Decimal('0.00'))
 
     # Unique stalls covered by this batch (a tenant may hold several).
@@ -85,7 +84,6 @@ def _batch_context(request, payments):
         'stall_list': stall_list,
         'rental_total': rental_total,
         'penalty_total': penalty_total,
-        'discount_total': discount_total,
         'total_due': total_due,
         'total_paid': total_paid,
         'remaining_balance': remaining,

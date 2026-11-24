@@ -190,23 +190,42 @@ def tenant_portal_history(request):
         {y for y in base_entries.values_list('transaction_date__year', flat=True) if y},
         reverse=True,
     )
+    if not available_years:
+        available_years = [date.today().year]
 
     entries = base_entries.select_related('billing', 'billing__stall', 'payment')
 
     type_filter = (request.GET.get('type') or '').strip()
-    year_filter = (request.GET.get('year') or '').strip()
-    month_filter = (request.GET.get('month') or '').strip()
+    raw_year = (request.GET.get('year') or '').strip()
+    raw_month = (request.GET.get('month') or '').strip()
     status_filter = (request.GET.get('status') or '').strip()
     search_query = (request.GET.get('search') or '').strip()
+
+    year_filter = ''
+    if raw_year:
+        try:
+            year_int = int(raw_year)
+            year_filter = str(year_int)
+            entries = entries.filter(transaction_date__year=year_int)
+            if year_int not in available_years:
+                available_years = sorted(set(available_years) | {year_int}, reverse=True)
+        except (ValueError, TypeError):
+            year_filter = ''
+
+    month_filter = ''
+    if raw_month:
+        try:
+            month_int = int(raw_month)
+            if 1 <= month_int <= 12:
+                month_filter = str(month_int)
+                entries = entries.filter(transaction_date__month=month_int)
+        except (ValueError, TypeError):
+            month_filter = ''
 
     if type_filter == 'billing':
         entries = entries.filter(debit__gt=0)
     elif type_filter == 'payment':
         entries = entries.filter(credit__gt=0)
-    if year_filter:
-        entries = entries.filter(transaction_date__year=year_filter)
-    if month_filter:
-        entries = entries.filter(transaction_date__month=month_filter)
     if status_filter:
         entries = entries.filter(
             Q(billing__status=status_filter) | Q(payment__status=status_filter)

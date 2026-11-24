@@ -1,0 +1,65 @@
+{% comment %}
+Shared by templates/contracts/form.html, _modal_form.html, and bulk_assign.html.
+Automatically defaults end_date to 3 years (data-default-duration-years) after
+start_date whenever start_date changes, unless the encoder explicitly sets a
+custom end_date.
+{% endcomment %}
+<script>
+(function () {
+  var script = document.currentScript;
+  var scope = (script && script.parentElement) || document;
+  var startInput = scope.querySelector('input[name=start_date]') || document.querySelector('input[name=start_date]');
+  var endInput = scope.querySelector('input[name=end_date]') || document.querySelector('input[name=end_date]');
+  if (!startInput || !endInput) return;
+
+  var years = parseInt(endInput.getAttribute('data-default-duration-years') || '3', 10) || 3;
+
+  function addYearsIso(isoDate, deltaYears) {
+    if (!isoDate || !/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return '';
+    var parts = isoDate.split('-').map(function (n) { return parseInt(n, 10); });
+    var targetYear = parts[0] + deltaYears;
+    var month = parts[1];
+    var day = parts[2];
+    if (month === 2 && day === 29) {
+      var isLeap = (targetYear % 4 === 0 && targetYear % 100 !== 0) || (targetYear % 400 === 0);
+      if (!isLeap) day = 28;
+    }
+    var mm = month < 10 ? '0' + month : String(month);
+    var dd = day < 10 ? '0' + day : String(day);
+    return targetYear + '-' + mm + '-' + dd;
+  }
+
+  var lastAutoValue = '';
+  if (startInput.value) {
+    var computed = addYearsIso(startInput.value, years);
+    if (!endInput.value) {
+      endInput.value = computed;
+      lastAutoValue = computed;
+    } else if (endInput.value === computed) {
+      lastAutoValue = computed;
+    }
+  }
+
+  var manualOverride = !!(endInput.value && endInput.value !== lastAutoValue);
+
+  endInput.addEventListener('input', function () {
+    if (!endInput.value) {
+      manualOverride = false;
+      lastAutoValue = '';
+    } else if (endInput.value !== lastAutoValue) {
+      manualOverride = true;
+    }
+  });
+
+  startInput.addEventListener('change', function () {
+    if (!startInput.value) return;
+    if (manualOverride && endInput.value) return;
+    var computed = addYearsIso(startInput.value, years);
+    if (computed) {
+      endInput.value = computed;
+      lastAutoValue = computed;
+      manualOverride = false;
+    }
+  });
+})();
+</script>

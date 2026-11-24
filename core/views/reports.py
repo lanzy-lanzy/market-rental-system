@@ -15,6 +15,84 @@ from core.models import (
 )
 
 
+def is_htmx(request):
+    return getattr(request, 'htmx', None) or request.headers.get('HX-Request') == 'true'
+
+
+BILLING_STATUS_FILTER_LABELS = {
+    '': 'All Outstanding',
+    'all': 'All Statuses',
+    'paid': 'Paid',
+    'unpaid': 'Unpaid',
+    'partial': 'Partial',
+    'overdue': 'Overdue',
+    'balance': 'With Balance (> 0)',
+}
+
+
+def _normalize_billing_status_filter(raw_status, default=''):
+    value = (raw_status or '').strip().lower()
+    if not value:
+        return default
+    if value in ('all', 'paid', 'unpaid', 'partial', 'overdue', 'balance'):
+        return value
+    return default
+
+
+def _apply_billing_status_filter(queryset, status_filter, default_mode='outstanding'):
+    """Filter a Billing queryset by status or remaining balance."""
+    if status_filter == 'all':
+        return queryset
+    if status_filter == 'paid':
+        return queryset.filter(status='Paid')
+    if status_filter == 'unpaid':
+        return queryset.filter(status='Unpaid')
+    if status_filter == 'partial':
+        return queryset.filter(status='Partial')
+    if status_filter == 'overdue':
+        return queryset.filter(status='Overdue')
+    if status_filter == 'balance':
+        return queryset.filter(balance__gt=0)
+
+    if default_mode == 'paid':
+        return queryset.filter(status='Paid')
+    if default_mode == 'overdue':
+        return queryset.filter(status='Overdue')
+    if default_mode == 'outstanding':
+        return queryset.filter(
+            Q(status='Unpaid') | Q(status='Partial') | Q(status='Overdue') | Q(balance__gt=0)
+        )
+    return queryset
+
+
+def _apply_billing_search_filter(queryset, search_query):
+    if not search_query:
+        return queryset
+    return queryset.filter(
+        Q(tenant__full_name__icontains=search_query)
+        | Q(tenant__first_name__icontains=search_query)
+        | Q(tenant__last_name__icontains=search_query)
+        | Q(tenant__tenant_id__icontains=search_query)
+        | Q(stall__stall_number__icontains=search_query)
+        | Q(stall__section__name__icontains=search_query)
+    )
+
+
+def _parse_optional_int(value, min_val=None, max_val=None):
+    raw = (value or '').strip()
+    if not raw:
+        return None
+    try:
+        num = int(raw)
+    except (ValueError, TypeError):
+        return None
+    if min_val is not None and num < min_val:
+        return None
+    if max_val is not None and num > max_val:
+        return None
+    return num
+
+
 def get_date_range(request):
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
@@ -53,7 +131,9 @@ def report_dashboard(request):
     total_balance = billings.aggregate(total=Sum('balance'))['total'] or 0
     paid_count = billings.filter(status='Paid').count()
     unpaid_count = billings.filter(status='Unpaid').count()
+    partial_count = billings.filter(status='Partial').count()
     overdue_count = billings.filter(status='Overdue').count()
+    balance_count = billings.filter(balance__gt=0).count()
     total_count = billings.count()
 
     collection_rate = round(float(total_collected) / float(total_billed) * 100, 2) if total_billed else 0
@@ -69,7 +149,9 @@ def report_dashboard(request):
         'total_balance': total_balance,
         'paid_count': paid_count,
         'unpaid_count': unpaid_count,
+        'partial_count': partial_count,
         'overdue_count': overdue_count,
+        'balance_count': balance_count,
         'total_count': total_count,
         'collection_rate': collection_rate,
         'month_name': calendar.month_name[month],
@@ -290,16 +372,32 @@ def report_collector(request):
 @management_required
 def report_paid_tenants(request):
     month, year = get_month_year(request)
+    status_filter = _normalize_billing_status_filter(request.GET.get('status'), default='paid')
+    search_query = (request.GET.get('search') or '').strip()
+
     billings = Billing.objects.filter(
         billing_month=month,
         billing_year=year,
-        status='Paid',
-    ).select_related('tenant', 'stall').order_by('tenant__full_name')
+    ).select_related('tenant', 'stall', 'stall__section')
+    billings = _apply_billing_status_filter(billings, status_filter, default_mode='paid')
+    billings = _apply_billing_search_filter(billings, search_query)
+    billings = billings.order_by('tenant__full_name', 'stall__stall_number')
 
     paginator = Paginator(billings, 50)
     page_obj = paginator.get_page(request.GET.get('page'))
 
-    total_collected = billings.aggregate(total=Sum('amount_paid'))['total'] or 0
+    aggregates = billings.aggregate(
+        total_rental=Sum('rental_amount'),
+        total_penalty=Sum('penalty_amount'),
+        total_due=Sum('total_due'),
+        total_collected=Sum('amount_paid'),
+        total_balance=Sum('balance'),
+    )
+    total_rental = aggregates['total_rental'] or 0
+    total_penalty = aggregates['total_penalty'] or 0
+    total_due = aggregates['total_due'] or 0
+    total_collected = aggregates['total_collected'] or 0
+    total_balance = aggregates['total_balance'] or 0
     total_count = billings.count()
 
     context = {
@@ -307,27 +405,54 @@ def report_paid_tenants(request):
         'month': month,
         'year': year,
         'month_name': calendar.month_name[month],
+        'status_filter': status_filter,
+        'status_label': BILLING_STATUS_FILTER_LABELS.get(status_filter, 'Paid'),
+        'search_query': search_query,
+        'export_report_key': 'paid',
+        'report_url_name': 'report_paid_tenants',
+        'total_rental': total_rental,
+        'total_penalty': total_penalty,
+        'total_due': total_due,
         'total_collected': total_collected,
+        'total_balance': total_balance,
         'total_count': total_count,
         'report_type': 'Paid Tenants Report',
+        'pagination_target': 'report-tenants-wrapper',
     }
-    return render(request, 'reports/paid_tenants.html', context)
+    template = 'reports/_tenants_report_content.html' if is_htmx(request) else 'reports/paid_tenants.html'
+    return render(request, template, context)
 
 
 @management_required
 def report_unpaid_tenants(request):
     month, year = get_month_year(request)
+    status_filter = _normalize_billing_status_filter(request.GET.get('status'), default='')
+    search_query = (request.GET.get('search') or '').strip()
+
     billings = Billing.objects.filter(
         billing_month=month,
         billing_year=year,
-    ).filter(
-        Q(status='Unpaid') | Q(status='Partial') | Q(status='Overdue')
-    ).select_related('tenant', 'stall').order_by('-balance')
+    ).select_related('tenant', 'stall', 'stall__section')
+    billings = _apply_billing_status_filter(billings, status_filter, default_mode='outstanding')
+    billings = _apply_billing_search_filter(billings, search_query)
+    billings = billings.order_by('-balance', 'tenant__full_name')
 
     paginator = Paginator(billings, 50)
     page_obj = paginator.get_page(request.GET.get('page'))
 
-    total_unpaid = billings.aggregate(total=Sum('balance'))['total'] or 0
+    aggregates = billings.aggregate(
+        total_rental=Sum('rental_amount'),
+        total_penalty=Sum('penalty_amount'),
+        total_due=Sum('total_due'),
+        total_collected=Sum('amount_paid'),
+        total_balance=Sum('balance'),
+    )
+    total_rental = aggregates['total_rental'] or 0
+    total_penalty = aggregates['total_penalty'] or 0
+    total_due = aggregates['total_due'] or 0
+    total_collected = aggregates['total_collected'] or 0
+    total_balance = aggregates['total_balance'] or 0
+    total_unpaid = total_balance
     total_count = billings.count()
 
     context = {
@@ -335,32 +460,70 @@ def report_unpaid_tenants(request):
         'month': month,
         'year': year,
         'month_name': calendar.month_name[month],
+        'status_filter': status_filter,
+        'status_label': BILLING_STATUS_FILTER_LABELS.get(status_filter, 'All Outstanding'),
+        'search_query': search_query,
+        'export_report_key': 'unpaid',
+        'report_url_name': 'report_unpaid_tenants',
+        'total_rental': total_rental,
+        'total_penalty': total_penalty,
+        'total_due': total_due,
+        'total_collected': total_collected,
+        'total_balance': total_balance,
         'total_unpaid': total_unpaid,
         'total_count': total_count,
         'report_type': 'Unpaid Tenants Report',
+        'pagination_target': 'report-tenants-wrapper',
     }
-    return render(request, 'reports/unpaid_tenants.html', context)
+    template = 'reports/_tenants_report_content.html' if is_htmx(request) else 'reports/unpaid_tenants.html'
+    return render(request, template, context)
 
 
 @management_required
 def report_overdue(request):
-    billings = Billing.objects.filter(
-        status='Overdue'
-    ).select_related('tenant', 'stall').order_by('-balance')
+    status_filter = _normalize_billing_status_filter(request.GET.get('status'), default='overdue')
+    search_query = (request.GET.get('search') or '').strip()
+    month_filter = _parse_optional_int(request.GET.get('month'), min_val=1, max_val=12)
+    year_filter = _parse_optional_int(request.GET.get('year'), min_val=1900, max_val=2100)
+
+    billings = Billing.objects.select_related('tenant', 'stall', 'stall__section')
+    if month_filter is not None:
+        billings = billings.filter(billing_month=month_filter)
+    if year_filter is not None:
+        billings = billings.filter(billing_year=year_filter)
+    billings = _apply_billing_status_filter(billings, status_filter, default_mode='overdue')
+    billings = _apply_billing_search_filter(billings, search_query)
+    billings = billings.order_by('-balance', 'due_date', 'tenant__full_name')
 
     paginator = Paginator(billings, 50)
     page_obj = paginator.get_page(request.GET.get('page'))
 
-    total_overdue = billings.aggregate(total=Sum('balance'))['total'] or 0
+    aggregates = billings.aggregate(
+        total_due=Sum('total_due'),
+        total_collected=Sum('amount_paid'),
+        total_balance=Sum('balance'),
+    )
+    total_due = aggregates['total_due'] or 0
+    total_collected = aggregates['total_collected'] or 0
+    total_overdue = aggregates['total_balance'] or 0
     total_count = billings.count()
 
     context = {
         'page_obj': page_obj,
+        'status_filter': status_filter,
+        'status_label': BILLING_STATUS_FILTER_LABELS.get(status_filter, 'Overdue'),
+        'search_query': search_query,
+        'month_filter': month_filter,
+        'year_filter': year_filter,
+        'total_due': total_due,
+        'total_collected': total_collected,
         'total_overdue': total_overdue,
         'total_count': total_count,
         'report_type': 'Overdue Accounts Report',
+        'pagination_target': 'report-overdue-wrapper',
     }
-    return render(request, 'reports/overdue.html', context)
+    template = 'reports/_overdue_content.html' if is_htmx(request) else 'reports/overdue.html'
+    return render(request, template, context)
 
 
 @management_required
@@ -453,6 +616,8 @@ def report_export_pdf(request):
     report_type = request.GET.get('report', 'monthly')
     month, year = get_month_year(request)
     date_from, date_to = get_date_range(request)
+    raw_status = request.GET.get('status')
+    search_query = (request.GET.get('search') or '').strip()
 
     try:
         import weasyprint
@@ -462,11 +627,14 @@ def report_export_pdf(request):
 
     # Route to correct dataset and template
     if report_type == 'monthly':
-        billings = Billing.objects.filter(billing_month=month, billing_year=year).select_related('tenant', 'stall')
+        status_filter = _normalize_billing_status_filter(raw_status, default='all')
+        billings = Billing.objects.filter(billing_month=month, billing_year=year).select_related('tenant', 'stall', 'stall__section')
+        billings = _apply_billing_status_filter(billings, status_filter, default_mode='all')
+        billings = _apply_billing_search_filter(billings, search_query)
         total_billed = billings.aggregate(total=Sum('total_due'))['total'] or 0
         total_collected = billings.aggregate(total=Sum('amount_paid'))['total'] or 0
         template = 'reports/pdf/monthly.html'
-        context = {'billings': billings, 'month': month, 'year': year, 'month_name': __import__('calendar').month_name[month], 'total_billed': total_billed, 'total_collected': total_collected, 'report_type': 'Monthly Collection Report'}
+        context = {'billings': billings, 'month': month, 'year': year, 'month_name': calendar.month_name[month], 'total_billed': total_billed, 'total_collected': total_collected, 'status_label': BILLING_STATUS_FILTER_LABELS.get(status_filter, ''), 'report_type': 'Monthly Collection Report'}
     elif report_type == 'daily':
         payments = Payment.objects.filter(status__in=['Paid', 'Partial'], payment_date__gte=date_from, payment_date__lte=date_to).select_related('tenant', 'stall', 'collected_by')
         total_collected = payments.aggregate(total=Sum('amount_paid'))['total'] or 0
@@ -510,27 +678,48 @@ def report_export_pdf(request):
         template = 'reports/pdf/collector.html'
         context = {'collector_data': collector_data, 'date_from': date_from, 'date_to': date_to, 'grand_total': grand_total, 'report_type': 'Collection by Collector'}
     elif report_type in ['paid', 'paid_tenants']:
-        billings = Billing.objects.filter(billing_month=month, billing_year=year, status='Paid').select_related('tenant', 'stall')
+        status_filter = _normalize_billing_status_filter(raw_status, default='paid')
+        billings = Billing.objects.filter(billing_month=month, billing_year=year).select_related('tenant', 'stall', 'stall__section')
+        billings = _apply_billing_status_filter(billings, status_filter, default_mode='paid')
+        billings = _apply_billing_search_filter(billings, search_query).order_by('tenant__full_name', 'stall__stall_number')
         total_billed = billings.aggregate(total=Sum('total_due'))['total'] or 0
         total_collected = billings.aggregate(total=Sum('amount_paid'))['total'] or 0
         template = 'reports/pdf/monthly.html'
-        context = {'billings': billings, 'month': month, 'year': year, 'month_name': __import__('calendar').month_name[month], 'total_billed': total_billed, 'total_collected': total_collected, 'report_type': 'Paid Tenants Report'}
+        context = {'billings': billings, 'month': month, 'year': year, 'month_name': calendar.month_name[month], 'total_billed': total_billed, 'total_collected': total_collected, 'status_label': BILLING_STATUS_FILTER_LABELS.get(status_filter, 'Paid'), 'report_type': 'Paid Tenants Report'}
     elif report_type in ['unpaid', 'unpaid_tenants']:
-        billings = Billing.objects.filter(billing_month=month, billing_year=year).filter(Q(status='Unpaid') | Q(status='Partial') | Q(status='Overdue')).select_related('tenant', 'stall')
+        status_filter = _normalize_billing_status_filter(raw_status, default='')
+        billings = Billing.objects.filter(billing_month=month, billing_year=year).select_related('tenant', 'stall', 'stall__section')
+        billings = _apply_billing_status_filter(billings, status_filter, default_mode='outstanding')
+        billings = _apply_billing_search_filter(billings, search_query).order_by('-balance', 'tenant__full_name')
         total_billed = billings.aggregate(total=Sum('total_due'))['total'] or 0
         total_collected = billings.aggregate(total=Sum('amount_paid'))['total'] or 0
         template = 'reports/pdf/monthly.html'
-        context = {'billings': billings, 'month': month, 'year': year, 'month_name': __import__('calendar').month_name[month], 'total_billed': total_billed, 'total_collected': total_collected, 'report_type': 'Unpaid Tenants Report'}
+        context = {'billings': billings, 'month': month, 'year': year, 'month_name': calendar.month_name[month], 'total_billed': total_billed, 'total_collected': total_collected, 'status_label': BILLING_STATUS_FILTER_LABELS.get(status_filter, 'All Outstanding'), 'report_type': 'Unpaid Tenants Report'}
     elif report_type == 'overdue':
-        billings = Billing.objects.filter(status='Overdue').select_related('tenant', 'stall')
+        status_filter = _normalize_billing_status_filter(raw_status, default='overdue')
+        month_filter = _parse_optional_int(request.GET.get('month'), min_val=1, max_val=12)
+        year_filter = _parse_optional_int(request.GET.get('year'), min_val=1900, max_val=2100)
+        billings = Billing.objects.select_related('tenant', 'stall', 'stall__section')
+        if month_filter is not None:
+            billings = billings.filter(billing_month=month_filter)
+        if year_filter is not None:
+            billings = billings.filter(billing_year=year_filter)
+        billings = _apply_billing_status_filter(billings, status_filter, default_mode='overdue')
+        billings = _apply_billing_search_filter(billings, search_query).order_by('-balance', 'due_date', 'tenant__full_name')
         total_billed = billings.aggregate(total=Sum('total_due'))['total'] or 0
         total_collected = billings.aggregate(total=Sum('amount_paid'))['total'] or 0
         template = 'reports/pdf/monthly.html'
-        context = {'billings': billings, 'month': month, 'year': year, 'month_name': __import__('calendar').month_name[month], 'total_billed': total_billed, 'total_collected': total_collected, 'report_type': 'Overdue Accounts Report'}
+        context = {'billings': billings, 'month': month_filter or month, 'year': year_filter or year, 'month_name': calendar.month_name[month_filter] if month_filter else 'All Months', 'total_billed': total_billed, 'total_collected': total_collected, 'status_label': BILLING_STATUS_FILTER_LABELS.get(status_filter, 'Overdue'), 'report_type': 'Overdue Accounts Report'}
     elif report_type in ['occupancy', 'vacant']:
         qs = Stall.objects.select_related('section', 'stall_type').all().order_by('section__name', 'stall_number')
+        section_filter = (request.GET.get('section') or '').strip()
+        occ_status_filter = (request.GET.get('status') or '').strip()
+        if section_filter and section_filter != 'None':
+            qs = qs.filter(section_id=section_filter)
         if report_type == 'vacant':
             qs = qs.filter(status='Vacant')
+        elif occ_status_filter and occ_status_filter != 'None':
+            qs = qs.filter(status=occ_status_filter)
         template = 'reports/pdf/occupancy.html'
         context = {'stalls': qs, 'total': qs.count(), 'report_type': 'Vacant Stall Report' if report_type == 'vacant' else 'Stall Occupancy Report'}
     elif report_type == 'ledger':
@@ -568,6 +757,8 @@ def report_export_excel(request):
     report_type = request.GET.get('report', 'monthly')
     month, year = get_month_year(request)
     date_from, date_to = get_date_range(request)
+    raw_status = request.GET.get('status')
+    search_query = (request.GET.get('search') or '').strip()
 
     try:
         import openpyxl
@@ -591,7 +782,10 @@ def report_export_excel(request):
             cell.alignment = Alignment(horizontal='center')
 
     if report_type == 'monthly':
+        status_filter = _normalize_billing_status_filter(raw_status, default='all')
         billings = Billing.objects.filter(billing_month=month, billing_year=year).select_related('tenant', 'stall', 'stall__section')
+        billings = _apply_billing_status_filter(billings, status_filter, default_mode='all')
+        billings = _apply_billing_search_filter(billings, search_query)
         headers = ['Tenant ID', 'Tenant Name', 'Stall', 'Section', 'Rental', 'Penalty', 'Total Due', 'Amount Paid', 'Balance', 'Status']
         style_header(headers)
         for row, billing in enumerate(billings, 2):
@@ -665,7 +859,10 @@ def report_export_excel(request):
             ws.cell(row=row, column=2, value=payments.count())
             ws.cell(row=row, column=3, value=float(total))
     elif report_type in ['paid', 'paid_tenants']:
-        billings = Billing.objects.filter(billing_month=month, billing_year=year, status='Paid').select_related('tenant', 'stall')
+        status_filter = _normalize_billing_status_filter(raw_status, default='paid')
+        billings = Billing.objects.filter(billing_month=month, billing_year=year).select_related('tenant', 'stall', 'stall__section')
+        billings = _apply_billing_status_filter(billings, status_filter, default_mode='paid')
+        billings = _apply_billing_search_filter(billings, search_query).order_by('tenant__full_name', 'stall__stall_number')
         headers = ['Tenant ID', 'Tenant Name', 'Stall', 'Section', 'Rental', 'Penalty', 'Total Due', 'Amount Paid', 'Balance', 'Status']
         style_header(headers)
         for row, billing in enumerate(billings, 2):
@@ -680,7 +877,10 @@ def report_export_excel(request):
             ws.cell(row=row, column=9, value=float(billing.balance))
             ws.cell(row=row, column=10, value=billing.get_status_display())
     elif report_type in ['unpaid', 'unpaid_tenants']:
-        billings = Billing.objects.filter(billing_month=month, billing_year=year).filter(Q(status='Unpaid') | Q(status='Partial') | Q(status='Overdue')).select_related('tenant', 'stall')
+        status_filter = _normalize_billing_status_filter(raw_status, default='')
+        billings = Billing.objects.filter(billing_month=month, billing_year=year).select_related('tenant', 'stall', 'stall__section')
+        billings = _apply_billing_status_filter(billings, status_filter, default_mode='outstanding')
+        billings = _apply_billing_search_filter(billings, search_query).order_by('-balance', 'tenant__full_name')
         headers = ['Tenant ID', 'Tenant Name', 'Stall', 'Section', 'Rental', 'Penalty', 'Total Due', 'Amount Paid', 'Balance', 'Status']
         style_header(headers)
         for row, billing in enumerate(billings, 2):
@@ -695,7 +895,16 @@ def report_export_excel(request):
             ws.cell(row=row, column=9, value=float(billing.balance))
             ws.cell(row=row, column=10, value=billing.get_status_display())
     elif report_type == 'overdue':
-        billings = Billing.objects.filter(status='Overdue').select_related('tenant', 'stall')
+        status_filter = _normalize_billing_status_filter(raw_status, default='overdue')
+        month_filter = _parse_optional_int(request.GET.get('month'), min_val=1, max_val=12)
+        year_filter = _parse_optional_int(request.GET.get('year'), min_val=1900, max_val=2100)
+        billings = Billing.objects.select_related('tenant', 'stall', 'stall__section')
+        if month_filter is not None:
+            billings = billings.filter(billing_month=month_filter)
+        if year_filter is not None:
+            billings = billings.filter(billing_year=year_filter)
+        billings = _apply_billing_status_filter(billings, status_filter, default_mode='overdue')
+        billings = _apply_billing_search_filter(billings, search_query).order_by('-balance', 'due_date', 'tenant__full_name')
         headers = ['Tenant ID', 'Tenant Name', 'Stall', 'Section', 'Rental', 'Penalty', 'Total Due', 'Amount Paid', 'Balance', 'Due Date', 'Status']
         style_header(headers)
         for row, billing in enumerate(billings, 2):
@@ -712,8 +921,14 @@ def report_export_excel(request):
             ws.cell(row=row, column=11, value=billing.get_status_display())
     elif report_type in ['occupancy', 'vacant']:
         qs = Stall.objects.select_related('section', 'stall_type').all().order_by('section__name', 'stall_number')
+        section_filter = (request.GET.get('section') or '').strip()
+        occ_status_filter = (request.GET.get('status') or '').strip()
+        if section_filter and section_filter != 'None':
+            qs = qs.filter(section_id=section_filter)
         if report_type == 'vacant':
             qs = qs.filter(status='Vacant')
+        elif occ_status_filter and occ_status_filter != 'None':
+            qs = qs.filter(status=occ_status_filter)
         headers = ['Stall #', 'Section', 'Type', 'Size', 'Monthly Rate', 'Status', 'Tenant']
         style_header(headers)
         for row, stall in enumerate(qs, 2):
