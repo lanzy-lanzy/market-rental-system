@@ -4,6 +4,7 @@ Financial rows are written through core.helpers (get_or_create_billing,
 record_payment, apply_overdue_penalties) so Billing, Payment and TenantLedger
 always agree with each other.
 """
+import os
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -22,6 +23,7 @@ from core.helpers import (
 from core.models import (
     AuditLog,
     Billing,
+    ContractAmendment,
     MarketSection,
     Notice,
     PenaltySetting,
@@ -203,6 +205,14 @@ class Command(BaseCommand):
         if options['reset']:
             call_command('flush', interactive=False)
             self.stdout.write(self.style.WARNING('Database flushed — seeding fresh data.'))
+        elif Tenant.objects.count() >= 3 and RentalContract.objects.exists():
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f'Database already seeded ({Tenant.objects.count()} tenants, '
+                    f'{RentalContract.objects.count()} contracts) — skipping to preserve existing data.'
+                )
+            )
+            return
 
         today = date.today()
         months = [self._shift_month(today, -back) for back in range(MONTHS_BACK - 1, -1, -1)]
@@ -212,6 +222,7 @@ class Command(BaseCommand):
         self._create_market_structure()
         tenants = self._create_tenants()
         contracts = self._create_contracts(tenants, today)
+        self._create_contract_amendments(contracts, users, today)
         self._create_billings(contracts, months)
         payments = self._create_payments(contracts, tenants, users, months, today)
         overdue, penalized = apply_overdue_penalties(today)
@@ -272,16 +283,23 @@ class Command(BaseCommand):
 
     def _create_users(self):
         created = 0
-        for username, (password, full_name, role, phone) in STAFF_PASSWORDS.items():
+        env_passwords = {
+            'admin': os.environ.get('SEED_ADMIN_PASSWORD'),
+            'collector': os.environ.get('SEED_COLLECTOR_PASSWORD'),
+            'collector1': os.environ.get('SEED_COLLECTOR_PASSWORD'),
+        }
+        for username, (default_password, full_name, role, phone) in STAFF_PASSWORDS.items():
             user = self._get_or_none(User, username=username)
             if user is None:
+                password = env_passwords.get(username) or default_password
                 first, _, last = full_name.partition(' ')
                 user = User.objects.create_user(
                     username=username, password=password, email=f'{username}@dumingag.example.com',
                     first_name=first, last_name=last,
                     is_staff=role == 'admin', is_superuser=role == 'admin')
                 created += 1
-            UserProfile.objects.update_or_create(
+            # Preserve existing profiles and credentials; never overwrite on re-run.
+            UserProfile.objects.get_or_create(
                 user=user,
                 defaults={'role': role, 'phone': phone,
                           'address': 'Dumingag, Zamboanga del Sur', 'must_change_password': False})
@@ -356,28 +374,52 @@ class Command(BaseCommand):
                 created += 1
             contracts[(tenant.pk, stall.pk, status)] = contract
 
-        # Stall status is derived from the contracts, never typed by hand.
-        Stall.objects.update(status='Vacant')
-        occupied, reserved = [], []
-        for (_tenant_pk, stall_pk, status) in contracts:
-            if status == 'Active':
-                occupied.append(stall_pk)
-            elif status == 'Pending':
-                reserved.append(stall_pk)
+        # Stall status is derived from all contracts in the database, never wiping active ones.
+        occupied = list(
+            RentalContract.objects.filter(status='Active').values_list('stall_id', flat=True).distinct()
+        )
+        reserved = list(
+            RentalContract.objects.filter(status='Pending')
+            .exclude(stall_id__in=occupied)
+            .values_list('stall_id', flat=True)
+            .distinct()
+        )
         Stall.objects.filter(pk__in=occupied).update(status='Occupied')
         Stall.objects.filter(pk__in=reserved).update(status='Reserved')
-        Stall.objects.filter(stall_number=MAINTENANCE_STALL).update(status='Maintenance')
+        Stall.objects.filter(stall_number=MAINTENANCE_STALL).exclude(pk__in=occupied).update(status='Maintenance')
 
         override_tenant = tenants.get(PENALTY_OVERRIDE_TENANT)
         override = next((contract for (tenant_pk, _stall_pk, status), contract in contracts.items()
                          if tenant_pk == override_tenant.pk and status == 'Active'), None)
         if override:
-            PenaltySetting.objects.update_or_create(
+            PenaltySetting.objects.get_or_create(
                 contract=override,
                 defaults={'penalty_type': 'percentage', 'penalty_value': Decimal('3.00'),
                           'grace_period': 3, 'due_day': override.due_day, 'is_active': True})
         self.stdout.write(self.style.SUCCESS(f'Created {created} rental contracts'))
         return contracts
+
+    def _create_contract_amendments(self, contracts, users, today):
+        """Seed a sample stall renovation amendment so amendment history is populated."""
+        if ContractAmendment.objects.exists():
+            return
+        admin_user = users.get('admin')
+        sample_contract = next(
+            (c for c in contracts.values() if c.status == 'Active' and c.monthly_rent >= Decimal('1500.00')),
+            None,
+        )
+        if sample_contract is None:
+            return
+        prev_rent = (sample_contract.monthly_rent - Decimal('200.00')).quantize(Decimal('0.01'))
+        ContractAmendment.objects.create(
+            contract=sample_contract,
+            reason='renovation',
+            effective_date=max(sample_contract.start_date, today - timedelta(days=90)),
+            previous_monthly_rent=prev_rent,
+            new_monthly_rent=sample_contract.monthly_rent,
+            remarks='Standard stall renovation and counter upgrade.',
+            created_by=admin_user,
+        )
 
     def _create_billings(self, contracts, months):
         created = 0

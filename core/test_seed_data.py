@@ -7,7 +7,7 @@ from django.test import TestCase
 from core.forms import TenantForm
 from core.helpers import recalc_billing_from_payments
 from core.models import (
-    Billing, MarketSection, Notice, Payment, RentalContract, Stall, SystemSetting,
+    Billing, ContractAmendment, MarketSection, Notice, Payment, RentalContract, Stall, SystemSetting,
     Tenant, TenantLedger, UserProfile,
 )
 
@@ -129,3 +129,58 @@ class SeedDataConsistencyTests(TestCase):
         self.assertEqual(Payment.objects.count(), self.payments)
         self.assertEqual(Billing.objects.count(), Billing.objects.values(
             'tenant', 'stall', 'billing_month', 'billing_year').distinct().count())
+
+    def test_at_least_three_tenants_and_sample_amendment_are_seeded(self):
+        self.assertGreaterEqual(Tenant.objects.count(), 3)
+        self.assertTrue(ContractAmendment.objects.exists())
+
+
+class DeployAutoSeedTests(TestCase):
+    """Verify Seenode auto-seed hook populates empty DBs and preserves existing credentials."""
+
+    def test_should_auto_seed_skips_during_tests_and_management_commands(self):
+        from core.seed_on_deploy import should_auto_seed
+
+        self.assertFalse(should_auto_seed(argv=['manage.py', 'test']))
+        self.assertFalse(should_auto_seed(argv=['manage.py', 'makemigrations']))
+        self.assertFalse(should_auto_seed(argv=['manage.py', 'collectstatic']))
+        self.assertTrue(should_auto_seed(argv=['gunicorn', 'market_rental.wsgi:application']))
+
+    def test_ensure_seeded_on_deploy_populates_empty_db_and_preserves_passwords(self):
+        from django.contrib.auth.models import User
+        from core.seed_on_deploy import ensure_seeded_on_deploy
+
+        self.assertEqual(Tenant.objects.count(), 0)
+        seeded = ensure_seeded_on_deploy(
+            force_check=True,
+            argv=['gunicorn', 'market_rental.wsgi:application'],
+        )
+        self.assertTrue(seeded)
+        self.assertGreaterEqual(Tenant.objects.count(), 3)
+        self.assertTrue(RentalContract.objects.exists())
+        self.assertTrue(Billing.objects.exists())
+        self.assertTrue(Payment.objects.exists())
+        self.assertTrue(User.objects.filter(username='admin').exists())
+        self.assertTrue(User.objects.filter(username='collector').exists())
+
+        # Change admin & collector passwords, then re-run deploy seed hook
+        admin = User.objects.get(username='admin')
+        admin.set_password('ProdAdmin!999')
+        admin.save(update_fields=['password'])
+
+        collector = User.objects.get(username='collector')
+        collector.set_password('ProdCollector!999')
+        collector.save(update_fields=['password'])
+
+        tenant_count_before = Tenant.objects.count()
+        second_run = ensure_seeded_on_deploy(
+            force_check=True,
+            argv=['gunicorn', 'market_rental.wsgi:application'],
+        )
+        self.assertFalse(second_run)
+        self.assertEqual(Tenant.objects.count(), tenant_count_before)
+
+        admin.refresh_from_db()
+        collector.refresh_from_db()
+        self.assertTrue(admin.check_password('ProdAdmin!999'))
+        self.assertTrue(collector.check_password('ProdCollector!999'))

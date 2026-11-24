@@ -27,3 +27,34 @@ class SeedUsersCommandTests(TestCase):
         self.assertEqual(tenant_user.profile.role, "tenant")
         self.assertTrue(Tenant.objects.filter(user=tenant_user).exists())
         self.assertTrue(SystemSetting.objects.exists())
+
+    def test_seed_users_does_not_reset_existing_admin_and_collector_credentials(self):
+        call_command("seed_users")
+
+        admin = User.objects.get(username="admin")
+        admin.set_password("MyCustomAdmin!2026")
+        admin.save(update_fields=["password"])
+        admin.profile.phone = "09998887777"
+        admin.profile.save(update_fields=["phone"])
+
+        collector = User.objects.get(username="collector")
+        collector.set_password("MyCustomCollector!2026")
+        collector.save(update_fields=["password"])
+        collector.profile.phone = "09991112222"
+        collector.profile.save(update_fields=["phone"])
+
+        # Re-running seed_users must NEVER reset credentials or overwrite profiles
+        call_command("seed_users")
+
+        admin.refresh_from_db()
+        admin.profile.refresh_from_db()
+        collector.refresh_from_db()
+        collector.profile.refresh_from_db()
+
+        self.assertTrue(admin.check_password("MyCustomAdmin!2026"))
+        self.assertFalse(admin.check_password("admin123"))
+        self.assertEqual(admin.profile.phone, "09998887777")
+
+        self.assertTrue(collector.check_password("MyCustomCollector!2026"))
+        self.assertFalse(collector.check_password("collector123"))
+        self.assertEqual(collector.profile.phone, "09991112222")
